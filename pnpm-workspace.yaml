@@ -1,3 +1,4 @@
 allowBuilds:
+  canvas: set this to true or false
   esbuild: false
   spawn-sync: false

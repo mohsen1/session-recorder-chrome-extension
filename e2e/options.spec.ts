@@ -13,7 +13,7 @@ test('persists transcription settings to chrome.storage.local', async ({
   await page.goto(extUrl(extensionId, 'options.html'));
 
   const section = page
-    .locator('section.card')
+    .locator('section.settings__section')
     .filter({ has: page.getByRole('heading', { name: 'Transcription' }) });
 
   await section.getByRole('combobox').selectOption('deepgram');

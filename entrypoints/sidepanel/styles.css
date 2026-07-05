@@ -132,8 +132,14 @@ button {
   color: var(--ink);
 }
 
-.app__live-dot {
+.app__actions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app__live-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -1065,6 +1071,251 @@ button {
   width: 100%;
   padding: 11px;
   font-size: 13px;
+}
+
+/* ---- Settings (side-panel view + shared options form) ---- */
+
+.view--settings {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px;
+}
+
+.settings__close {
+  margin-left: auto;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings__section {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 13px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+.settings__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 1px;
+}
+
+.settings__head svg {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.settings__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  flex: 1;
+}
+
+.settings__saved {
+  color: var(--ok);
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.settings__label {
+  font-weight: 500;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.settings__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.settings input[type='text'],
+.settings input[type='password'],
+.settings input[type='number'],
+.settings select,
+.settings textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.settings textarea {
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.settings input:focus,
+.settings select:focus,
+.settings textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+
+.settings__toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.settings__toggle input {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+.settings__hint {
+  color: var(--muted);
+  font-size: 11.5px;
+  margin: 0;
+}
+
+.settings__ref-label {
+  color: var(--muted);
+  font-size: 10.5px;
+  margin-top: 2px;
+}
+
+.settings__ref {
+  display: block;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.settings__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.settings__result {
+  font-size: 11.5px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  margin: 0;
+  word-break: break-word;
+}
+
+.settings__result--ok {
+  color: var(--ok);
+  background: var(--accent-tint);
+}
+
+.settings__result--error {
+  color: var(--danger);
+  background: var(--danger-tint);
+}
+
+.settings__danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.settings__danger:hover:not(:disabled) {
+  background: var(--danger-tint);
+  border-color: var(--danger);
+}
+
+.settings__storage-numbers {
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings__storage-numbers strong {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.settings__storage-numbers span {
+  color: var(--muted);
+}
+
+.settings__storage-bar {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.settings__storage-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.settings__sessions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.settings__session {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.settings__session-name {
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings__session-meta {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- animations ---- */

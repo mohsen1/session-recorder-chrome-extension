@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Clock, Database, Layers } from 'lucide-react';
+import { Clock, Database, Layers, Settings, X } from 'lucide-react';
 import { getEvents, getSession } from '@/lib/storage';
 import { formatClock } from '@/lib/export/markdown';
 import type {
@@ -29,6 +29,7 @@ import { CaptureBar } from './components/CaptureBar';
 import { Timeline } from './components/Timeline';
 import { SessionList } from './components/SessionList';
 import { ExportPanel } from './components/ExportPanel';
+import { SettingsForm } from './components/SettingsForm';
 
 export function App(): React.JSX.Element {
   const init = useSidepanel((s) => s.init);
@@ -42,6 +43,8 @@ export function App(): React.JSX.Element {
   const [dismissedStoppedId, setDismissedStoppedId] = useState<string | null>(
     null,
   );
+  // Settings view overlay, reachable from the header gear in every state.
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     void init();
@@ -56,7 +59,9 @@ export function App(): React.JSX.Element {
     session.id !== dismissedStoppedId;
 
   let body: React.JSX.Element;
-  if (reviewId) {
+  if (settingsOpen) {
+    body = <SettingsView onClose={() => setSettingsOpen(false)} />;
+  } else if (reviewId) {
     body = (
       <SessionReview sessionId={reviewId} onClose={() => setReviewId(null)} closeLabel="← Back" />
     );
@@ -88,7 +93,18 @@ export function App(): React.JSX.Element {
           />
           <span className="app__title">Session Recorder</span>
         </div>
-        {isLive && <span className="app__live-dot" aria-hidden="true" />}
+        <div className="app__actions">
+          {isLive && <span className="app__live-dot" aria-hidden="true" />}
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Settings"
+            aria-pressed={settingsOpen}
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            <Settings size={17} strokeWidth={1.75} />
+          </button>
+        </div>
       </header>
       {error && (
         <div className="app__error" role="alert">
@@ -99,6 +115,40 @@ export function App(): React.JSX.Element {
         </div>
       )}
       <main className="app__body">{ready ? body : <p className="app__loading">Loading…</p>}</main>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Settings
+// ----------------------------------------------------------------------------
+
+function SettingsView({
+  onClose,
+}: {
+  onClose: () => void;
+}): React.JSX.Element {
+  return (
+    <div className="view view--settings">
+      <div className="review__topbar">
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm"
+          onClick={onClose}
+        >
+          ← Back
+        </button>
+        <span className="review__name">Settings</span>
+        <button
+          type="button"
+          className="icon-btn settings__close"
+          aria-label="Close settings"
+          onClick={onClose}
+        >
+          <X size={16} strokeWidth={1.75} />
+        </button>
+      </div>
+      <SettingsForm />
     </div>
   );
 }

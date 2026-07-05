@@ -741,7 +741,12 @@ class Orchestrator {
         return { active, annotating: this.annotating };
       }
       case 'annotation/exit':
-        return this.handleAnnotationExit(msg.shapes, msg.viewport, sender);
+        return this.handleAnnotationExit(
+          msg.shapes,
+          msg.viewport,
+          msg.image,
+          sender,
+        );
 
       // --- manual capture actions ---
       case 'screenshot/capture': {
@@ -879,6 +884,7 @@ class Orchestrator {
   private async handleAnnotationExit(
     shapes: unknown,
     viewport: { w: number; h: number },
+    image: string | undefined,
     sender: chrome.runtime.MessageSender,
   ): Promise<{ ok: boolean }> {
     this.annotating = false;
@@ -888,9 +894,8 @@ class Orchestrator {
       ? (shapes as AnnotationShape[])
       : [];
 
-    // A cancel (Escape / ✗) sends an empty shape list: just reset the annotating
-    // state, with no screenshot and no annotation event.
-    if (shapeList.length === 0) {
+    // Cancel: the editor closed without an image. Just reset state, no event.
+    if (!image) {
       this.broadcastState();
       return { ok: true };
     }
@@ -901,13 +906,20 @@ class Orchestrator {
         ? senderTab
         : await this.activeSessionTabId();
 
-    // Grab the annotated view; capture() emits a screenshot through recordEvent,
-    // which records its assetId in `lastAnnotationShot`.
-    this.lastAnnotationShot = undefined;
-    if (tabId >= 0) await this.screenshots.capture(tabId, 'annotation');
+    // The editor sends the finished annotated image; store it as the screenshot
+    // asset for this annotation (no second capture needed).
+    let screenshotAssetId: string | undefined;
+    try {
+      const blob = await dataUrlToBlob(image);
+      const asset = await this.putAssetBlob('screenshot', blob, blob.type);
+      screenshotAssetId = asset.id;
+    } catch {
+      /* if the image fails to decode, record the shapes without an image */
+    }
+
     const payload: AnnotationPayload = {
       shapes: shapeList,
-      screenshotAssetId: this.lastAnnotationShot,
+      screenshotAssetId,
       viewport,
     };
     this.recordEvent({
@@ -1035,11 +1047,40 @@ class Orchestrator {
     this.annotating = !this.annotating;
     const tabId = await this.activeSessionTabId();
     if (tabId >= 0) {
-      await sendToTab(tabId, { kind: 'content/annotate', on: this.annotating });
+      if (this.annotating) {
+        // Freeze the current view and hand it to the editor to annotate. This
+        // avoids drawing on a moving page and lets the editor work on a stable
+        // image.
+        const image = await this.captureTabImage(tabId).catch(() => undefined);
+        await sendToTab(tabId, {
+          kind: 'content/annotate',
+          on: true,
+          image,
+        });
+      } else {
+        await sendToTab(tabId, { kind: 'content/annotate', on: false });
+      }
     }
     broadcast({ kind: 'annotation/state', annotating: this.annotating });
     this.broadcastState();
     return this.annotating;
+  }
+
+  /** Grab the current tab view as a JPEG data URL (debugger, else tabs API). */
+  private async captureTabImage(tabId: number): Promise<string | undefined> {
+    if (this.dbg.isAttached(tabId)) {
+      const { data } = await this.dbg.captureScreenshot(tabId, 90);
+      return `data:image/jpeg;base64,${data}`;
+    }
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      return await chrome.tabs.captureVisibleTab(tab.windowId, {
+        format: 'jpeg',
+        quality: 90,
+      });
+    } catch {
+      return undefined;
+    }
   }
 
   // --------------------------------------------------------------------------

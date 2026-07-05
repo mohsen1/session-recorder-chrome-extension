@@ -44,7 +44,13 @@ export type RequestMessage =
   | { kind: 'capture/fileBlob'; event: RawEvent; dataUrl: string }
   // --- content handshake / annotation results (content -> bg) ---
   | { kind: 'content/hello' }
-  | { kind: 'annotation/exit'; shapes: unknown; viewport: { w: number; h: number } }
+  | {
+      kind: 'annotation/exit';
+      shapes: unknown;
+      viewport: { w: number; h: number };
+      /** The rendered annotated image (data URL) when finished, absent on cancel. */
+      image?: string;
+    }
   // --- manual capture actions (sidepanel -> bg) ---
   | { kind: 'screenshot/capture' }
   | { kind: 'marker/add'; name?: string }
@@ -155,7 +161,13 @@ export type BroadcastMessage =
 
 export type ContentMessage =
   | { kind: 'content/setActive'; active: boolean }
-  | { kind: 'content/annotate'; on: boolean };
+  | {
+      kind: 'content/annotate';
+      on: boolean;
+      /** Frozen screenshot (data URL) to annotate, sent when turning on. */
+      image?: string;
+      viewport?: { w: number; h: number };
+    };
 
 const CONTENT_MARKER = '__sr_content__';
 
