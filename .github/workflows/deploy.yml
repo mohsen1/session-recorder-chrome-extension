@@ -29,11 +29,15 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # pnpm 11 requires Node >= 22.13.
+          node-version: 22
           cache: pnpm
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Activate GitHub Pages on first deploy without manual repo setup.
+          enablement: true
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
