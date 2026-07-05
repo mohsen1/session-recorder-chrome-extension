@@ -128,4 +128,21 @@ describe('buildDescriptor', () => {
     expect(d.selector).toBe('#go');
     expect(d.rect).toBeDefined();
   });
+
+  it('never leaks a sensitive field value into descriptor text', () => {
+    frag(
+      '<input type="password" id="pw" name="password" placeholder="password" value="hunter2" />',
+    );
+    const el = document.querySelector('input')!;
+    const d = buildDescriptor(el);
+    expect(visibleText(el)).not.toContain('hunter2');
+    expect(d.text ?? '').not.toContain('hunter2');
+    // Placeholder is a safe fallback.
+    expect(d.text).toBe('password');
+  });
+
+  it('does surface a non-sensitive input value as text', () => {
+    frag('<input type="text" id="city" value="London" />');
+    expect(visibleText(document.querySelector('input')!)).toBe('London');
+  });
 });

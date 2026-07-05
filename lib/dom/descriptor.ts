@@ -81,7 +81,11 @@ export function visibleText(el: Element, cap: number = DEFAULT_TEXT_CAP): string
   // Form controls / images carry no text content but still show something.
   const tag = el.tagName.toLowerCase();
   if (tag === 'input' || tag === 'textarea' || tag === 'select') {
-    const val = typeof html.value === 'string' ? html.value : '';
+    // Never surface the value of a sensitive field as "text" — that would leak
+    // a password/token into the descriptor even though the captured value is
+    // redacted elsewhere. Fall through to placeholder / aria-label / name.
+    const val =
+      !isSensitiveInput(el) && typeof html.value === 'string' ? html.value : '';
     if (val) return capText(val, cap);
     const ph = typeof html.placeholder === 'string' ? html.placeholder : '';
     if (ph) return capText(ph, cap);
