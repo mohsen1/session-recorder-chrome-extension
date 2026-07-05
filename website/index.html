@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Session Recorder — Record a web session. Get an LLM-ready bug report.</title>
+    <meta
+      name="description"
+      content="A Chrome extension that records a rich, multi-modal session of a web app — interactions, full network traffic, screenshots, voice, annotations — and exports a fully local, LLM-ready bug report."
+    />
+    <link rel="icon" href="./logo.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./logo.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-head">
+      <a class="brand" href="#top" aria-label="Session Recorder home">
+        <img class="brand-mark" src="./logo.png" width="28" height="28" alt="" />
+        <span class="brand-name">Session Recorder</span>
+      </a>
+      <nav class="site-nav">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a
+          href="https://github.com/thirdface/session-recorder"
+          rel="noopener"
+          >GitHub</a
+        >
+      </nav>
+    </header>
+
+    <main id="top">
+      <!-- Hero -->
+      <section class="hero">
+        <img
+          class="hero-logo"
+          src="./logo.png"
+          width="88"
+          height="88"
+          alt="Session Recorder logo"
+        />
+        <h1 class="hero-title">
+          Record a web session.<br />Get an LLM-ready bug report.
+        </h1>
+        <p class="hero-sub">
+          A Chrome extension that captures a full, multi-modal recording of a
+          web app — interactions, network, screenshots, voice, annotations — and
+          exports a fully local <code>report.md</code> optimized for a coding
+          agent to digest.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="./session-recorder.zip" download>
+            <span class="dot" aria-hidden="true"></span>
+            Download the extension
+          </a>
+          <a
+            class="btn btn-secondary"
+            href="https://github.com/thirdface/session-recorder"
+            rel="noopener"
+            >View on GitHub</a
+          >
+        </div>
+        <p class="hero-note">
+          Manifest V3 · WXT + React + TypeScript · Nothing leaves your machine.
+        </p>
+      </section>
+
+      <!-- How it works -->
+      <section id="how" class="section">
+        <h2 class="section-title">How it works</h2>
+        <ol class="steps">
+          <li class="step">
+            <span class="step-num">01</span>
+            <h3 class="step-title">Hit record</h3>
+            <p class="step-body">
+              Open the side panel and start recording. The extension attaches to
+              the tab and captures every stream through one funnel.
+            </p>
+          </li>
+          <li class="step">
+            <span class="step-num">02</span>
+            <h3 class="step-title">Exercise the app</h3>
+            <p class="step-body">
+              Reproduce the bug. Narrate out loud, drop markers, annotate the
+              screen. Everything persists to IndexedDB as you go.
+            </p>
+          </li>
+          <li class="step">
+            <span class="step-num">03</span>
+            <h3 class="step-title">Export the report</h3>
+            <p class="step-body">
+              Pick a verbosity level with a live token estimate and export a
+              local zip. Hand <code>report.md</code> to your coding agent.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Features -->
+      <section id="features" class="section">
+        <h2 class="section-title">What it captures</h2>
+        <div class="grid">
+          <article class="card">
+            <h3 class="card-title">Full network capture</h3>
+            <p class="card-body">
+              Request and response bodies, headers, timing, and websockets via
+              <code>chrome.debugger</code> / CDP — plus console logs,
+              exceptions, and failed requests.
+            </p>
+          </article>
+          <article class="card">
+            <h3 class="card-title">Screenshots</h3>
+            <p class="card-body">
+              <code>Page.captureScreenshot</code> at a configurable frequency,
+              with near-duplicate frames automatically deduped so the timeline
+              stays lean.
+            </p>
+          </article>
+          <article class="card">
+            <h3 class="card-title">Real-time voice narration</h3>
+            <p class="card-body">
+              Narrate while you record via an offscreen
+              <code>MediaRecorder</code>, segmented for optional cloud
+              transcription — OpenAI-compatible, Deepgram, or ElevenLabs Scribe.
+            </p>
+          </article>
+          <article class="card">
+            <h3 class="card-title">Annotations</h3>
+            <p class="card-body">
+              An in-page shadow-DOM canvas overlay for vector shapes, saved
+              alongside the annotated screenshot. Never trimmed — it is an
+              explicit signal of what mattered.
+            </p>
+          </article>
+          <article class="card">
+            <h3 class="card-title">Intelligent trimming</h3>
+            <p class="card-body">
+              Captured at full fidelity, trimmed deterministically at export
+              into four levels — Full, Standard, Compact, Minimal — each with a
+              live token estimate. No LLM in the loop.
+            </p>
+          </article>
+          <article class="card">
+            <h3 class="card-title">Redaction on by default</h3>
+            <p class="card-body">
+              Auth headers, token-like fields, sensitive URL params, and
+              password inputs are masked at capture time — raw secrets never
+              touch disk.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Install -->
+      <section class="section">
+        <div class="install">
+          <h2 class="install-title">Install (load unpacked)</h2>
+          <p class="install-body">
+            Download the zip and unpack it, or build from source. Then load it
+            into Chrome as an unpacked extension.
+          </p>
+          <ol class="install-steps">
+            <li>
+              Visit <code>chrome://extensions</code> and enable
+              <strong>Developer mode</strong>.
+            </li>
+            <li>
+              Click <strong>Load unpacked</strong> and select the
+              <code>chrome-mv3</code> folder.
+            </li>
+            <li>
+              Click the toolbar icon to open the side panel and hit
+              <strong>Record</strong>.
+            </li>
+          </ol>
+          <p class="install-note">
+            While recording, Chrome shows a "…&nbsp;is being debugged" banner —
+            that is expected; it is how the extension taps the full
+            network&nbsp;and console streams.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <div class="foot-row">
+        <a class="brand" href="#top" aria-label="Session Recorder home">
+          <img class="brand-mark" src="./logo.png" width="22" height="22" alt="" />
+          <span class="brand-name">Session Recorder</span>
+        </a>
+        <nav class="foot-nav">
+          <a
+            href="https://github.com/thirdface/session-recorder"
+            rel="noopener"
+            >GitHub</a
+          >
+          <a href="./session-recorder.zip" download>Download</a>
+        </nav>
+      </div>
+      <p class="foot-fine">
+        Open source. Nothing leaves your machine except optional voice
+        transcription you configure and opt into.
+      </p>
+    </footer>
+  </body>
+</html>

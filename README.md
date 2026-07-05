@@ -1,10 +1,18 @@
-# Session Recorder
+<p align="center">
+  <img src="design/logo-256.png" width="112" height="112" alt="Session Recorder logo" />
+</p>
+
+<h1 align="center">Session Recorder</h1>
+
+<p align="center">
+  Record a web session. Get an LLM-ready bug report.
+</p>
 
 A Chrome extension (Manifest V3) that records a rich, multi-modal session of a
 user exercising a web app — **interactions, full network traffic, screenshots,
-voice narration, annotations, and files** — and exports a fully local zip whose
-`report.md` is optimized for an **LLM coding agent** to digest (bug reproduction,
-behavior analysis).
+real-time voice narration, annotations, and files** — and exports a fully local
+zip whose `report.md` is optimized for an **LLM coding agent** to digest (bug
+reproduction, behavior analysis).
 
 Built with **WXT + React + TypeScript**. Nothing leaves your machine except
 optional voice transcription (which you configure and opt into).
@@ -99,12 +107,20 @@ persistent Chromium context, starts a recording, interacts with the bundled
 performed actions and marker — while confirming redaction held (a typed password
 never appears anywhere in the output).
 
-## Configure transcription (optional)
+## Voice narration & transcription (optional)
 
-Options page → **Transcription**. Pluggable providers: an **OpenAI-compatible**
-endpoint (default), **Deepgram**, or **ElevenLabs Scribe**. Enter a base URL,
-model, and API key (stored in `chrome.storage.local` only). Without a key,
-sessions keep the raw audio and note that segments are untranscribed.
+Talk over the recording to explain what's happening. With **Deepgram (Nova-3)**
+configured, narration is transcribed **in real time** over a streaming websocket:
+each utterance becomes its own timeline entry the instant you finish saying it,
+stamped at the moment you began speaking — so the report shows narration *"while
+clicking 'Checkout'"* rather than one late blob. Other providers
+(**OpenAI gpt-4o-transcribe**, **ElevenLabs Scribe v2**) transcribe in
+fine-grained batches.
+
+Options page → **Transcription**: pick a provider, base URL, model, and API key
+(stored in `chrome.storage.local` only). Model defaults track the current (2026)
+recommended models. Without a key, sessions keep the raw audio and note that
+segments are untranscribed.
 
 ## Using a report with an LLM agent
 
