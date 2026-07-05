@@ -76,7 +76,17 @@ export function App(): React.JSX.Element {
   return (
     <div className="app">
       <header className="app__bar">
-        <span className="app__title">Session Recorder</span>
+        <div className="app__brand">
+          <img
+            className="app__logo"
+            src="/icon/128.png"
+            alt=""
+            aria-hidden="true"
+            width={20}
+            height={20}
+          />
+          <span className="app__title">Session Recorder</span>
+        </div>
         {isLive && <span className="app__live-dot" aria-hidden="true" />}
       </header>
       {error && (

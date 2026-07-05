@@ -2,7 +2,8 @@
   <img src="design/logo-256.png" width="112" height="112" alt="Session Recorder logo" />
 </p>
 
-<h1 align="center">Session Recorder</h1>
+<h1 align="center">Session Recorder Browser Extension</h1>
+
 
 <p align="center">
   Record a web session. Get an LLM-ready bug report.

@@ -10,6 +10,7 @@ import { useSidepanel } from '../store';
 export function CaptureBar(): React.JSX.Element {
   const micOn = useSidepanel((s) => s.micOn);
   const micLevel = useSidepanel((s) => s.micLevel);
+  const liveTranscript = useSidepanel((s) => s.liveTranscript);
   const annotating = useSidepanel((s) => s.annotating);
   const toggleMic = useSidepanel((s) => s.toggleMic);
   const toggleAnnotate = useSidepanel((s) => s.toggleAnnotate);
@@ -47,7 +48,8 @@ export function CaptureBar(): React.JSX.Element {
           onClick={() => void toggleMic()}
           aria-pressed={micOn}
         >
-          {micOn ? '● Mic' : 'Mic'}
+          {micOn && <span className="rec-badge__dot" aria-hidden="true" />}
+          Mic
         </button>
         <div className="mic-meter" aria-hidden="true">
           <div
@@ -64,6 +66,19 @@ export function CaptureBar(): React.JSX.Element {
           Annotate
         </button>
       </div>
+
+      {micOn && (
+        <div className="capture-bar__transcript" aria-live="polite">
+          <span className="capture-bar__transcript-tag">VOICE</span>
+          <span
+            className={`capture-bar__transcript-text${
+              liveTranscript ? '' : ' capture-bar__transcript-text--idle'
+            }`}
+          >
+            {liveTranscript || 'Listening…'}
+          </span>
+        </div>
+      )}
 
       <div className="capture-bar__row">
         <button type="button" className="chip-btn" onClick={onPickFile}>

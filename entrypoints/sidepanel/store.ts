@@ -43,6 +43,8 @@ export interface SidepanelStore {
   // --- UI-only live signals ---
   micLevel: number;
   transcription: TranscriptionProgress | null;
+  /** Latest interim transcript line while recording (from 'transcript/live'). */
+  liveTranscript: string;
   ready: boolean;
 
   // --- lifecycle ---
@@ -95,6 +97,7 @@ export const useSidepanel = create<SidepanelStore>((set, get) => ({
   error: undefined,
   micLevel: 0,
   transcription: null,
+  liveTranscript: '',
   ready: false,
 
   init: async () => {
@@ -130,6 +133,10 @@ export const useSidepanel = create<SidepanelStore>((set, get) => ({
                 total: evt.total,
               },
             });
+            break;
+          case 'transcript/live':
+            // Interim line for the recording ticker; cleared once finalized.
+            set({ liveTranscript: evt.final ? '' : evt.text });
             break;
           case 'annotation/state':
             set({ annotating: evt.annotating });

@@ -293,10 +293,20 @@ export function App() {
   return (
     <div className="page">
       <header className="page-header">
-        <h1>Session Recorder — Settings</h1>
-        <p className="subtitle">
-          Configure transcription, redaction, capture, and manage stored data.
-        </p>
+        <img
+          className="page-logo"
+          src="/icon/128.png"
+          alt=""
+          aria-hidden="true"
+          width={34}
+          height={34}
+        />
+        <div>
+          <h1>Session Recorder — Settings</h1>
+          <p className="subtitle">
+            Configure transcription, redaction, capture, and manage stored data.
+          </p>
+        </div>
       </header>
 
       {/* ---------------------------------------------------------------- */}

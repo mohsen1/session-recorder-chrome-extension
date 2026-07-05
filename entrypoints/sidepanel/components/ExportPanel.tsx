@@ -25,6 +25,9 @@ interface ExportPanelProps {
   sessionId: string;
 }
 
+/** Above this token estimate a level is flagged as risky for model context. */
+const TOKEN_WARN_LIMIT = 180_000;
+
 const LEVEL_ORDER: VerbosityLevel[] = ['L0', 'L1', 'L2', 'L3'];
 const LEVEL_LABELS: Record<VerbosityLevel, string> = {
   L0: 'Full',
@@ -64,6 +67,14 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
       cancelled = true;
     };
   }, [sessionId]);
+
+  // Once estimates land, if the selected level is over the limit, nudge to L1.
+  useEffect(() => {
+    if (!estimates) return;
+    const current = estimates.find((e) => e.level === level);
+    if (current && current.tokens > TOKEN_WARN_LIMIT) setLevel('L1');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estimates]);
 
   const onDownload = async () => {
     if (building) return;
@@ -142,6 +153,11 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
                     </span>
                   </span>
                   <span className="level__omits">{omitNote(est)}</span>
+                  {est && est.tokens > TOKEN_WARN_LIMIT && (
+                    <span className="level__warn">
+                      large — may exceed model limits
+                    </span>
+                  )}
                 </span>
               </label>
             );

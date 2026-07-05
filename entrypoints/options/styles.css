@@ -1,43 +1,66 @@
-/**
- * Options page styles: a clean, readable card layout that adapts to the
- * viewer's light/dark colour scheme.
- */
+/* Session Recorder — options page.
+   Same single-accent (coral) system as the side panel (design/DESIGN.md).
+   Light tokens at :root; dark via prefers-color-scheme AND [data-theme=dark],
+   with an explicit [data-theme=light] overriding the OS preference. */
 
 :root {
-  --bg: #f4f5f7;
-  --card-bg: #ffffff;
-  --border: #e1e4e8;
-  --text: #1f2328;
-  --text-muted: #656d76;
-  --accent: #2563eb;
-  --accent-text: #ffffff;
-  --danger: #d1242f;
-  --ok: #1a7f37;
-  --ok-bg: #e6f4ea;
-  --err-bg: #fbe9e7;
-  --input-bg: #ffffff;
-  --code-bg: #f0f1f3;
-  --bar-track: #e1e4e8;
+  --ink: #16181d;
+  --ink-2: #3b3f47;
+  --muted: #767b85;
+  --line: #e7e7e3;
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #fbfbfa;
+  --accent: #ff5a4d;
+  --accent-ink: #ffffff;
+  --accent-tint: rgba(255, 90, 77, 0.08);
+  --ok: #2f9e6f;
+  --ok-tint: rgba(47, 158, 111, 0.1);
+  --warn: #c98a12;
+  --danger: #e5484d;
+  --danger-tint: rgba(229, 72, 77, 0.09);
+
+  --radius: 8px;
+  --radius-card: 12px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 0 rgba(0, 0, 0, 0.02);
+
+  --font-sans: ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Inter, system-ui,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1117;
-    --card-bg: #161b22;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-muted: #8b949e;
-    --accent: #388bfd;
-    --accent-text: #ffffff;
-    --danger: #f85149;
-    --ok: #3fb950;
-    --ok-bg: #12261a;
-    --err-bg: #2d1416;
-    --input-bg: #0d1117;
-    --code-bg: #0d1117;
-    --bar-track: #30363d;
+  :root:not([data-theme='light']) {
+    --ink: #ececea;
+    --ink-2: #b9bcc2;
+    --muted: #878b93;
+    --line: #24272e;
+    --bg: #0f1114;
+    --surface: #16181d;
+    --surface-2: #1b1e24;
+    --accent: #ff6355;
+    --accent-tint: rgba(255, 99, 85, 0.12);
+    --ok-tint: rgba(47, 158, 111, 0.16);
+    --danger-tint: rgba(229, 72, 77, 0.14);
+    --shadow: none;
   }
+}
+
+:root[data-theme='dark'] {
+  --ink: #ececea;
+  --ink-2: #b9bcc2;
+  --muted: #878b93;
+  --line: #24272e;
+  --bg: #0f1114;
+  --surface: #16181d;
+  --surface-2: #1b1e24;
+  --accent: #ff6355;
+  --accent-tint: rgba(255, 99, 85, 0.12);
+  --ok-tint: rgba(47, 158, 111, 0.16);
+  --danger-tint: rgba(229, 72, 77, 0.14);
+  --shadow: none;
 }
 
 * {
@@ -47,60 +70,85 @@
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--text);
-  font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .page {
-  max-width: 900px;
+  max-width: 880px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding: 40px 24px 72px;
+}
+
+/* --- header with logo --- */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.page-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: block;
+  flex: 0 0 auto;
 }
 
 .page-header h1 {
-  margin: 0 0 4px;
-  font-size: 22px;
+  margin: 0 0 2px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .subtitle {
-  margin: 0 0 24px;
-  color: var(--text-muted);
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 /* --- cards --- */
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px 22px;
-  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  padding: 22px 24px;
+  margin-bottom: 18px;
 }
 
 .card-head {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .card-head h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   flex: 1;
 }
 
 .saved-badge {
   color: var(--ok);
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 500;
+  font-size: 12px;
 }
 
 /* --- grid + fields --- */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 18px;
+  gap: 16px 18px;
 }
 
 .grid-3 {
@@ -117,7 +165,7 @@ body {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -126,8 +174,9 @@ body {
 }
 
 .field-label {
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--ink-2);
 }
 
 input[type='text'],
@@ -137,16 +186,17 @@ select,
 textarea {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--input-bg);
-  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--ink);
   font: inherit;
+  font-size: 13.5px;
 }
 
 textarea {
   resize: vertical;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
 }
 
@@ -164,36 +214,38 @@ textarea:focus {
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 13.5px;
 }
 
 .toggle input {
   width: 16px;
   height: 16px;
+  accent-color: var(--accent);
 }
 
 .hint {
-  color: var(--text-muted);
-  font-size: 13px;
+  color: var(--muted);
+  font-size: 12.5px;
   margin: 0 0 14px;
 }
 
 /* --- redaction reference blocks --- */
 .ref-label {
-  color: var(--text-muted);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11.5px;
   margin-top: 4px;
 }
 
 .ref-block {
   display: block;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 6px 8px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 7px 9px;
+  font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--text-muted);
+  color: var(--muted);
   word-break: break-word;
   white-space: pre-wrap;
 }
@@ -204,50 +256,72 @@ textarea:focus {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .btn {
   padding: 8px 16px;
-  border: 1px solid transparent;
-  border-radius: 6px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
   background: var(--accent);
-  color: var(--accent-text);
+  color: var(--accent-ink);
   font: inherit;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
+  transition: filter 0.15s ease, background 0.15s ease, border-color 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
-  filter: brightness(1.08);
+  filter: brightness(1.04);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: default;
 }
 
 .btn-secondary {
-  background: transparent;
-  color: var(--accent);
-  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+  font-weight: 500;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--ink) 22%, var(--line));
+  filter: none;
 }
 
 .btn-ghost {
   background: transparent;
-  color: var(--text-muted);
-  border-color: var(--border);
+  color: var(--muted);
+  border-color: var(--line);
   font-weight: 500;
-  padding: 4px 12px;
+  padding: 5px 12px;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+  filter: none;
 }
 
 .btn-danger {
   background: var(--danger);
+  border-color: var(--danger);
 }
 
 /* --- test result --- */
 .result {
-  font-size: 13px;
+  font-size: 12.5px;
   padding: 6px 10px;
   border-radius: 6px;
   max-width: 100%;
@@ -256,12 +330,12 @@ textarea:focus {
 
 .result-ok {
   color: var(--ok);
-  background: var(--ok-bg);
+  background: var(--ok-tint);
 }
 
 .result-error {
   color: var(--danger);
-  background: var(--err-bg);
+  background: var(--danger-tint);
 }
 
 /* --- storage --- */
@@ -270,18 +344,25 @@ textarea:focus {
 }
 
 .storage-numbers {
-  font-size: 14px;
+  font-size: 13.5px;
   margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.storage-numbers strong {
+  font-family: var(--font-mono);
+  font-weight: 600;
 }
 
 .storage-numbers span {
-  color: var(--text-muted);
+  color: var(--muted);
 }
 
 .storage-bar {
-  height: 12px;
-  border-radius: 6px;
-  background: var(--bar-track);
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   overflow: hidden;
 }
 
@@ -295,31 +376,40 @@ textarea:focus {
   overflow-x: auto;
 }
 
-.sessions {
+table.sessions {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
 
-.sessions th,
-.sessions td {
+table.sessions th,
+table.sessions td {
   text-align: left;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 
-.sessions th {
-  color: var(--text-muted);
-  font-weight: 600;
+table.sessions th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
 }
 
-.sessions td:first-child {
+table.sessions td:first-child {
   white-space: normal;
   word-break: break-word;
+  color: var(--ink);
 }
 
-.sessions .num {
+table.sessions .num {
   text-align: right;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }

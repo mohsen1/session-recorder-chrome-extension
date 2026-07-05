@@ -1,0 +1,93 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege token; Pages deployment needs id-token for OIDC.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deploy at a time; let an in-progress run finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+
+      - name: Build extension
+        run: pnpm build
+
+      - name: Zip extension
+        # WXT emits a zip under .output/ (e.g. session-recorder-<ver>-chrome.zip).
+        run: pnpm zip
+
+      - name: Assemble _site
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+
+          # Copy the static website.
+          cp -R website/. _site/
+
+          # Locate the produced extension zip: prefer a chrome zip, else any zip,
+          # newest first.
+          zip_file="$(ls -t .output/*-chrome.zip 2>/dev/null | head -n1 || true)"
+          if [ -z "$zip_file" ]; then
+            zip_file="$(ls -t .output/*.zip 2>/dev/null | head -n1 || true)"
+          fi
+          if [ -z "$zip_file" ]; then
+            echo "::error::No extension zip found under .output/"
+            ls -la .output || true
+            exit 1
+          fi
+          echo "Using extension zip: $zip_file"
+          cp "$zip_file" _site/session-recorder.zip
+
+          # Ensure the logo is present (website already ships one; keep design
+          # logo as a fallback if missing).
+          if [ ! -f _site/logo.png ] && [ -f design/logo.png ]; then
+            cp design/logo.png _site/logo.png
+          fi
+
+          ls -la _site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
