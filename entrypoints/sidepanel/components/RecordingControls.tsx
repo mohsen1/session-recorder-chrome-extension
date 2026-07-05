@@ -5,6 +5,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { Pause, Play, Square } from 'lucide-react';
 import { formatClock } from '@/lib/export/markdown';
 import { useSidepanel } from '../store';
 
@@ -45,41 +46,33 @@ export function RecordingControls(): React.JSX.Element | null {
 
   return (
     <div className="rec-controls">
-      <div className="rec-controls__status">
-        <span
-          className={`rec-badge ${paused ? 'rec-badge--paused' : 'rec-badge--live'}`}
-        >
-          <span className="rec-badge__dot" />
-          {paused ? 'PAUSED' : 'REC'}
-        </span>
-        <span className="rec-controls__time">{formatClock(elapsed)}</span>
-      </div>
+      <span
+        className={`rec-badge ${paused ? 'rec-badge--paused' : 'rec-badge--live'}`}
+      >
+        <span className="rec-badge__dot" />
+        {paused ? 'Paused' : 'REC'}
+      </span>
+      <span className="rec-controls__time">{formatClock(elapsed)}</span>
       <div className="rec-controls__buttons">
-        {paused ? (
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={() => void resumeRecording()}
-            disabled={stopping}
-          >
-            Resume
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={() => void pauseRecording()}
-            disabled={stopping}
-          >
-            Pause
-          </button>
-        )}
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={() =>
+            void (paused ? resumeRecording() : pauseRecording())
+          }
+          disabled={stopping}
+          aria-label={paused ? 'Resume' : 'Pause'}
+          title={paused ? 'Resume' : 'Pause'}
+        >
+          {paused ? <Play size={16} /> : <Pause size={16} />}
+        </button>
         <button
           type="button"
           className="btn btn--stop"
           onClick={() => void stopRecording()}
           disabled={stopping}
         >
+          <Square size={13} fill="currentColor" strokeWidth={0} />
           {stopping ? 'Stopping…' : 'Stop'}
         </button>
       </div>

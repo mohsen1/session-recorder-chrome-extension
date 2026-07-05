@@ -1,11 +1,30 @@
 /**
- * The mid-session capture toolbar: mic toggle with a live level meter, annotate
- * toggle, file attach (hidden <input type=file> -> file/attach with a data URL),
- * an instant marker button, and a note text field.
+ * The mid-session capture bar, pinned to the bottom of the recording view.
+ *
+ * Primary row (matches the design): a mic toggle with a live level waveform,
+ * plus Annotate and Marker. Above it, a slim row for the two lower-frequency
+ * actions: attach a file and add a note. When the mic is on, an interim
+ * transcript line shows the recognizer keeping up in real time.
  */
-
 import React, { useRef, useState } from 'react';
+import { Mic, PenLine, Flag, Paperclip } from 'lucide-react';
 import { useSidepanel } from '../store';
+
+/** A small waveform whose bars scale with the live mic level. */
+function Waveform({ level, on }: { level: number; on: boolean }): React.JSX.Element {
+  const bars = [0.3, 0.7, 0.45, 0.9, 0.55, 1, 0.6, 0.8, 0.4, 0.7, 0.5, 0.85, 0.35];
+  return (
+    <span className="waveform" aria-hidden="true">
+      {bars.map((b, i) => (
+        <span
+          key={i}
+          className="waveform__bar"
+          style={{ height: `${on ? Math.max(12, b * level * 100) : 12}%` }}
+        />
+      ))}
+    </span>
+  );
+}
 
 export function CaptureBar(): React.JSX.Element {
   const micOn = useSidepanel((s) => s.micOn);
@@ -21,11 +40,8 @@ export function CaptureBar(): React.JSX.Element {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState('');
 
-  const onPickFile = () => fileInputRef.current?.click();
-
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Reset so the same file can be re-selected later.
     e.target.value = '';
     if (file) await attachFile(file);
   };
@@ -40,39 +56,13 @@ export function CaptureBar(): React.JSX.Element {
   const level = Math.max(0, Math.min(1, micLevel));
 
   return (
-    <div className="capture-bar">
-      <div className="capture-bar__row">
-        <button
-          type="button"
-          className={`chip-btn ${micOn ? 'chip-btn--on' : ''}`}
-          onClick={() => void toggleMic()}
-          aria-pressed={micOn}
-        >
-          {micOn && <span className="rec-badge__dot" aria-hidden="true" />}
-          Mic
-        </button>
-        <div className="mic-meter" aria-hidden="true">
-          <div
-            className="mic-meter__fill"
-            style={{ width: `${micOn ? level * 100 : 0}%` }}
-          />
-        </div>
-        <button
-          type="button"
-          className={`chip-btn ${annotating ? 'chip-btn--on' : ''}`}
-          onClick={() => void toggleAnnotate()}
-          aria-pressed={annotating}
-        >
-          Annotate
-        </button>
-      </div>
-
+    <div className="capture">
       {micOn && (
-        <div className="capture-bar__transcript" aria-live="polite">
-          <span className="capture-bar__transcript-tag">VOICE</span>
+        <div className="capture__transcript" aria-live="polite">
+          <Mic size={12} strokeWidth={2} className="capture__transcript-icon" />
           <span
-            className={`capture-bar__transcript-text${
-              liveTranscript ? '' : ' capture-bar__transcript-text--idle'
+            className={`capture__transcript-text${
+              liveTranscript ? '' : ' capture__transcript-text--idle'
             }`}
           >
             {liveTranscript || 'Listening…'}
@@ -80,47 +70,71 @@ export function CaptureBar(): React.JSX.Element {
         </div>
       )}
 
-      <div className="capture-bar__row">
-        <button type="button" className="chip-btn" onClick={onPickFile}>
-          Attach
-        </button>
+      <form
+        className="capture__note"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submitNote();
+        }}
+      >
         <button
           type="button"
-          className="chip-btn"
-          onClick={() => void addMarker()}
+          className="icon-btn"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Attach a file"
+          title="Attach a file"
         >
-          + Marker
+          <Paperclip size={15} />
         </button>
+        <input
+          type="text"
+          className="capture__note-input"
+          placeholder="Add a note…"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+        {note.trim() && (
+          <button type="submit" className="btn btn--sm">
+            Add
+          </button>
+        )}
         <input
           ref={fileInputRef}
           type="file"
           hidden
           onChange={(e) => void onFileChange(e)}
         />
-      </div>
-
-      <form
-        className="note-row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void submitNote();
-        }}
-      >
-        <input
-          type="text"
-          className="note-input"
-          placeholder="Add a note…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-        <button
-          type="submit"
-          className="chip-btn"
-          disabled={!note.trim()}
-        >
-          Add
-        </button>
       </form>
+
+      <div className="capture__bar">
+        <button
+          type="button"
+          className={`capture__mic ${micOn ? 'capture__mic--on' : ''}`}
+          onClick={() => void toggleMic()}
+          aria-pressed={micOn}
+        >
+          <Mic size={16} strokeWidth={2} />
+          <span className="capture__mic-label">{micOn ? 'Mic on' : 'Mic'}</span>
+          {micOn && <Waveform level={level} on={micOn} />}
+        </button>
+        <button
+          type="button"
+          className={`capture__action ${annotating ? 'capture__action--on' : ''}`}
+          onClick={() => void toggleAnnotate()}
+          aria-pressed={annotating}
+        >
+          <PenLine size={15} />
+          Annotate
+        </button>
+        <button
+          type="button"
+          className="capture__action"
+          onClick={() => void addMarker()}
+        >
+          <Flag size={15} />
+          Marker
+        </button>
+      </div>
     </div>
   );
 }

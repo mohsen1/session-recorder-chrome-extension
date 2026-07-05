@@ -109,7 +109,7 @@ test('records interactions and exports a readable, valid zip', async ({
 
   // Four verbosity levels with token estimates are shown.
   await expect(sp.locator('input[name="verbosity"]')).toHaveCount(4);
-  await expect(sp.getByText(/tokens/).first()).toBeVisible();
+  await expect(sp.locator('.level__tokens').first()).toBeVisible();
 
   // 9) Capture the real Download-button output by intercepting chrome.downloads.
   await sp.evaluate(() => {

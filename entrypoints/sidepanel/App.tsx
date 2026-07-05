@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { Clock, Database, Layers } from 'lucide-react';
 import { getEvents, getSession } from '@/lib/storage';
 import { formatClock } from '@/lib/export/markdown';
 import type {
@@ -25,7 +26,7 @@ import {
 import { RecordButton } from './components/RecordButton';
 import { RecordingControls } from './components/RecordingControls';
 import { CaptureBar } from './components/CaptureBar';
-import { Ticker } from './components/Ticker';
+import { Timeline } from './components/Timeline';
 import { SessionList } from './components/SessionList';
 import { ExportPanel } from './components/ExportPanel';
 
@@ -170,9 +171,9 @@ function RecordingView(): React.JSX.Element {
   return (
     <div className="view view--recording">
       <RecordingControls />
-      <CaptureBar />
       <TabChips />
-      <Ticker />
+      <Timeline />
+      <CaptureBar />
     </div>
   );
 }
@@ -304,30 +305,6 @@ function SessionReview({
   );
 }
 
-const COUNT_LABELS: Partial<Record<EventType, string>> = {
-  click: 'clicks',
-  input: 'inputs',
-  scroll: 'scrolls',
-  key: 'keys',
-  nav: 'navigations',
-  'spa-route': 'routes',
-  'tab-switch': 'tab switches',
-  'tab-opened': 'tabs opened',
-  'tab-closed': 'tabs closed',
-  'net-request': 'requests',
-  console: 'console',
-  error: 'errors',
-  screenshot: 'screenshots',
-  'annotation-start': 'annotate starts',
-  annotation: 'annotations',
-  'voice-segment': 'voice',
-  'file-captured': 'files',
-  'file-attached': 'attachments',
-  marker: 'markers',
-  note: 'notes',
-  'session-note': 'system notes',
-};
-
 function Summary({ session }: { session: Session }): React.JSX.Element {
   const duration = Math.max(
     0,
@@ -337,40 +314,22 @@ function Summary({ session }: { session: Session }): React.JSX.Element {
     ([, n]) => typeof n === 'number' && n > 0,
   ) as [EventType, number][];
 
+  const totalEvents = counts.reduce((a, [, n]) => a + n, 0);
+
   return (
     <div className="summary">
-      <div className="summary__stats">
-        <div className="summary__stat">
-          <span className="summary__value">{formatClock(duration)}</span>
-          <span className="summary__key">duration</span>
-        </div>
-        <div className="summary__stat">
-          <span className="summary__value">
-            {formatBytes(session.assetBytes)}
-          </span>
-          <span className="summary__key">assets</span>
-        </div>
-        <div className="summary__stat">
-          <span className="summary__value">
-            {counts.reduce((a, [, n]) => a + n, 0)}
-          </span>
-          <span className="summary__key">events</span>
-        </div>
-      </div>
-      {counts.length > 0 && (
-        <ul className="summary__counts">
-          {counts
-            .sort((a, b) => b[1] - a[1])
-            .map(([type, n]) => (
-              <li key={type} className="summary__count">
-                <span className="summary__count-n">{n}</span>
-                <span className="summary__count-t">
-                  {COUNT_LABELS[type] ?? type}
-                </span>
-              </li>
-            ))}
-        </ul>
-      )}
+      <span className="summary__stat">
+        <Clock size={15} strokeWidth={1.75} />
+        {formatClock(duration)}
+      </span>
+      <span className="summary__stat">
+        <Database size={15} strokeWidth={1.75} />
+        {formatBytes(session.assetBytes)}
+      </span>
+      <span className="summary__stat">
+        <Layers size={15} strokeWidth={1.75} />
+        {totalEvents}
+      </span>
     </div>
   );
 }

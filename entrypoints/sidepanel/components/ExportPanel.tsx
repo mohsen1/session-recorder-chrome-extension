@@ -149,7 +149,7 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
                     <span className="level__id">{lvl}</span>
                     <span className="level__name">{LEVEL_LABELS[lvl]}</span>
                     <span className="level__tokens">
-                      {est ? `~${formatTokens(est.tokens)} tokens` : '—'}
+                      {est ? `~${formatTokens(est.tokens)}` : '—'}
                     </span>
                   </span>
                   <span className="level__omits">{omitNote(est)}</span>
@@ -191,7 +191,7 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
 
 function omitNote(est: TokenEstimate | undefined): string {
   if (!est) return '';
-  if (est.omitted.length === 0) return 'Full fidelity — nothing omitted.';
+  if (est.omitted.length === 0) return 'Full fidelity, nothing omitted';
   return `Omits: ${est.omitted.join(', ')}`;
 }
 
