@@ -399,6 +399,9 @@ export function dropBodiesExceptErrors(): Transform {
       if (isAnomalous(p) || errorLinkedIds.has(p.requestId)) return clone;
       clearBody(p.requestBody);
       clearBody(p.responseBody);
+      // A prior bodyToShapeSummary pass may have stashed the body as a shape
+      // sketch; drop that too so the body is truly gone at this level.
+      p.bodyShape = undefined;
       return clone;
     });
   };
@@ -425,10 +428,11 @@ export function interactionsToTextOnly(): Transform {
       ) {
         const d = clone.payload.descriptor;
         if (d) {
+          // Minimal level: element text only (renderer falls back to the tag
+          // name when no selector is present).
           clone.payload.descriptor = {
             tag: d.tag,
             ...(d.text !== undefined ? { text: d.text } : {}),
-            ...(d.selector !== undefined ? { selector: d.selector } : {}),
           };
         }
       }
