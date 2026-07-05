@@ -1,32 +1,20 @@
 # Internal API surface (build contract)
 
-This document is the authoritative interface spec for every module. It exists so
-modules can be built in parallel and still interlock. **Implement the signatures
-exactly as written.** The runtime types come from `lib/session/types.ts`,
-`lib/session/events.ts`, `lib/session/settings.ts`, and `lib/messaging.ts` — read
-those first.
+This document is the interface spec for every module. It lets us build modules in
+parallel and still interlock them. Implement the signatures exactly as written.
+The runtime types come from `lib/session/types.ts`, `lib/session/events.ts`,
+`lib/session/settings.ts`, and `lib/messaging.ts`. Read those first.
 
 ## Global conventions
 
-- **Runtime**: Chrome MV3. Use `chrome.*` APIs directly (types via `@types/chrome`).
-  Do **not** import WXT's `browser`. In content scripts / background, `chrome` is global.
-- **WXT entrypoints**: import define helpers from `wxt/sandbox`
-  (`defineBackground`, `defineContentScript`, `defineUnlistedScript`).
-- **Imports**: use the `@/` path alias for cross-tree imports, e.g.
-  `import type { SessionEvent } from '@/lib/session/types'`. Relative imports
-  within the same directory are fine.
-- **TS strictness**: `strict` + `noUncheckedIndexedAccess` are on. Guard array/`Map`
-  access. No `any` in public signatures (internal `any` for CDP params is OK, typed as
-  `Record<string, unknown>` where reasonable).
-- **Purity**: modules marked _(pure)_ must not touch `chrome`, DOM, network, or
-  global mutable state, and must not mutate their inputs (clone first). They are
-  unit-tested in node.
-- **No blobs over messaging**: never send a `Blob`/`ArrayBuffer` through
-  `chrome.runtime.sendMessage`. Use data URLs for the few small cross-context
-  transfers (file attach, audio segment) or write to IndexedDB and pass the id.
-- **IDs**: `import { newId } from '@/lib/util/ids'`.
-- Every source file: concise top-of-file comment stating its role. Match the
-  house style of the already-written `lib/session/*` files.
+- runtime: Chrome MV3. Use `chrome.*` APIs directly, with types from `@types/chrome`. Do not import WXT's `browser`. In content scripts and background, `chrome` is global
+- WXT entrypoints: import define helpers from `wxt/sandbox` (`defineBackground`, `defineContentScript`, `defineUnlistedScript`)
+- imports: use the `@/` path alias for cross-tree imports, for example `import type { SessionEvent } from '@/lib/session/types'`. Relative imports within the same directory are fine
+- TypeScript strictness: `strict` and `noUncheckedIndexedAccess` are on. Guard array and `Map` access. Use no `any` in public signatures. Internal `any` for CDP params is fine, typed as `Record<string, unknown>` where reasonable
+- purity: modules marked (pure) must not touch `chrome`, DOM, network, or global mutable state, and must not mutate their inputs (clone first). We unit-test them in node
+- no blobs over messaging: never send a `Blob` or `ArrayBuffer` through `chrome.runtime.sendMessage`. Use data URLs for the few small cross-context transfers (file attach, audio segment), or write to IndexedDB and pass the id
+- IDs: `import { newId } from '@/lib/util/ids'`
+- give every source file a concise top-of-file comment stating its role. Match the house style of the already-written `lib/session/*` files
 
 ---
 
@@ -56,8 +44,8 @@ export function nearestHeading(el: Element): string | undefined  // walk ancesto
 ```
 
 ## lib/storage/index.ts
-IndexedDB via `idb`. DB name `session-recorder`, version 1.
-Stores: `sessions` (keyPath `id`); `events` (keyPath `id`, index `by-session` on `['sessionId','t']`); `assets` (keyPath `id`, index `by-session` on `sessionId`).
+This module uses IndexedDB via `idb`. The DB name is `session-recorder`, version 1.
+The stores are `sessions` (keyPath `id`); `events` (keyPath `id`, index `by-session` on `['sessionId','t']`); and `assets` (keyPath `id`, index `by-session` on `sessionId`).
 ```
 import type { Asset, AssetMeta, Session, SessionEvent } from '@/lib/session/types'
 export async function createSession(s: Session): Promise<void>
@@ -97,10 +85,12 @@ export function redactHeaders(headers: NetHeader[], rules: RedactionRules): NetH
 export function redactBody(text: string, mime: string | undefined, rules: RedactionRules): { text: string; redacted: boolean }
 export function redactUrl(url: string, rules: RedactionRules): string   // redact matching query-param VALUES
 ```
-Redaction is a no-op passthrough when called with an all-empty rules set? No — defaults ALWAYS apply; the per-session master switch is handled by the caller (background only calls redaction when `settings.redactionEnabled`).
+Redaction is not a no-op when the rules set is all-empty. The defaults always
+apply. The caller handles the per-session master switch: background calls redaction
+only when `settings.redactionEnabled` is set.
 
 ## lib/capture/debugger.ts
-Wrapper over `chrome.debugger`. Protocol `1.3`.
+This module wraps `chrome.debugger`. The protocol is `1.3`.
 ```
 export type CdpEventHandler = (tabId: number, method: string, params: Record<string, unknown>) => void
 export type DetachHandler = (tabId: number, reason: string) => void
@@ -119,10 +109,11 @@ export class DebuggerManager {
   dispose(): void
 }
 ```
-Register the `chrome.debugger.onEvent`/`onDetach` listeners once in the constructor and fan out to arrays of handlers.
+Register the `chrome.debugger.onEvent` and `onDetach` listeners once in the
+constructor, then fan out to arrays of handlers.
 
 ## lib/capture/network.ts
-Assembles CDP Network events into `NetRequestPayload`. See pseudocode in IMPLEMENTATION.md §2.2.
+This module assembles CDP Network events into `NetRequestPayload`. See the pseudocode in IMPLEMENTATION.md §2.2.
 ```
 import type { CaptureSettings, RawEvent } from '@/lib/session/types'
 export interface NetworkDeps {
@@ -139,14 +130,14 @@ export class NetworkCapturer {
 }
 ```
 Behavior:
-- `requestWillBeSent` → open pending record (method, url, headers, postData, initiator.type, resourceType via later `responseReceived`).
-- `requestWillBeSentExtraInfo` → merge full request headers if available.
-- `responseReceived` → status, statusText, response headers, mimeType, timing.
-- `loadingFinished` → **immediately** `send(tabId,'Network.getResponseBody',{requestId})`; if `base64Encoded` keep as base64 (mark base64). Apply redaction (when settings.redactionEnabled) to headers/url/text. Truncate text to `inlineBodyCapBytes` (mark truncated + originalSize). If original ≤ `assetBodyCapBytes`, also `storeBodyAsset` and set `responseBody.assetId`. Emit `{type:'net-request', tabId, payload}`.
-- `loadingFailed` → emit with `failed:true, failureReason`.
-- Websockets: `webSocketCreated` open pending ws; `webSocketFrameSent/Received` append to `wsFrames` (cap ~100 frames, text cap 2KB each); `webSocketClosed` emit. Set `websocket:true`.
-- getResponseBody can reject (body evicted) — catch and emit with `responseBody.present=false`.
-- Redaction is applied here, before emit. Import from `./redaction`.
+- `requestWillBeSent` opens a pending record (method, url, headers, postData, initiator.type, resourceType via a later `responseReceived`)
+- `requestWillBeSentExtraInfo` merges full request headers if available
+- `responseReceived` records status, statusText, response headers, mimeType, and timing
+- `loadingFinished` immediately calls `send(tabId,'Network.getResponseBody',{requestId})`. If `base64Encoded`, keep the body as base64 (mark base64). Apply redaction (when settings.redactionEnabled) to headers, url, and text. Truncate text to `inlineBodyCapBytes` (mark truncated plus originalSize). If the original is `≤ assetBodyCapBytes`, also call `storeBodyAsset` and set `responseBody.assetId`. Emit `{type:'net-request', tabId, payload}`
+- `loadingFailed` emits with `failed:true, failureReason`
+- websockets: `webSocketCreated` opens a pending ws; `webSocketFrameSent/Received` append to `wsFrames` (cap about 100 frames, text cap 2KB each); `webSocketClosed` emits. Set `websocket:true`
+- getResponseBody can reject when the body is evicted. Catch it and emit with `responseBody.present=false`
+- apply redaction here, before emit. Import it from `./redaction`
 
 ## lib/capture/console.ts
 ```
@@ -157,10 +148,10 @@ export class ConsoleCapturer {
   reset(): void
 }
 ```
-- `Runtime.consoleAPICalled` → `console` event. `params.type` maps to level (`error|warning->warn|...`). Stringify `params.args` (RemoteObject[]) to readable strings (prefer `.value`, else `.description`, else `.preview`), join with space, cap 2KB. Extract `source` from `stackTrace.callFrames[0]` as `url:line`.
-- `Runtime.exceptionThrown` → `error` event `{origin:'exception', message, stack}` from `exceptionDetails`.
-- `Log.entryAdded` → if `level==='error'` emit an `error` event `{origin:'log'}`, else a `console` event.
-- Consecutive-duplicate coalescing: hold one pending `console` event; if the next identical (same level+text) arrives within 1000ms, bump `payload.repeat` instead of emitting a second; flush the pending event when a different one arrives or after 1000ms of quiet (use setTimeout).
+- `Runtime.consoleAPICalled` maps to a `console` event. `params.type` maps to a level (`error|warning->warn|...`). Stringify `params.args` (RemoteObject[]) to readable strings (prefer `.value`, else `.description`, else `.preview`), join with a space, and cap at 2KB. Extract `source` from `stackTrace.callFrames[0]` as `url:line`
+- `Runtime.exceptionThrown` maps to an `error` event `{origin:'exception', message, stack}` from `exceptionDetails`
+- `Log.entryAdded`: if `level==='error'`, emit an `error` event `{origin:'log'}`, else emit a `console` event
+- consecutive-duplicate coalescing: hold one pending `console` event. If the next identical event (same level plus text) arrives within 1000ms, bump `payload.repeat` instead of emitting a second. Flush the pending event when a different one arrives, or after 1000ms of quiet (use setTimeout)
 
 ## lib/capture/screenshots.ts
 ```
@@ -179,10 +170,15 @@ export class ScreenshotScheduler {
 }
 ```
 Policy (from `getSettings().screenshotPolicy`):
-- `every-interaction`: on click / key / scroll / nav / spa-route / tab-switch events → debounce 500ms per tab, then capture(trigger derived).
-- `key-moments`: on nav / spa-route / error / net-request(status>=400) / tab events → capture.
-- `on-demand`: `onEvent` does nothing; only `capture()` (manual + annotation exit) fires.
-Dedup: before storing, compute aHash of the JPEG (`averageHashFromBlob`). Keep `lastHashByTab`. If `hammingHex(new,last) <= settings.screenshotDedupThreshold`, DROP (don't store, don't emit). Else store + emit `{type:'screenshot', tabId, payload:{assetId,width,height,trigger,ahash,contextText}}` and update lastHash. Get width/height from the decoded `ImageBitmap`.
+- `every-interaction`: on click, key, scroll, nav, spa-route, or tab-switch events, debounce 500ms per tab, then capture (trigger derived)
+- `key-moments`: on nav, spa-route, error, net-request(status>=400), or tab events, capture
+- `on-demand`: `onEvent` does nothing; only `capture()` fires (manual plus annotation exit)
+
+Dedup: before storing, compute the aHash of the JPEG (`averageHashFromBlob`). Keep
+`lastHashByTab`. If `hammingHex(new,last) <= settings.screenshotDedupThreshold`,
+drop it: do not store, do not emit. Otherwise store it and emit
+`{type:'screenshot', tabId, payload:{assetId,width,height,trigger,ahash,contextText}}`,
+then update lastHash. Get width and height from the decoded `ImageBitmap`.
 
 ## lib/capture/multitab.ts
 ```
@@ -230,7 +226,11 @@ export function interactionsToTextOnly(): Transform     // strip descriptors to 
 export function planFor(level: VerbosityLevel): Transform[]
 export function applyLevel(events: SessionEvent[], level: VerbosityLevel, ctx: TrimContext): SessionEvent[]
 ```
-Rules: every transform clones (never mutates input events); every transform SKIPS events where `isProtected(e)` is true (import from `@/lib/session/events`) — except purely cosmetic ones like coalesceScrolls that only touch scroll (never protected). `planFor` per IMPLEMENTATION.md §4.3 (L0 = [], L1/L2/L3 cumulative).
+Rules: every transform clones and never mutates the input events. Every transform
+skips events where `isProtected(e)` is true (import from `@/lib/session/events`).
+The exception is purely cosmetic transforms like coalesceScrolls, which only touch
+scroll events and are never protected. `planFor` follows IMPLEMENTATION.md §4.3
+(L0 = [], L1/L2/L3 cumulative).
 
 ## lib/export/markdown.ts  (pure)
 ```
@@ -246,7 +246,17 @@ export function renderReport(input: RenderInput): string     // the full report.
 export function renderManifest(input: RenderInput): string   // MANIFEST.md asset index
 export function formatClock(ms: number): string              // mm:ss (or h:mm:ss), exported for reuse/tests
 ```
-Renderer rules per IMPLEMENTATION.md §3.2: header block (app urls, date, duration, tab registry, settings, level, per-type count table); chronological body with per-type one-liners; `[mm:ss]` timestamps everywhere; nav/tab events as `##` section breaks; net-request collapsed block with fenced bodies (or shape summary if `payload.bodyShape` set, or collapsed marker if `payload.collapsed`); console/error fenced, errors prefixed `⚠`; screenshot as `![context](path)`; marker/note as loud blockquote; voice-segment as `> 🎙️ transcript`; annotation as a described list of shapes + target elements + `![](path)`; appendices (network index, console dump). Must be self-sufficient (readable without opening assets) at L2/L3.
+Renderer rules follow IMPLEMENTATION.md §3.2. Render a header block (app urls, date,
+duration, tab registry, settings, level, per-type count table). Render a chronological
+body with per-type one-liners and `[mm:ss]` timestamps everywhere. Render nav and tab
+events as `##` section breaks. Render net-request as a collapsed block with fenced
+bodies (or a shape summary if `payload.bodyShape` is set, or a collapsed marker if
+`payload.collapsed`). Render console and error entries fenced, with errors prefixed
+`⚠`. Render a screenshot as `![context](path)`. Render marker and note as a loud
+blockquote. Render voice-segment as `> 🎙️ transcript`. Render annotation as a
+described list of shapes plus target elements plus `![](path)`. Render appendices
+(network index, console dump). The report must be self-sufficient (readable without
+opening assets) at L2 and L3.
 
 ## lib/export/zip.ts
 ```
@@ -284,7 +294,12 @@ export interface TranscriptionConfig {
 }
 export interface TranscriptionProvider { transcribe(audio: Blob, config: TranscriptionConfig): Promise<TranscriptionResult> }
 ```
-`openai-compatible.ts`, `deepgram.ts`, `elevenlabs.ts`: one class each implementing `TranscriptionProvider` via `fetch` (multipart for OpenAI `/audio/transcriptions` default model `whisper-1`, baseUrl default `https://api.openai.com/v1`; Deepgram `https://api.deepgram.com/v1/listen` Nova model with word timings; ElevenLabs `https://api.elevenlabs.io/v1/speech-to-text` model `scribe_v1`). Throw `Error` on non-2xx with body text.
+`openai-compatible.ts`, `deepgram.ts`, and `elevenlabs.ts` each hold one class that
+implements `TranscriptionProvider` via `fetch`: multipart for OpenAI
+`/audio/transcriptions`, default model `whisper-1`, baseUrl default
+`https://api.openai.com/v1`; Deepgram `https://api.deepgram.com/v1/listen` Nova model
+with word timings; ElevenLabs `https://api.elevenlabs.io/v1/speech-to-text` model
+`scribe_v1`. Throw `Error` on a non-2xx response, with the body text.
 `index.ts`:
 ```
 export function getProvider(name: TranscriptionConfig['provider']): TranscriptionProvider
@@ -315,17 +330,19 @@ export class SessionBuilder {
 }
 export function tinyPngBlob(): Blob   // 1x1 png for screenshot assets
 ```
-Give each event a monotonically increasing `t` and correct `importance` (use `scoreEvent`) and `protected` where appropriate. Keep it small but expressive enough that trimmer/markdown tests are meaningful.
+Give each event a monotonically increasing `t`, the correct `importance` (use
+`scoreEvent`), and `protected` where appropriate. Keep it small but expressive enough
+that trimmer and markdown tests are meaningful.
 
 ---
 
 ## Entry points (see separate build tasks for detailed behavior)
 
-- `entrypoints/background.ts` — the orchestrator; wires all the above.
-- `entrypoints/interactions.content.ts`, `annotations.content.ts`, `file-capture.content.ts` — ISOLATED-world content scripts.
-- `entrypoints/sidepanel/*`, `entrypoints/options/*` — React apps.
-- `entrypoints/offscreen/*`, `entrypoints/mic-permission/*` — audio + permission pages.
+- `entrypoints/background.ts` is the orchestrator; it wires all the above
+- `entrypoints/interactions.content.ts`, `annotations.content.ts`, and `file-capture.content.ts` are ISOLATED-world content scripts
+- `entrypoints/sidepanel/*` and `entrypoints/options/*` are React apps
+- `entrypoints/offscreen/*` and `entrypoints/mic-permission/*` are the audio and permission pages
 
-Navigation (`nav`) and SPA route (`spa-route`) events are captured in the
-**background** via `chrome.webNavigation` (onCommitted / onHistoryStateUpdated /
-onReferenceFragmentUpdated) — NOT in content scripts.
+We capture navigation (`nav`) and SPA route (`spa-route`) events in the background
+via `chrome.webNavigation` (onCommitted, onHistoryStateUpdated,
+onReferenceFragmentUpdated), not in content scripts.

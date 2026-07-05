@@ -1,53 +1,53 @@
 # Event schema (frozen contract)
 
-This document is the **schema freeze** for the recorder's event stream. It is the
+This document freezes the schema for the recorder's event stream. It is the
 authoritative reference for the renderer (`lib/export/markdown`) and the trimmer
-(`lib/export/trimmer`): both read events by `type` and rely on the payload fields
+(`lib/export/trimmer`). Both read events by `type` and rely on the payload fields
 described here being present and shaped as stated.
 
 The runtime source of truth is [`lib/session/types.ts`](../lib/session/types.ts).
-Later phases may **add** new `EventType`s (extend `EventType` + `EventPayloadMap`)
-but must **never** change the shape of an existing payload. If a field's meaning
-would change, add a new field instead.
+Later phases may add new `EventType`s by extending `EventType` and
+`EventPayloadMap`, but they must never change the shape of an existing payload. To
+change a field's meaning, add a new field instead.
 
 ## Envelope
 
-Every event is a `BaseEvent<T>` — a discriminated union member keyed on `type`:
+Every event is a `BaseEvent<T>`, a discriminated union member keyed on `type`:
 
 | Field        | Type                        | Meaning |
 | ------------ | --------------------------- | ------- |
 | `id`         | `string`                    | Unique event id (`newId`). |
 | `sessionId`  | `string`                    | Owning session id. |
-| `t`          | `number`                    | **Milliseconds from session start** (not epoch). This is the join key across events, screenshots, and the voice transcript; the renderer prints it as `[mm:ss]`. |
+| `t`          | `number`                    | Milliseconds from session start, not epoch. This is the join key across events, screenshots, and the voice transcript. The renderer prints it as `[mm:ss]`. |
 | `tabId`      | `number` (optional)         | Source tab, when the event belongs to a specific tab. |
-| `type`       | `EventType`                 | Discriminant selecting the payload shape. |
-| `importance` | `number`                    | Static importance score assigned once at capture by `scoreEvent` (see [`lib/session/events.ts`](../lib/session/events.ts)). Higher survives trimming longer. |
-| `protected`  | `boolean` (optional)        | When `true`, the trimmer never drops or compacts this event. Also implied for the `PROTECTED_TYPES` set even when this flag is unset — the trimmer must consult `isProtected(e)`, not just this flag. |
+| `type`       | `EventType`                 | Discriminant that selects the payload shape. |
+| `importance` | `number`                    | Static importance score, assigned once at capture by `scoreEvent` (see [`lib/session/events.ts`](../lib/session/events.ts)). A higher score survives trimming longer. |
+| `protected`  | `boolean` (optional)        | When `true`, the trimmer never drops or compacts this event. The `PROTECTED_TYPES` set also implies protection even when this flag is unset, so the trimmer must consult `isProtected(e)`, not just this flag. |
 | `payload`    | `EventPayloadMap[type]`     | Per-type body, documented below. |
 
-A `RawEvent` is what a capture source emits *before* the background funnel stamps
-`id`/`sessionId`/`t`/`importance`: it carries only `type`, optional `tabId`,
-optional `at` (explicit ms-epoch timestamp; the funnel defaults to now), and
+A `RawEvent` is what a capture source emits before the background funnel stamps
+`id`, `sessionId`, `t`, and `importance`. It carries only `type`, optional `tabId`,
+optional `at` (an explicit ms-epoch timestamp; the funnel defaults to now), and
 `payload`.
 
 ### Shared value objects
 
-- **`Rect`** — `{ x, y, w, h }` (numbers).
-- **`Point`** — `{ x, y }` (numbers).
-- **`ElementDescriptor`** — best-effort description of a DOM element built in a
+- `Rect` is `{ x, y, w, h }` (numbers)
+- `Point` is `{ x, y }` (numbers)
+- `ElementDescriptor` is a best-effort description of a DOM element, built in a
   content script: `tag` (required), optional `id`, `role`, `ariaLabel`, `name`,
-  `text` (visible text, capped ~80 chars), `selector` (best-effort CSS selector:
-  id > `[data-testid]` > short ancestor path), and `rect`.
-- **`NetHeader`** — `{ name, value }` (both strings).
-- **`NetBody`** — see [net-request](#net-request).
+  `text` (visible text, capped at about 80 characters), `selector` (best-effort CSS
+  selector: id, then `[data-testid]`, then a short ancestor path), and `rect`
+- `NetHeader` is `{ name, value }` (both strings)
+- `NetBody` is described under [net-request](#net-request)
 
 ### Protected types
 
 `isProtected(e)` returns `true` for any event with `protected: true`, and for all
-of these types regardless of the flag:
+of these types whatever the flag says:
 `marker`, `note`, `annotation`, `voice-segment`, `error`, `file-captured`,
 `file-attached`, `session-note`. These are the user's explicit signals plus
-errors — the reason the recording exists — and the trimmer must preserve them at
+errors, the reason the recording exists, so the trimmer must preserve them at
 every verbosity level.
 
 ---
@@ -55,27 +55,27 @@ every verbosity level.
 ## Interaction events
 
 ### `click`
-`ClickPayload` — a pointer click on an element.
+`ClickPayload` records a pointer click on an element.
 
 | Field        | Type                 | Meaning |
 | ------------ | -------------------- | ------- |
 | `descriptor` | `ElementDescriptor`  | The clicked element. |
-| `modifiers`  | `string[]`           | Held modifier keys, e.g. `['ctrl','shift']`. Empty array when none. |
+| `modifiers`  | `string[]`           | Held modifier keys, for example `['ctrl','shift']`. Empty array when none. |
 | `button`     | `number` (optional)  | Mouse button (0 = primary), when not the default. |
 
 ### `input`
-`InputPayload` — a committed value change on a form field.
+`InputPayload` records a committed value change on a form field.
 
 | Field       | Type                | Meaning |
 | ----------- | ------------------- | ------- |
 | `descriptor`| `ElementDescriptor` | The field. |
-| `value`     | `string`            | The recorded value, **or the redaction marker** when `redacted` is true. |
-| `redacted`  | `boolean`           | True for sensitive fields (password/token/etc. per `isSensitiveInput`); `value` then holds the marker, never the real input. |
-| `inputType` | `string` (optional) | The `<input type=…>` (e.g. `password`, `email`). |
+| `value`     | `string`            | The recorded value, or the redaction marker when `redacted` is true. |
+| `redacted`  | `boolean`           | True for sensitive fields, such as passwords or tokens, per `isSensitiveInput`. When true, `value` holds the marker, never the real input. |
+| `inputType` | `string` (optional) | The `<input type=…>`, for example `password` or `email`. |
 
 ### `scroll`
-`ScrollPayload` — a scroll gesture. Lowest importance; runs of consecutive
-scrolls on the same tab are coalesced by the trimmer.
+`ScrollPayload` records a scroll gesture. It has the lowest importance, and the
+trimmer coalesces runs of consecutive scrolls on the same tab.
 
 | Field      | Type                | Meaning |
 | ---------- | ------------------- | ------- |
@@ -84,33 +84,35 @@ scrolls on the same tab are coalesced by the trimmer.
 | `container`| `string` (optional) | Selector of the scroll container, or `'window'`. |
 
 ### `key`
-`KeyPayload` — a notable key press (Enter/Escape/Tab/shortcut chords).
+`KeyPayload` records a notable key press, such as Enter, Escape, Tab, or a
+shortcut chord.
 
 | Field       | Type                          | Meaning |
 | ----------- | ----------------------------- | ------- |
-| `key`       | `string`                      | Normalized key, e.g. `'Enter'`, `'Escape'`, `'Ctrl+K'`. |
+| `key`       | `string`                      | Normalized key, for example `'Enter'`, `'Escape'`, or `'Ctrl+K'`. |
 | `modifiers` | `string[]`                    | Held modifiers. |
 | `descriptor`| `ElementDescriptor` (optional)| The focused element, when known. |
 
 ---
 
-## Navigation & tab events
+## Navigation and tab events
 
-These segment the story; the renderer turns them into `##` section breaks.
+These events segment the story. The renderer turns them into `##` section breaks.
 
 ### `nav`
-`NavPayload` — a full-page navigation (captured in the background via
-`chrome.webNavigation.onCommitted`).
+`NavPayload` records a full-page navigation. The background captures it through
+`chrome.webNavigation.onCommitted`.
 
 | Field           | Type                | Meaning |
 | --------------- | ------------------- | ------- |
 | `url`           | `string`            | Destination URL. |
 | `title`         | `string` (optional) | Page title, when available. |
-| `transitionType`| `string` (optional) | Chrome transition type (e.g. `link`, `typed`, `reload`). |
+| `transitionType`| `string` (optional) | Chrome transition type, for example `link`, `typed`, or `reload`. |
 
 ### `spa-route`
-`SpaRoutePayload` — a client-side route change (History API / fragment), captured
-via `onHistoryStateUpdated` / `onReferenceFragmentUpdated`.
+`SpaRoutePayload` records a client-side route change through the History API or a
+fragment. It is captured through `onHistoryStateUpdated` and
+`onReferenceFragmentUpdated`.
 
 | Field   | Type                                        | Meaning |
 | ------- | ------------------------------------------- | ------- |
@@ -119,7 +121,7 @@ via `onHistoryStateUpdated` / `onReferenceFragmentUpdated`.
 | `method`| `'pushState' \| 'replaceState' \| 'popstate'`| How the route changed. |
 
 ### `tab-switch`
-`TabSwitchPayload` — the active tab changed within the session.
+`TabSwitchPayload` records that the active tab changed within the session.
 
 | Field       | Type                | Meaning |
 | ----------- | ------------------- | ------- |
@@ -129,16 +131,16 @@ via `onHistoryStateUpdated` / `onReferenceFragmentUpdated`.
 | `toTitle`   | `string` (optional) | Its title. |
 
 ### `tab-opened`
-`TabOpenedPayload` — a new tab was adopted into the session.
+`TabOpenedPayload` records that the session adopted a new tab.
 
 | Field        | Type                | Meaning |
 | ------------ | ------------------- | ------- |
 | `url`        | `string` (optional) | Initial URL, when known. |
 | `title`      | `string` (optional) | Initial title. |
-| `openerTabId`| `number` (optional) | The tab that opened it (must be a session tab to be adopted). |
+| `openerTabId`| `number` (optional) | The tab that opened it. It must be a session tab for the new tab to be adopted. |
 
 ### `tab-closed`
-`TabClosedPayload` — a session tab was closed.
+`TabClosedPayload` records that a session tab was closed.
 
 | Field  | Type                | Meaning |
 | ------ | ------------------- | ------- |
@@ -150,96 +152,96 @@ via `onHistoryStateUpdated` / `onReferenceFragmentUpdated`.
 ## Deep-capture events
 
 ### `net-request`
-`NetRequestPayload` — one network request/response assembled from CDP
-`Network.*` events. Redaction (when enabled) is applied to headers, URL, and
+`NetRequestPayload` records one network request and response, assembled from CDP
+`Network.*` events. When redaction is enabled, it applies to headers, URL, and
 bodies before emit.
 
 | Field            | Type                    | Meaning |
 | ---------------- | ----------------------- | ------- |
-| `requestId`      | `string`                | CDP request id; also the join key for `ErrorPayload.linkedRequestId`. |
-| `method`         | `string`                | HTTP method. Mutating methods (POST/PUT/DELETE/PATCH) score higher. |
-| `url`            | `string`                | Request URL (query-param values may be redacted). |
-| `resourceType`   | `string` (optional)     | CDP resource type (`XHR`, `Fetch`, `Image`, `Font`, `Stylesheet`, …). Used by `dropStaticAssets`. |
-| `status`         | `number` (optional)     | Response status. `>= 400` scores higher and is never dropped as a static asset. |
+| `requestId`      | `string`                | CDP request id, also the join key for `ErrorPayload.linkedRequestId`. |
+| `method`         | `string`                | HTTP method. Mutating methods (POST, PUT, DELETE, PATCH) score higher. |
+| `url`            | `string`                | Request URL. Query-param values may be redacted. |
+| `resourceType`   | `string` (optional)     | CDP resource type (`XHR`, `Fetch`, `Image`, `Font`, `Stylesheet`, and so on). `dropStaticAssets` uses it. |
+| `status`         | `number` (optional)     | Response status. A status of `>= 400` scores higher and is never dropped as a static asset. |
 | `statusText`     | `string` (optional)     | Response status text. |
 | `requestHeaders` | `NetHeader[]`           | Request headers (redacted). |
 | `responseHeaders`| `NetHeader[]`           | Response headers (redacted). |
 | `requestBody`    | `NetBody` (optional)    | Request body (see below). |
 | `responseBody`   | `NetBody` (optional)    | Response body (see below). |
 | `timing`         | `{ startedAt: number; durationMs?: number }` (optional) | Timing. |
-| `initiator`      | `string` (optional)     | Initiator type/description. |
-| `failed`         | `boolean` (optional)    | True when the request failed (network error). Scores highest. |
+| `initiator`      | `string` (optional)     | Initiator type or description. |
+| `failed`         | `boolean` (optional)    | True when the request failed with a network error. Scores highest. |
 | `failureReason`  | `string` (optional)     | CDP failure reason when `failed`. |
 | `fromCache`      | `boolean` (optional)    | Served from cache. |
 | `mime`           | `string` (optional)     | Response MIME type. |
 | `websocket`      | `boolean` (optional)    | True for WebSocket connections. |
-| `wsFrames`       | `WsFrame[]` (optional)  | WebSocket frames (capped ~100, each text capped ~2 KB). |
-| `collapsed`      | `{ count: number; statuses: number[]; note?: string }` (optional) | **Set by the trimmer** when repeated calls to the same endpoint are folded into this representative request. |
-| `bodyShape`      | `{ request?: string; response?: string }` (optional) | **Set by the trimmer** when a body was reduced to a JSON shape summary. |
+| `wsFrames`       | `WsFrame[]` (optional)  | WebSocket frames, capped at about 100, each text capped at about 2 KB. |
+| `collapsed`      | `{ count: number; statuses: number[]; note?: string }` (optional) | The trimmer sets this when it folds repeated calls to the same endpoint into this representative request. |
+| `bodyShape`      | `{ request?: string; response?: string }` (optional) | The trimmer sets this when it reduces a body to a JSON shape summary. |
 
-**`NetBody`** — `{ present, mime?, text?, truncated?, originalSize?, assetId?, base64? }`:
-- `present` — whether a body exists (false when the CDP body was evicted).
-- `mime` — body MIME.
-- `text` — possibly truncated and/or redacted body text.
-- `truncated` — true when `text` was cut to the inline cap.
-- `originalSize` — original (pre-truncation) size in bytes.
-- `assetId` — id of the full body stored as a `net-body` asset when it overflowed the inline cap.
-- `base64` — true when `text` is base64 (binary body).
+`NetBody` is `{ present, mime?, text?, truncated?, originalSize?, assetId?, base64? }`:
+- `present` is whether a body exists. It is false when the CDP body was evicted.
+- `mime` is the body MIME type
+- `text` is the body text, possibly truncated or redacted
+- `truncated` is true when `text` was cut to the inline cap
+- `originalSize` is the original size in bytes, before truncation
+- `assetId` is the id of the full body, stored as a `net-body` asset when it overflowed the inline cap
+- `base64` is true when `text` is base64 (a binary body)
 
-**`WsFrame`** — `{ dir: 'sent' | 'recv'; opcode: number; ts: number; text?: string; truncated?: boolean }`; `ts` is ms from session start.
+`WsFrame` is `{ dir: 'sent' | 'recv'; opcode: number; ts: number; text?: string; truncated?: boolean }`. `ts` is milliseconds from session start.
 
 ### `console`
-`ConsolePayload` — a `console.*` call or non-error `Log.entryAdded`.
+`ConsolePayload` records a `console.*` call or a non-error `Log.entryAdded`.
 
 | Field   | Type                  | Meaning |
 | ------- | --------------------- | ------- |
 | `level` | `ConsoleLevel`        | One of `log \| info \| warn \| error \| debug \| trace`. `error` and `warn` score higher. |
-| `text`  | `string`              | Stringified, space-joined args, capped ~2 KB. |
+| `text`  | `string`              | Stringified, space-joined args, capped at about 2 KB. |
 | `args`  | `string[]` (optional) | Individual stringified arguments. |
-| `repeat`| `number` (optional)   | Consecutive-duplicate collapse count (same level+text within 1000 ms). |
+| `repeat`| `number` (optional)   | Count of collapsed consecutive duplicates (same level and text within 1000 ms). |
 | `stack` | `string` (optional)   | Stack trace, when present. |
-| `source`| `string` (optional)   | Origin as `url:line` (from the first stack frame). |
+| `source`| `string` (optional)   | Origin as `url:line`, from the first stack frame. |
 
 ### `error`
-`ErrorPayload` — an error surfaced from any source. Protected; the renderer
-isolates these with a `⚠` prefix.
+`ErrorPayload` records an error surfaced from any source. It is protected, and the
+renderer isolates these with a `⚠` prefix.
 
 | Field            | Type                                             | Meaning |
 | ---------------- | ------------------------------------------------ | ------- |
 | `message`        | `string`                                         | Error message. |
 | `stack`          | `string` (optional)                              | Stack trace. |
-| `origin`         | `'exception' \| 'console' \| 'network' \| 'log'` | Where it came from: uncaught exception, `console.error`, network failure, or an error-level `Log.entryAdded`. |
-| `linkedRequestId`| `string` (optional)                              | The `net-request` this error is tied to (its body is never dropped). |
+| `origin`         | `'exception' \| 'console' \| 'network' \| 'log'` | Where it came from: an uncaught exception, `console.error`, a network failure, or an error-level `Log.entryAdded`. |
+| `linkedRequestId`| `string` (optional)                              | The `net-request` this error is tied to. Its body is never dropped. |
 
 ---
 
 ## Visual events
 
 ### `screenshot`
-`ScreenshotPayload` — a captured viewport JPEG (stored as an asset).
+`ScreenshotPayload` records a captured viewport JPEG, stored as an asset.
 
 | Field           | Type                 | Meaning |
 | --------------- | -------------------- | ------- |
 | `assetId`       | `string`             | Id of the stored JPEG asset. |
-| `width`         | `number`             | Image width (from the decoded bitmap). |
+| `width`         | `number`             | Image width, from the decoded bitmap. |
 | `height`        | `number`             | Image height. |
-| `trigger`       | `ScreenshotTrigger`  | Why it was taken: `interaction \| nav \| error \| annotation \| manual \| key-moment`. `annotation`/`manual` score highest, then `error`, then `nav`. |
+| `trigger`       | `ScreenshotTrigger`  | Why it was taken: `interaction \| nav \| error \| annotation \| manual \| key-moment`. `annotation` and `manual` score highest, then `error`, then `nav`. |
 | `ahash`         | `string` (optional)  | 64-bit average hash as hex, for near-duplicate dedup. |
-| `repeat`        | `number` (optional)  | Consecutive near-duplicate count folded into this shot. |
-| `contextText`   | `string` (optional)  | One-line description of what triggered it (used as the image alt/caption). |
+| `repeat`        | `number` (optional)  | Count of consecutive near-duplicates folded into this shot. |
+| `contextText`   | `string` (optional)  | One-line description of what triggered it, used as the image alt text or caption. |
 | `hasAnnotations`| `boolean` (optional) | True when annotation shapes were drawn over it. |
 
 ### `annotation-start`
-`AnnotationStartPayload` — the user entered annotation mode.
+`AnnotationStartPayload` records that the user entered annotation mode.
 
 | Field     | Type                   | Meaning |
 | --------- | ---------------------- | ------- |
-| `viewport`| `{ w: number; h: number }` | Viewport size at entry (annotation coordinate space). |
+| `viewport`| `{ w: number; h: number }` | Viewport size at entry, the annotation coordinate space. |
 
 ### `annotation`
-`AnnotationPayload` — a set of shapes drawn over a screenshot. Protected; the
-renderer describes each shape and its target element in text so the report is
-readable without opening the image.
+`AnnotationPayload` records a set of shapes drawn over a screenshot. It is
+protected. The renderer describes each shape and its target element in text, so
+the report reads without opening the image.
 
 | Field              | Type                       | Meaning |
 | ------------------ | -------------------------- | ------- |
@@ -247,29 +249,30 @@ readable without opening the image.
 | `screenshotAssetId`| `string` (optional)        | The screenshot being annotated. |
 | `viewport`         | `{ w: number; h: number }` | Coordinate space for the shapes. |
 
-**`AnnotationShape`** — `{ tool, color, strokeWidth, points?, rect?, from?, to?, text?, targetDescriptor? }`:
-- `tool` — one of `pen \| arrow \| rect \| ellipse \| text \| highlighter \| redact`.
-- `color`, `strokeWidth` — stroke styling.
-- `points` — path for `pen` / `highlighter`.
-- `rect` — bounds for `rect` / `ellipse` / `redact`.
-- `from`, `to` — endpoints for `arrow`.
-- `text` — label for `text`.
-- `targetDescriptor` — the element under the shape's anchor, for text-only description to the LLM.
+`AnnotationShape` is `{ tool, color, strokeWidth, points?, rect?, from?, to?, text?, targetDescriptor? }`:
+- `tool` is one of `pen \| arrow \| rect \| ellipse \| text \| highlighter \| redact`
+- `color` and `strokeWidth` set the stroke styling
+- `points` is the path for `pen` and `highlighter`
+- `rect` is the bounds for `rect`, `ellipse`, and `redact`
+- `from` and `to` are the endpoints for `arrow`
+- `text` is the label for `text`
+- `targetDescriptor` is the element under the shape's anchor, for a text-only description to the LLM
 
 ---
 
 ## Voice events
 
 ### `voice-segment`
-`VoiceSegmentPayload` — a recorded audio segment plus its transcript. Protected.
+`VoiceSegmentPayload` records a recorded audio segment plus its transcript. It is
+protected.
 
 | Field               | Type                                | Meaning |
 | ------------------- | ----------------------------------- | ------- |
 | `assetId`           | `string`                            | Id of the stored audio (`.webm`) asset. |
-| `tStart`            | `number`                            | Segment start, ms from session start. |
-| `tEnd`              | `number`                            | Segment end, ms from session start. |
-| `transcript`        | `string \| null`                    | Transcribed text; `null` when not yet transcribed or transcription failed. |
-| `words`             | `{ word: string; t: number }[]` (optional) | Per-word timings (ms from session start), when the provider supplies them. |
+| `tStart`            | `number`                            | Segment start, milliseconds from session start. |
+| `tEnd`              | `number`                            | Segment end, milliseconds from session start. |
+| `transcript`        | `string \| null`                    | Transcribed text. It is `null` when not yet transcribed or when transcription failed. |
+| `words`             | `{ word: string; t: number }[]` (optional) | Per-word timings (milliseconds from session start), when the provider supplies them. |
 | `transcriptionError`| `string` (optional)                 | Error message when transcription failed. |
 | `provider`          | `string` (optional)                 | Transcription provider used. |
 
@@ -277,24 +280,24 @@ readable without opening the image.
 
 ## File events
 
-Both use `FilePayload`. Protected.
+Both events use `FilePayload`. Both are protected.
 
 ### `file-captured`
-A file the user selected/uploaded on a page, captured by the file-capture content
-script.
+A file the user selected or uploaded on a page, captured by the file-capture
+content script.
 
 ### `file-attached`
 A file the user attached directly through the extension UI.
 
-**`FilePayload`**:
+`FilePayload`:
 
 | Field         | Type                | Meaning |
 | ------------- | ------------------- | ------- |
-| `assetId`     | `string` (optional) | Id of the stored file asset; **undefined when metadata-only** (oversized). |
+| `assetId`     | `string` (optional) | Id of the stored file asset. Undefined when metadata-only (oversized). |
 | `fileName`    | `string`            | Original file name. |
 | `mime`        | `string`            | MIME type. |
 | `size`        | `number`            | File size in bytes. |
-| `contextText` | `string` (optional) | Where it was used, e.g. `"uploaded to Import CSV dialog"`. |
+| `contextText` | `string` (optional) | Where it was used, for example `"uploaded to Import CSV dialog"`. |
 | `metadataOnly`| `boolean` (optional)| True when the file exceeded `fileCapBytes` and only metadata was kept. |
 | `note`        | `string` (optional) | Free-form note. |
 
@@ -303,16 +306,16 @@ A file the user attached directly through the extension UI.
 ## User-signal events
 
 ### `marker`
-`MarkerPayload` — an explicit user marker. Protected; rendered as a loud
-blockquote.
+`MarkerPayload` records an explicit user marker. It is protected, and the renderer
+shows it as a prominent blockquote.
 
 | Field  | Type     | Meaning |
 | ------ | -------- | ------- |
 | `name` | `string` | Marker label. |
 
 ### `note`
-`NotePayload` — a typed note from the user. Protected; rendered as a loud
-blockquote.
+`NotePayload` records a typed note from the user. It is protected, and the
+renderer shows it as a prominent blockquote.
 
 | Field  | Type     | Meaning |
 | ------ | -------- | ------- |
@@ -323,8 +326,9 @@ blockquote.
 ## System events
 
 ### `session-note`
-`SessionNotePayload` — a note the system records about the session itself
-(rehydration, debugger detach, info/warning). Protected.
+`SessionNotePayload` records a note the system makes about the session itself,
+covering rehydration, debugger detach, and info or warning messages. It is
+protected.
 
 | Field  | Type                                          | Meaning |
 | ------ | --------------------------------------------- | ------- |
