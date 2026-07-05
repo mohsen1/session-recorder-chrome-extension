@@ -1,0 +1,181 @@
+/**
+ * The single typed messaging contract for the extension.
+ *
+ * Two channels:
+ *  - Request/response: `sendMessage(msg)` -> a `MessageResponse`. Used for
+ *    sidepanel/options/content -> background calls.
+ *  - Broadcast: background -> all extension views via `broadcast(evt)`, received
+ *    with `onBroadcast(cb)`. Used for live UI updates (ticker, state, progress).
+ *
+ * Every later phase adds message kinds HERE and nowhere else.
+ */
+
+import type {
+  Asset,
+  CaptureSettings,
+  EventType,
+  RawEvent,
+  Session,
+  SessionEvent,
+  VerbosityLevel,
+} from './session/types';
+
+// ----------------------------------------------------------------------------
+// Request messages (X -> background)
+// ----------------------------------------------------------------------------
+
+export type RequestMessage =
+  // --- session lifecycle (sidepanel -> bg) ---
+  | { kind: 'session/start'; tabId: number; settings?: Partial<CaptureSettings> }
+  | { kind: 'session/stop' }
+  | { kind: 'session/pause' }
+  | { kind: 'session/resume' }
+  | { kind: 'session/getState' }
+  | { kind: 'session/list' }
+  | { kind: 'session/get'; sessionId: string }
+  | { kind: 'session/delete'; sessionId: string }
+  | { kind: 'session/rename'; sessionId: string; name: string }
+  // --- capture (content -> bg) ---
+  | { kind: 'capture/event'; event: RawEvent }
+  | { kind: 'capture/fileBlob'; event: RawEvent; dataUrl: string }
+  // --- manual capture actions (sidepanel -> bg) ---
+  | { kind: 'screenshot/capture' }
+  | { kind: 'marker/add'; name?: string }
+  | { kind: 'note/add'; text: string }
+  | { kind: 'annotation/toggle' }
+  | { kind: 'file/attach'; fileName: string; mime: string; dataUrl: string; note?: string }
+  // --- voice (sidepanel -> bg) ---
+  | { kind: 'mic/toggle'; on: boolean }
+  | { kind: 'transcription/retry'; sessionId: string; eventId: string }
+  // --- data reads (sidepanel/options -> bg) ---
+  | { kind: 'events/get'; sessionId: string }
+  | { kind: 'assets/getMeta'; sessionId: string }
+  // --- export (sidepanel -> bg or self-handled) ---
+  | { kind: 'export/estimate'; sessionId: string }
+  // --- offscreen lifecycle (bg <-> offscreen) ---
+  | { kind: 'audio/start'; sessionId: string; startedAt: number }
+  | { kind: 'audio/pause' }
+  | { kind: 'audio/resume' }
+  | { kind: 'audio/stop' }
+  // --- offscreen -> bg ---
+  | { kind: 'audio/segment'; sessionId: string; tStart: number; tEnd: number; dataUrl: string; mime: string }
+  | { kind: 'audio/level'; level: number }
+  // --- storage ---
+  | { kind: 'storage/estimate' };
+
+// ----------------------------------------------------------------------------
+// Response
+// ----------------------------------------------------------------------------
+
+export interface AppState {
+  session: Session | null;
+  /** Recent events for the ticker (materialized). */
+  recentEvents: SessionEvent[];
+  recording: boolean;
+  paused: boolean;
+  micOn: boolean;
+  annotating: boolean;
+  attachedTabIds: number[];
+  error?: string;
+}
+
+export interface TokenEstimate {
+  level: VerbosityLevel;
+  tokens: number;
+  approxBytes: number;
+  omitted: string[];
+}
+
+export type ResponseFor = {
+  'session/start': { ok: boolean; session?: Session; error?: string };
+  'session/stop': { ok: boolean };
+  'session/pause': { ok: boolean };
+  'session/resume': { ok: boolean };
+  'session/getState': AppState;
+  'session/list': { sessions: Session[] };
+  'session/get': { session: Session | null };
+  'session/delete': { ok: boolean };
+  'session/rename': { ok: boolean };
+  'capture/event': { ok: boolean };
+  'capture/fileBlob': { ok: boolean };
+  'screenshot/capture': { ok: boolean };
+  'marker/add': { ok: boolean };
+  'note/add': { ok: boolean };
+  'annotation/toggle': { ok: boolean; annotating: boolean };
+  'file/attach': { ok: boolean };
+  'mic/toggle': { ok: boolean; micOn: boolean; error?: string };
+  'transcription/retry': { ok: boolean };
+  'events/get': { events: SessionEvent[] };
+  'assets/getMeta': { assets: Array<Omit<Asset, 'blob'>> };
+  'export/estimate': { estimates: TokenEstimate[] };
+  'audio/start': { ok: boolean };
+  'audio/pause': { ok: boolean };
+  'audio/resume': { ok: boolean };
+  'audio/stop': { ok: boolean };
+  'audio/segment': { ok: boolean };
+  'audio/level': { ok: boolean };
+  'storage/estimate': { usage: number; quota: number };
+};
+
+// ----------------------------------------------------------------------------
+// Broadcast messages (background -> views)
+// ----------------------------------------------------------------------------
+
+export type BroadcastMessage =
+  | { kind: 'state/update'; state: AppState }
+  | { kind: 'event/tick'; event: SessionEvent; counts: Partial<Record<EventType, number>> }
+  | { kind: 'export/progress'; sessionId: string; phase: string; pct: number }
+  | { kind: 'transcription/progress'; sessionId: string; done: number; total: number }
+  | { kind: 'mic/level'; level: number }
+  | { kind: 'annotation/state'; annotating: boolean };
+
+// ----------------------------------------------------------------------------
+// Transport helpers
+// ----------------------------------------------------------------------------
+
+const BROADCAST_MARKER = '__sr_broadcast__';
+
+/** Send a request to the background and await the typed response. */
+export async function sendMessage<K extends RequestMessage['kind']>(
+  msg: Extract<RequestMessage, { kind: K }>,
+): Promise<ResponseFor[K]> {
+  return (await chrome.runtime.sendMessage(msg)) as ResponseFor[K];
+}
+
+/** Register a typed handler for incoming requests (background side). */
+export function onMessage(
+  handler: (
+    msg: RequestMessage,
+    sender: chrome.runtime.MessageSender,
+  ) => Promise<unknown> | unknown,
+): void {
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg && msg[BROADCAST_MARKER]) return false; // ignore broadcasts
+    Promise.resolve(handler(msg as RequestMessage, sender))
+      .then((res) => sendResponse(res))
+      .catch((err) =>
+        sendResponse({ ok: false, error: String(err?.message ?? err) }),
+      );
+    return true; // keep the channel open for the async response
+  });
+}
+
+/** Broadcast an update from the background to all extension views. */
+export function broadcast(evt: BroadcastMessage): void {
+  chrome.runtime
+    .sendMessage({ ...evt, [BROADCAST_MARKER]: true })
+    .catch(() => {
+      /* no views open — fine */
+    });
+}
+
+/** Subscribe to broadcasts (sidepanel/options side). Returns an unsubscribe fn. */
+export function onBroadcast(cb: (evt: BroadcastMessage) => void): () => void {
+  const listener = (msg: unknown) => {
+    if (msg && (msg as Record<string, unknown>)[BROADCAST_MARKER]) {
+      cb(msg as BroadcastMessage);
+    }
+  };
+  chrome.runtime.onMessage.addListener(listener);
+  return () => chrome.runtime.onMessage.removeListener(listener);
+}

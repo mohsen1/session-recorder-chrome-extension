@@ -1,0 +1,43 @@
+{
+  "name": "session-recorder-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension that records rich, multi-modal web-app sessions (interactions, full network traffic, screenshots, voice, annotations, files) and exports an LLM-optimized report.",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "idb": "^8.0.0",
+    "nanoid": "^5.0.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@wxt-dev/module-react": "^1.1.3",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "wxt": "^0.19.13"
+  },
+  "packageManager": "pnpm@11.6.0",
+  "pnpm": {
+    "overrides": {
+      "@vitejs/plugin-react": "4.3.4"
+    },
+    "onlyBuiltDependencies": ["esbuild", "@esbuild/darwin-arm64", "workerd"]
+  }
+}
