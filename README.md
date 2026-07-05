@@ -26,17 +26,15 @@ optional voice transcription, which you configure and opt into.
 
 ## What it captures
 
-| Stream | How |
-| --- | --- |
-| Network (request and response bodies, headers, timing, websockets) | `chrome.debugger` / CDP `Network` domain |
-| Console logs, exceptions, failed requests | CDP `Runtime` / `Log` |
-| Clicks, inputs, scrolls, keys | content script (ISOLATED world) |
-| Navigations and SPA route changes | `chrome.webNavigation` (fires on `pushState`) |
-| Screenshots | CDP `Page.captureScreenshot` — configurable frequency, near-duplicate deduped |
-| Voice narration | offscreen `MediaRecorder`, segmented, optional cloud transcription |
-| Annotations | in-page shadow-DOM canvas overlay; vector shapes plus annotated screenshot |
-| Files | intercepted `<input type=file>` / drag-drop, plus manual attach |
-| Markers and notes | side-panel buttons plus keyboard shortcuts |
+- network — request and response bodies, headers, timing, and websockets through `chrome.debugger` and the CDP `Network` domain
+- console logs, exceptions, and failed requests through CDP `Runtime` and `Log`
+- clicks, inputs, scrolls, and keys through a content script in the ISOLATED world
+- navigations and SPA route changes through `chrome.webNavigation`, which fires on `pushState`
+- screenshots through CDP `Page.captureScreenshot`, at a configurable frequency with near-duplicates deduped
+- voice narration through an offscreen `MediaRecorder`, segmented, with optional cloud transcription
+- annotations through an in-page shadow-DOM canvas overlay, saved as vector shapes plus an annotated screenshot
+- files through intercepted `<input type=file>` and drag-drop, plus manual attach
+- markers and notes through side-panel buttons and keyboard shortcuts
 
 Everything flows through one funnel in the background service worker and
 persists to IndexedDB. So a session survives service-worker restarts, and you
@@ -56,12 +54,10 @@ session.
 The extension captures sessions at full fidelity and trims them at export time
 into 4 deterministic levels. Each level shows a live token estimate.
 
-| Level | Target | Strategy |
-| --- | --- | --- |
-| L0 Full | everything | full bodies, all screenshots |
-| L1 Standard | ~150k | bodies → 4 KB, static assets collapsed, scrolls coalesced |
-| L2 Compact | ~50k | bodies → JSON shape summary, repeated requests collapsed, screenshots thinned |
-| L3 Minimal | ~15k | narrative skeleton: interactions as text, non-error bodies dropped |
+- L0 Full — everything: full bodies and all screenshots
+- L1 Standard (about 150k tokens) — bodies cut to 4 KB, static assets collapsed, scrolls coalesced
+- L2 Compact (about 50k tokens) — bodies reduced to a JSON shape summary, repeated requests collapsed, screenshots thinned
+- L3 Minimal (about 15k tokens) — a narrative skeleton: interactions as text, non-error bodies dropped
 
 The extension never trims these at any level: voice transcript, annotations and
 their screenshots, markers and notes, errors (console, exception, 4xx-5xx with
@@ -137,17 +133,15 @@ See [`docs/report-format.md`](./docs/report-format.md) for a suggested prompt.
 
 ## Why we need each permission
 
-| Permission | Why |
-| --- | --- |
-| `debugger` | Full network plus console and exception capture via CDP (the "being debugged" banner) |
-| `sidePanel` | The recording and export UI |
-| `tabs`, `webNavigation` | Multi-tab tracking; navigation and SPA-route events |
-| `scripting` | Content-script activation |
-| `storage`, `unlimitedStorage` | Persist sessions, events, and assets in IndexedDB |
-| `offscreen` | `MediaRecorder` for voice (service workers cannot use `getUserMedia`) |
-| `downloads` | Save the exported zip |
-| `alarms` | Heartbeat that flushes the event buffer while recording |
-| `<all_urls>` | The recorder must work on whatever SaaS app you point it at |
+- `debugger` — full network, console, and exception capture through CDP (the "being debugged" banner)
+- `sidePanel` — the recording and export UI
+- `tabs` and `webNavigation` — multi-tab tracking, navigation, and SPA-route events
+- `scripting` — content-script activation
+- `storage` and `unlimitedStorage` — persist sessions, events, and assets in IndexedDB
+- `offscreen` — `MediaRecorder` for voice, since service workers cannot use `getUserMedia`
+- `downloads` — save the exported zip
+- `alarms` — a heartbeat that flushes the event buffer while recording
+- `<all_urls>` — the recorder must work on whatever SaaS app you point it at
 
 ## Project layout
 
