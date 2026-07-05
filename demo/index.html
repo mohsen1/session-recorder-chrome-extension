@@ -1,0 +1,407 @@
+<!--
+  demo/index.html — self-contained manual test harness for the session recorder.
+
+  Open this page in a tab, start a recording session with the extension, then
+  click the labelled buttons below to make the capture pipeline emit each event
+  type (net-request, console, error, input, scroll, file, request-collapsing,
+  etc.). No build step and no external dependencies: all JS/CSS is inline. The
+  outgoing fetches point at jsonplaceholder / same-origin paths and may 404 or
+  fail when offline — that is fine, a failed/404 request still produces a
+  net-request event, which is exactly what we want to observe.
+-->
+<meta charset="utf-8" />
+<title>Session Recorder — Demo &amp; Test Page</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1a1d21;
+    --muted: #5b6470;
+    --line: #d8dde3;
+    --accent: #2f6fed;
+    --accent-ink: #ffffff;
+    --warn: #b23b2e;
+    --ok: #1f7a4d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171b;
+      --card: #1d2127;
+      --ink: #e8ecf1;
+      --muted: #9aa4b0;
+      --line: #333a44;
+      --accent: #5b8dff;
+      --accent-ink: #0b0e12;
+      --warn: #ff7a6b;
+      --ok: #58c48a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 24px;
+  }
+  header {
+    max-width: 900px;
+    margin: 0 auto 20px;
+  }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  header p { color: var(--muted); margin: 0; }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    gap: 16px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  section h2 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  section .hint {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 12px;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  button {
+    font: inherit;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+  }
+  button.secondary {
+    background: transparent;
+    color: var(--accent);
+  }
+  button.danger {
+    border-color: var(--warn);
+    background: var(--warn);
+    color: #fff;
+  }
+  button:active { transform: translateY(1px); }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 4px; }
+  input[type="text"], input[type="password"], input[type="email"], textarea {
+    font: inherit;
+    width: 100%;
+    max-width: 340px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .field { margin-bottom: 10px; }
+  .scroller {
+    height: 220px;
+    overflow: auto;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--bg);
+  }
+  .scroller .filler {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+  }
+  #log {
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow: auto;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    color: var(--muted);
+  }
+  .tag {
+    display: inline-block;
+    font: 11px/1 ui-monospace, monospace;
+    padding: 3px 6px;
+    border-radius: 5px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    margin-left: 8px;
+  }
+  footer { max-width: 900px; margin: 24px auto 0; color: var(--muted); font-size: 13px; }
+  code { font-family: ui-monospace, monospace; }
+</style>
+
+<header>
+  <h1>Session Recorder — Demo &amp; Test Page</h1>
+  <p>
+    Start a recording with the extension, then use the buttons below to drive the
+    capture pipeline. Each control is labelled with the event type it produces.
+    Network calls may 404 or fail offline — that still emits a
+    <code>net-request</code> event, which is the point.
+  </p>
+</header>
+
+<main>
+  <section>
+    <h2>Network — fetch requests <span class="tag">net-request</span></h2>
+    <p class="hint">
+      GET has no body; POST sends a JSON body (watch redaction on the
+      <code>password</code>/<code>token</code> keys). Both may fail offline.
+    </p>
+    <div class="row">
+      <button id="btn-get">GET fetch</button>
+      <button id="btn-post">POST fetch (JSON body)</button>
+      <button id="btn-get-query" class="secondary">GET with secret query param</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Request collapsing — polling <span class="tag">net-request → collapsed</span></h2>
+    <p class="hint">
+      Fires 12 identical GET requests to the same endpoint in quick succession.
+      The trimmer (L2+) should collapse these into one representative request
+      plus a <code>×N similar</code> marker.
+    </p>
+    <div class="row">
+      <button id="btn-poll">Poll 12× (same endpoint)</button>
+      <button id="btn-poll-vary" class="secondary">Poll 12× (varying :id path)</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Console <span class="tag">console</span></h2>
+    <p class="hint">
+      <code>console.log</code>/<code>info</code>/<code>warn</code> become
+      <code>console</code> events; repeated identical logs test coalescing.
+    </p>
+    <div class="row">
+      <button id="btn-log">console.log</button>
+      <button id="btn-info" class="secondary">console.info</button>
+      <button id="btn-warn" class="secondary">console.warn</button>
+      <button id="btn-log-spam" class="secondary">console.log ×20 (duplicate)</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Errors <span class="tag">error / console</span></h2>
+    <p class="hint">
+      <code>console.error</code> → error event (<code>origin: 'console'</code> via
+      Log.entryAdded). The uncaught exception → error event
+      (<code>origin: 'exception'</code>). A rejected fetch also links an error.
+    </p>
+    <div class="row">
+      <button id="btn-console-error" class="danger">console.error</button>
+      <button id="btn-throw" class="danger">Throw uncaught exception</button>
+      <button id="btn-reject" class="danger">Unhandled promise rejection</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Form &amp; input <span class="tag">input / click / key</span></h2>
+    <p class="hint">
+      The password field must be redacted in <code>input</code> events
+      (<code>redacted: true</code>, value replaced with the marker). Typing and
+      Enter produce <code>input</code>/<code>key</code> events.
+    </p>
+    <form id="demo-form" autocomplete="off">
+      <div class="field">
+        <label for="f-user">Username</label>
+        <input type="text" id="f-user" name="username" placeholder="ada" />
+      </div>
+      <div class="field">
+        <label for="f-email">Email</label>
+        <input type="email" id="f-email" name="email" placeholder="ada@example.com" />
+      </div>
+      <div class="field">
+        <label for="f-pass">Password (should be redacted)</label>
+        <input type="password" id="f-pass" name="password" placeholder="••••••••" />
+      </div>
+      <div class="field">
+        <label for="f-token">API token (should be redacted)</label>
+        <input type="text" id="f-token" name="api_token" placeholder="sk-..." />
+      </div>
+      <div class="row">
+        <button type="submit">Submit form</button>
+        <button type="reset" class="secondary">Reset</button>
+      </div>
+    </form>
+  </section>
+
+  <section>
+    <h2>File upload <span class="tag">file-captured</span></h2>
+    <p class="hint">
+      Choosing a file triggers the file-capture content script. Small files are
+      captured whole; oversized files become metadata-only.
+    </p>
+    <div class="field">
+      <label for="f-file">Pick a file</label>
+      <input type="file" id="f-file" name="upload" />
+    </div>
+  </section>
+
+  <section>
+    <h2>Scrolling <span class="tag">scroll</span></h2>
+    <p class="hint">
+      Scroll inside this container to emit <code>scroll</code> events. Runs of
+      consecutive scrolls are coalesced by the trimmer.
+    </p>
+    <div class="scroller" id="scroller"></div>
+  </section>
+
+  <section>
+    <h2>Activity log <span class="tag">page-local</span></h2>
+    <p class="hint">A local echo of what this page did (not part of the recording).</p>
+    <div id="log">ready.</div>
+  </section>
+</main>
+
+<footer>
+  This page ships no external assets. Reload to reset state. Safe to open offline.
+</footer>
+
+<script>
+  (function () {
+    'use strict';
+
+    var GET_URL = 'https://jsonplaceholder.typicode.com/todos/1';
+    var LIST_URL = 'https://jsonplaceholder.typicode.com/posts';
+    var POST_URL = 'https://jsonplaceholder.typicode.com/posts';
+
+    var logEl = document.getElementById('log');
+    function log(msg) {
+      var line = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      logEl.textContent = line + '\n' + logEl.textContent;
+    }
+
+    function safeFetch(url, init) {
+      // Failures (offline / CORS / 404) are expected and still produce a
+      // net-request event — swallow so the page keeps working.
+      return fetch(url, init)
+        .then(function (res) {
+          log((init && init.method || 'GET') + ' ' + url + ' → ' + res.status);
+          return res;
+        })
+        .catch(function (err) {
+          log((init && init.method || 'GET') + ' ' + url + ' → failed (' + err.message + ')');
+        });
+    }
+
+    document.getElementById('btn-get').addEventListener('click', function () {
+      safeFetch(GET_URL);
+    });
+
+    document.getElementById('btn-post').addEventListener('click', function () {
+      safeFetch(POST_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // header redaction target:
+          'Authorization': 'Bearer demo-secret-token'
+        },
+        body: JSON.stringify({
+          title: 'demo order',
+          userId: 7,
+          // body-key redaction targets:
+          password: 'hunter2',
+          api_key: 'sk-demo-1234567890'
+        })
+      });
+    });
+
+    document.getElementById('btn-get-query').addEventListener('click', function () {
+      // URL-param redaction target: the `token` value should be redacted.
+      safeFetch(GET_URL + '?token=abc123secret&page=1');
+    });
+
+    document.getElementById('btn-poll').addEventListener('click', function () {
+      log('polling 12× (same endpoint)…');
+      for (var i = 0; i < 12; i++) {
+        safeFetch(GET_URL);
+      }
+    });
+
+    document.getElementById('btn-poll-vary').addEventListener('click', function () {
+      log('polling 12× (varying :id path)…');
+      for (var i = 1; i <= 12; i++) {
+        safeFetch('https://jsonplaceholder.typicode.com/todos/' + i);
+      }
+    });
+
+    document.getElementById('btn-log').addEventListener('click', function () {
+      console.log('demo: console.log at', new Date().toISOString(), { detail: 'sample object', n: 42 });
+      log('console.log emitted');
+    });
+    document.getElementById('btn-info').addEventListener('click', function () {
+      console.info('demo: console.info message');
+      log('console.info emitted');
+    });
+    document.getElementById('btn-warn').addEventListener('click', function () {
+      console.warn('demo: console.warn — something looks off');
+      log('console.warn emitted');
+    });
+    document.getElementById('btn-log-spam').addEventListener('click', function () {
+      for (var i = 0; i < 20; i++) {
+        console.log('demo: repeated identical log line');
+      }
+      log('console.log ×20 (duplicate) emitted');
+    });
+
+    document.getElementById('btn-console-error').addEventListener('click', function () {
+      console.error('demo: console.error — explicit error log', new Error('sample error object'));
+      log('console.error emitted');
+    });
+
+    document.getElementById('btn-throw').addEventListener('click', function () {
+      log('throwing uncaught exception…');
+      // Deferred so it escapes this handler and becomes a genuine window error.
+      setTimeout(function () {
+        throw new Error('demo: uncaught exception from the demo page');
+      }, 0);
+    });
+
+    document.getElementById('btn-reject').addEventListener('click', function () {
+      log('creating unhandled promise rejection…');
+      Promise.reject(new Error('demo: unhandled promise rejection'));
+    });
+
+    var form = document.getElementById('demo-form');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      log('form submitted (password/token fields should be redacted in the recording)');
+    });
+
+    var fileInput = document.getElementById('f-file');
+    fileInput.addEventListener('change', function () {
+      var f = fileInput.files && fileInput.files[0];
+      if (f) log('file selected: ' + f.name + ' (' + f.size + ' bytes, ' + (f.type || 'unknown') + ')');
+    });
+
+    // Populate the scrollable area with enough rows to scroll meaningfully.
+    var scroller = document.getElementById('scroller');
+    for (var i = 1; i <= 60; i++) {
+      var row = document.createElement('div');
+      row.className = 'filler';
+      row.textContent = 'Scrollable row ' + i + ' of 60';
+      scroller.appendChild(row);
+    }
+
+    log('demo page ready — start a recording, then drive the buttons.');
+  })();
+</script>

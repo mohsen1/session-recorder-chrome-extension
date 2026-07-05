@@ -38,6 +38,9 @@ export type RequestMessage =
   // --- capture (content -> bg) ---
   | { kind: 'capture/event'; event: RawEvent }
   | { kind: 'capture/fileBlob'; event: RawEvent; dataUrl: string }
+  // --- content handshake / annotation results (content -> bg) ---
+  | { kind: 'content/hello' }
+  | { kind: 'annotation/exit'; shapes: unknown; viewport: { w: number; h: number } }
   // --- manual capture actions (sidepanel -> bg) ---
   | { kind: 'screenshot/capture' }
   | { kind: 'marker/add'; name?: string }
@@ -98,6 +101,8 @@ export type ResponseFor = {
   'session/rename': { ok: boolean };
   'capture/event': { ok: boolean };
   'capture/fileBlob': { ok: boolean };
+  'content/hello': { active: boolean; annotating: boolean };
+  'annotation/exit': { ok: boolean };
   'screenshot/capture': { ok: boolean };
   'marker/add': { ok: boolean };
   'note/add': { ok: boolean };
@@ -133,6 +138,41 @@ export type BroadcastMessage =
 // Transport helpers
 // ----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
+// Content-directed messages (background -> a specific tab's content scripts)
+// ----------------------------------------------------------------------------
+
+export type ContentMessage =
+  | { kind: 'content/setActive'; active: boolean }
+  | { kind: 'content/annotate'; on: boolean };
+
+const CONTENT_MARKER = '__sr_content__';
+
+/** Send a content-directed message to a specific tab (all frames). */
+export async function sendToTab(
+  tabId: number,
+  msg: ContentMessage,
+): Promise<void> {
+  try {
+    await chrome.tabs.sendMessage(tabId, { ...msg, [CONTENT_MARKER]: true });
+  } catch {
+    /* no content script in that tab yet — fine */
+  }
+}
+
+/** Subscribe to content-directed messages (content-script side). */
+export function onContentMessage(
+  cb: (msg: ContentMessage) => void,
+): () => void {
+  const listener = (msg: unknown) => {
+    if (msg && (msg as Record<string, unknown>)[CONTENT_MARKER]) {
+      cb(msg as ContentMessage);
+    }
+  };
+  chrome.runtime.onMessage.addListener(listener);
+  return () => chrome.runtime.onMessage.removeListener(listener);
+}
+
 const BROADCAST_MARKER = '__sr_broadcast__';
 
 /** Send a request to the background and await the typed response. */
@@ -150,7 +190,7 @@ export function onMessage(
   ) => Promise<unknown> | unknown,
 ): void {
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg && msg[BROADCAST_MARKER]) return false; // ignore broadcasts
+    if (msg && (msg[BROADCAST_MARKER] || msg[CONTENT_MARKER])) return false; // not a request
     Promise.resolve(handler(msg as RequestMessage, sender))
       .then((res) => sendResponse(res))
       .catch((err) =>

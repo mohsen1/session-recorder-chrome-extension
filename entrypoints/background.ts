@@ -1,6 +1,1300 @@
+/**
+ * Background service worker — the session orchestrator.
+ *
+ * This is the central integration point of the extension: it owns the session
+ * state machine, wires every capture source (debugger / network / console /
+ * screenshots / multi-tab) into a single `recordEvent` funnel, persists through
+ * the storage layer, drives audio + transcription, and answers every typed
+ * request from the side panel, options page, content scripts, and offscreen doc.
+ *
+ * Every captured event — from any source — flows through `recordEvent`, the one
+ * place that stamps `t`, importance, and `protected`, updates counts, feeds the
+ * live ticker, and lets the screenshot scheduler react. Nothing bypasses it.
+ */
+
 import { defineBackground } from 'wxt/sandbox';
 
-// Placeholder — replaced by the full session orchestrator during the build.
+import {
+  broadcast,
+  onMessage,
+  sendToTab,
+  type AppState,
+  type RequestMessage,
+} from '@/lib/messaging';
+import type {
+  AnnotationPayload,
+  AnnotationShape,
+  Asset,
+  AssetKind,
+  CaptureSettings,
+  EventType,
+  FilePayload,
+  RawEvent,
+  ScreenshotPayload,
+  Session,
+  SessionEvent,
+  TabInfo,
+  VoiceSegmentPayload,
+} from '@/lib/session/types';
+import { PROTECTED_TYPES, scoreEvent } from '@/lib/session/events';
+import {
+  makeDefaultSettings,
+  STORAGE_KEYS,
+} from '@/lib/session/settings';
+import {
+  appendEvents,
+  createSession,
+  deleteSession,
+  EventWriter,
+  getAsset,
+  getAssetsMeta,
+  getEvents,
+  getSession,
+  listSessions,
+  putAsset,
+  storageEstimate,
+  updateSession,
+} from '@/lib/storage';
+import { DebuggerManager } from '@/lib/capture/debugger';
+import { NetworkCapturer } from '@/lib/capture/network';
+import { ConsoleCapturer } from '@/lib/capture/console';
+import { ScreenshotScheduler } from '@/lib/capture/screenshots';
+import { MultiTabTracker } from '@/lib/capture/multitab';
+import { newId } from '@/lib/util/ids';
+import { transcribe } from '@/lib/transcription';
+import type { TranscriptionConfig } from '@/lib/transcription/provider';
+import { estimateForLevels } from '@/lib/export/bundle';
+
+// ----------------------------------------------------------------------------
+// Constants
+// ----------------------------------------------------------------------------
+
+const HEARTBEAT_ALARM = 'sr-heartbeat';
+const OFFSCREEN_PATH = 'offscreen.html';
+const MIC_PERMISSION_PATH = 'mic-permission.html';
+
+/** Event types still accepted while paused — the user's explicit signals. */
+const ALLOWED_WHILE_PAUSED: ReadonlySet<EventType> = new Set<EventType>([
+  'marker',
+  'note',
+  'session-note',
+]);
+
+/** Console methods routed to the console capturer (everything else is Network.*). */
+const CONSOLE_METHODS = new Set<string>([
+  'Runtime.consoleAPICalled',
+  'Runtime.exceptionThrown',
+  'Log.entryAdded',
+]);
+
+// ----------------------------------------------------------------------------
+// Small pure helpers (module scope)
+// ----------------------------------------------------------------------------
+
+function errMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  const m = (e as { message?: unknown })?.message;
+  return typeof m === 'string' ? m : String(e);
+}
+
+/** Decode a base64 (no data: prefix) string to bytes, in a service worker. */
+function base64ToBytes(base64: string): Uint8Array {
+  const bin = atob(base64);
+  const len = bin.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i += 1) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+/** Convert a `data:` URL to a Blob. `fetch` handles data URLs in workers. */
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
+// ----------------------------------------------------------------------------
+// Orchestrator
+// ----------------------------------------------------------------------------
+
+class Orchestrator {
+  // --- session state ---
+  private current: Session | null = null;
+  private sessionStartEpoch = 0;
+  private paused = false;
+  private micOn = false;
+  private annotating = false;
+
+  private writer: EventWriter | null = null;
+  /** Last ~30 materialized events for the live ticker. */
+  private recent: SessionEvent[] = [];
+
+  /** Most recently activated session tab, for resolving "the active tab". */
+  private lastActiveSessionTab: number | undefined;
+  /** assetId of the last stored annotation-triggered screenshot. */
+  private lastAnnotationShot: string | undefined;
+  /** Set only on the last error, surfaced in broadcast state. */
+  private lastError: string | undefined;
+
+  // --- navigation listeners (bound refs so we can unregister) ---
+  private navRegistered = false;
+
+  // --- transcription queue ---
+  private readonly transQueue: { sessionId: string; event: SessionEvent }[] = [];
+  private transRunning = false;
+  private transDone = 0;
+  private transTotal = 0;
+
+  // --- capture modules ---
+  private readonly dbg: DebuggerManager;
+  private readonly network: NetworkCapturer;
+  private readonly console: ConsoleCapturer;
+  private readonly screenshots: ScreenshotScheduler;
+  private readonly multitab: MultiTabTracker;
+
+  constructor() {
+    this.dbg = new DebuggerManager();
+
+    this.network = new NetworkCapturer({
+      send: (tabId, method, params) => this.dbg.send(tabId, method, params),
+      getSettings: () => this.activeSettings(),
+      emit: (raw) => this.recordEvent(raw),
+      storeBodyAsset: this.storeBodyAsset,
+      sessionStart: () => this.sessionStartEpoch,
+    });
+
+    this.console = new ConsoleCapturer((raw) => this.recordEvent(raw));
+
+    this.screenshots = new ScreenshotScheduler({
+      captureScreenshot: (tabId, quality) =>
+        this.dbg.captureScreenshot(tabId, quality),
+      getSettings: () => this.activeSettings(),
+      emit: (raw) => this.recordEvent(raw),
+      storeScreenshot: this.storeScreenshot,
+    });
+
+    this.multitab = new MultiTabTracker({
+      isSessionTab: (tabId) => this.isSessionTab(tabId),
+      adopt: (tabId, openerTabId) => this.adopt(tabId, openerTabId),
+      onActivated: (tabId) => this.onTabActivated(tabId),
+      onClosed: (tabId) => this.onTabClosed(tabId),
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // Boot — register the always-on chrome listeners exactly once.
+  // --------------------------------------------------------------------------
+
+  init(): void {
+    // CDP fan-out: one shared listener in DebuggerManager, routed here.
+    this.dbg.onEvent((tabId, method, params) => {
+      if (method.startsWith('Network.')) {
+        this.network.handle(tabId, method, params);
+      } else if (CONSOLE_METHODS.has(method)) {
+        this.console.handle(tabId, method, params);
+      }
+    });
+    this.dbg.onDetach((tabId, reason) => this.onDebuggerDetach(tabId, reason));
+
+    // Typed request/response messaging.
+    onMessage((msg, sender) => this.handleMessage(msg, sender));
+
+    // Keyboard commands.
+    chrome.commands.onCommand.addListener((command) => {
+      void this.onCommand(command);
+    });
+
+    // Heartbeat: flush the event buffer + persist counts while recording.
+    chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name !== HEARTBEAT_ALARM) return;
+      void this.writer?.flush().catch(() => {});
+      void this.persistSession();
+    });
+
+    // Toolbar click opens the side panel for that tab.
+    chrome.action.onClicked.addListener((tab) => {
+      if (tab.id === undefined) return;
+      void chrome.sidePanel.open({ tabId: tab.id }).catch(() => {});
+    });
+
+    // Service-worker lifecycle: recover a live session.
+    chrome.runtime.onStartup.addListener(() => void this.rehydrate());
+    chrome.runtime.onInstalled.addListener(() => void this.rehydrate());
+
+    // Also attempt recovery on plain SW wake (no onStartup fires then).
+    void this.rehydrate();
+  }
+
+  // --------------------------------------------------------------------------
+  // The one event funnel. Every capture source ends up here.
+  // --------------------------------------------------------------------------
+
+  private recordEvent(raw: RawEvent): SessionEvent | undefined {
+    const session = this.current;
+    if (!session) return undefined;
+
+    const type = raw.type;
+    // While paused, drop capture events but keep the user's explicit signals.
+    if (this.paused && !ALLOWED_WHILE_PAUSED.has(type)) return undefined;
+
+    const at = raw.at ?? Date.now();
+    const event = {
+      id: newId('evt'),
+      sessionId: session.id,
+      t: at - this.sessionStartEpoch,
+      tabId: raw.tabId,
+      type,
+      payload: raw.payload,
+      importance: scoreEvent(raw),
+      protected: PROTECTED_TYPES.has(type),
+    } as SessionEvent;
+
+    // Persist (batched) + keep the summary counts current.
+    this.writer?.add(event);
+    session.counts[type] = (session.counts[type] ?? 0) + 1;
+
+    // Remember an annotation screenshot's asset so annotation/exit can link it.
+    if (type === 'screenshot') {
+      const p = event.payload as ScreenshotPayload;
+      if (p.trigger === 'annotation') this.lastAnnotationShot = p.assetId;
+    }
+
+    // Live ticker.
+    this.pushRecent(event);
+    broadcast({ kind: 'event/tick', event, counts: session.counts });
+
+    // Let the screenshot policy react to the just-recorded event.
+    this.screenshots.onEvent(event);
+
+    return event;
+  }
+
+  private pushRecent(event: SessionEvent): void {
+    this.recent.push(event);
+    if (this.recent.length > 30) this.recent = this.recent.slice(-30);
+  }
+
+  private updateRecent(event: SessionEvent): void {
+    const idx = this.recent.findIndex((e) => e.id === event.id);
+    if (idx >= 0) this.recent[idx] = event;
+  }
+
+  // --------------------------------------------------------------------------
+  // Lifecycle: start / adopt / stop / pause / resume
+  // --------------------------------------------------------------------------
+
+  private async start(
+    tabId: number,
+    settingsOverride?: Partial<CaptureSettings>,
+  ): Promise<{ ok: boolean; session?: Session; error?: string }> {
+    if (this.current) {
+      return { ok: false, error: 'A session is already recording.' };
+    }
+
+    const defaults = await this.loadDefaultSettings();
+    const settings: CaptureSettings = {
+      ...makeDefaultSettings(),
+      ...defaults,
+      ...(settingsOverride ?? {}),
+    };
+
+    let tab: chrome.tabs.Tab;
+    try {
+      tab = await chrome.tabs.get(tabId);
+    } catch (e) {
+      return { ok: false, error: `Cannot access tab ${tabId}: ${errMessage(e)}` };
+    }
+
+    const now = Date.now();
+    const primary: TabInfo = {
+      tabId,
+      url: tab.url ?? '',
+      title: tab.title ?? '',
+      role: 'primary',
+      attached: false,
+      attachedAt: now,
+    };
+    const session: Session = {
+      id: newId('ses'),
+      name: `Session ${new Date(now).toLocaleDateString()}`,
+      startedAt: now,
+      initialUrl: tab.url ?? '',
+      tabs: [primary],
+      settings,
+      status: 'recording',
+      counts: {},
+      assetBytes: 0,
+    };
+
+    // Prime in-memory state before capture can fire.
+    this.current = session;
+    this.sessionStartEpoch = now;
+    this.paused = false;
+    this.micOn = false;
+    this.annotating = false;
+    this.recent = [];
+    this.lastActiveSessionTab = tabId;
+    this.lastAnnotationShot = undefined;
+    this.lastError = undefined;
+    this.writer = new EventWriter();
+    this.network.reset();
+    this.console.reset();
+    this.screenshots.reset();
+
+    await createSession(session);
+
+    // Attach the debugger; a failure here aborts the whole start cleanly.
+    try {
+      await this.dbg.attach(tabId);
+    } catch (e) {
+      const error = errMessage(e);
+      session.status = 'idle';
+      this.lastError = error;
+      this.broadcastState();
+      // Never actually recorded — drop the phantom session record.
+      this.current = null;
+      this.writer?.dispose();
+      this.writer = null;
+      await deleteSession(session.id).catch(() => {});
+      return { ok: false, error };
+    }
+
+    primary.attached = true;
+    primary.attachedAt = Date.now();
+
+    this.multitab.start();
+    this.registerNavListeners();
+    this.startHeartbeat();
+
+    await sendToTab(tabId, { kind: 'content/setActive', active: true });
+    await this.persistSession();
+    this.broadcastState();
+
+    return { ok: true, session };
+  }
+
+  /** Follow the user into a tab the app opened. Errors are swallowed w/ a note. */
+  private async adopt(tabId: number, openerTabId?: number): Promise<void> {
+    const session = this.current;
+    if (!session) return;
+    if (this.isSessionTab(tabId)) return;
+
+    try {
+      await this.dbg.attach(tabId);
+
+      let tab: chrome.tabs.Tab | undefined;
+      try {
+        tab = await chrome.tabs.get(tabId);
+      } catch {
+        tab = undefined;
+      }
+
+      const now = Date.now();
+      const info: TabInfo = {
+        tabId,
+        url: tab?.url ?? '',
+        title: tab?.title ?? '',
+        openerTabId,
+        role: 'adopted',
+        attached: true,
+        attachedAt: now,
+      };
+      session.tabs.push(info);
+
+      await sendToTab(tabId, { kind: 'content/setActive', active: true });
+      this.recordEvent({
+        type: 'tab-opened',
+        tabId,
+        payload: { url: info.url, title: info.title, openerTabId },
+      });
+      await this.persistSession();
+      this.broadcastState();
+    } catch (e) {
+      this.recordEvent({
+        type: 'session-note',
+        tabId,
+        payload: { kind: 'warning', text: `Failed to adopt tab ${tabId}: ${errMessage(e)}` },
+      });
+    }
+  }
+
+  private async stop(): Promise<{ ok: boolean }> {
+    const session = this.current;
+    if (!session) return { ok: false };
+
+    session.status = 'stopping';
+    this.broadcastState();
+
+    if (this.micOn) await this.setMic(false).catch(() => {});
+
+    await this.writer?.flush().catch(() => {});
+    this.writer?.dispose();
+
+    for (const t of this.dbg.attachedTabs()) {
+      await this.dbg.detach(t).catch(() => {});
+    }
+    this.multitab.stop();
+    this.unregisterNavListeners();
+    this.stopHeartbeat();
+
+    for (const t of session.tabs) {
+      await sendToTab(t.tabId, { kind: 'content/setActive', active: false });
+      t.attached = false;
+    }
+
+    session.endedAt = Date.now();
+    session.status = 'stopped';
+    await updateSession(session);
+
+    this.current = null;
+    this.writer = null;
+    this.paused = false;
+    this.micOn = false;
+    this.annotating = false;
+    this.lastError = undefined;
+    this.broadcastState();
+
+    // Transcribe any voice segments still missing a transcript, in the background.
+    void this.transcribePending(session.id);
+
+    return { ok: true };
+  }
+
+  private async pause(): Promise<{ ok: boolean }> {
+    const session = this.current;
+    if (!session) return { ok: false };
+    this.paused = true;
+    session.status = 'paused';
+    if (this.micOn) this.sendToOffscreen({ kind: 'audio/pause' });
+    await this.persistSession();
+    this.broadcastState();
+    return { ok: true };
+  }
+
+  private async resume(): Promise<{ ok: boolean }> {
+    const session = this.current;
+    if (!session) return { ok: false };
+    this.paused = false;
+    session.status = 'recording';
+    if (this.micOn) this.sendToOffscreen({ kind: 'audio/resume' });
+    await this.persistSession();
+    this.broadcastState();
+    return { ok: true };
+  }
+
+  // --------------------------------------------------------------------------
+  // CDP detach + tab lifecycle
+  // --------------------------------------------------------------------------
+
+  private onDebuggerDetach(tabId: number, reason: string): void {
+    const session = this.current;
+    if (!session) return;
+
+    const info = session.tabs.find((t) => t.tabId === tabId);
+    if (info) {
+      info.attached = false;
+      info.detachedAt = Date.now();
+    }
+    this.recordEvent({
+      type: 'session-note',
+      tabId,
+      payload: { kind: 'detach', text: `Debugger detached from tab ${tabId} (${reason}).` },
+    });
+
+    // Keep the session alive even if nothing is attached — just note it.
+    if (!session.tabs.some((t) => t.attached)) {
+      this.recordEvent({
+        type: 'session-note',
+        payload: {
+          kind: 'warning',
+          text: 'All tabs are detached; recording continues but capture is paused until re-attach.',
+        },
+      });
+    }
+    void this.persistSession();
+    this.broadcastState();
+  }
+
+  private onTabActivated(tabId: number): void {
+    const session = this.current;
+    if (!session) return;
+    if (!this.isSessionTab(tabId)) return;
+
+    const from = this.lastActiveSessionTab;
+    this.lastActiveSessionTab = tabId;
+
+    // Only record a switch when moving between two session tabs.
+    if (from !== undefined && from !== tabId && this.isSessionTab(from)) {
+      const info = session.tabs.find((t) => t.tabId === tabId);
+      this.recordEvent({
+        type: 'tab-switch',
+        tabId,
+        payload: {
+          fromTabId: from,
+          toTabId: tabId,
+          toUrl: info?.url,
+          toTitle: info?.title,
+        },
+      });
+    }
+  }
+
+  private onTabClosed(tabId: number): void {
+    const session = this.current;
+    if (!session) return;
+    const info = session.tabs.find((t) => t.tabId === tabId);
+    if (!info) return;
+
+    info.attached = false;
+    info.detachedAt = Date.now();
+    this.recordEvent({
+      type: 'tab-closed',
+      tabId,
+      payload: { url: info.url, title: info.title },
+    });
+    void this.persistSession();
+    this.broadcastState();
+  }
+
+  // --------------------------------------------------------------------------
+  // Navigation (chrome.webNavigation) — nav + spa-route capture
+  // --------------------------------------------------------------------------
+
+  private readonly onNavCommitted = (
+    details: chrome.webNavigation.WebNavigationTransitionCallbackDetails,
+  ): void => {
+    if (details.frameId !== 0) return;
+    if (!this.isSessionTab(details.tabId)) return;
+    this.recordEvent({
+      type: 'nav',
+      tabId: details.tabId,
+      payload: { url: details.url, transitionType: details.transitionType },
+    });
+  };
+
+  private readonly onHistoryStateUpdated = (
+    details: chrome.webNavigation.WebNavigationTransitionCallbackDetails,
+  ): void => {
+    if (details.frameId !== 0) return;
+    if (!this.isSessionTab(details.tabId)) return;
+    this.recordEvent({
+      type: 'spa-route',
+      tabId: details.tabId,
+      payload: { url: details.url, method: 'pushState' },
+    });
+  };
+
+  private readonly onReferenceFragmentUpdated = (
+    details: chrome.webNavigation.WebNavigationTransitionCallbackDetails,
+  ): void => {
+    if (details.frameId !== 0) return;
+    if (!this.isSessionTab(details.tabId)) return;
+    this.recordEvent({
+      type: 'spa-route',
+      tabId: details.tabId,
+      payload: { url: details.url, method: 'replaceState' },
+    });
+  };
+
+  private registerNavListeners(): void {
+    if (this.navRegistered) return;
+    this.navRegistered = true;
+    chrome.webNavigation.onCommitted.addListener(this.onNavCommitted);
+    chrome.webNavigation.onHistoryStateUpdated.addListener(this.onHistoryStateUpdated);
+    chrome.webNavigation.onReferenceFragmentUpdated.addListener(
+      this.onReferenceFragmentUpdated,
+    );
+  }
+
+  private unregisterNavListeners(): void {
+    if (!this.navRegistered) return;
+    this.navRegistered = false;
+    chrome.webNavigation.onCommitted.removeListener(this.onNavCommitted);
+    chrome.webNavigation.onHistoryStateUpdated.removeListener(this.onHistoryStateUpdated);
+    chrome.webNavigation.onReferenceFragmentUpdated.removeListener(
+      this.onReferenceFragmentUpdated,
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Message dispatch
+  // --------------------------------------------------------------------------
+
+  private async handleMessage(
+    msg: RequestMessage,
+    sender: chrome.runtime.MessageSender,
+  ): Promise<unknown> {
+    switch (msg.kind) {
+      // --- session lifecycle ---
+      case 'session/start':
+        return this.start(msg.tabId, msg.settings);
+      case 'session/stop':
+        return this.stop();
+      case 'session/pause':
+        return this.pause();
+      case 'session/resume':
+        return this.resume();
+      case 'session/getState':
+        return this.buildState();
+
+      // --- session data ---
+      case 'session/list':
+        return { sessions: await listSessions() };
+      case 'session/get':
+        return { session: (await getSession(msg.sessionId)) ?? null };
+      case 'session/delete': {
+        if (this.current?.id === msg.sessionId) await this.stop();
+        await deleteSession(msg.sessionId);
+        return { ok: true };
+      }
+      case 'session/rename': {
+        const s = await getSession(msg.sessionId);
+        if (s) {
+          s.name = msg.name;
+          await updateSession(s);
+          const cur = this.current;
+          if (cur && cur.id === s.id) {
+            cur.name = msg.name;
+            this.broadcastState();
+          }
+        }
+        return { ok: true };
+      }
+
+      // --- capture (content -> bg) ---
+      case 'capture/event': {
+        const raw = { ...msg.event, tabId: msg.event.tabId ?? sender.tab?.id };
+        this.recordEvent(raw);
+        return { ok: true };
+      }
+      case 'capture/fileBlob':
+        return this.handleFileBlob(msg.event, msg.dataUrl, sender);
+
+      // --- content handshake / annotation ---
+      case 'content/hello': {
+        const tabId = sender.tab?.id;
+        const active =
+          !!this.current && tabId !== undefined && this.isSessionTab(tabId);
+        return { active, annotating: this.annotating };
+      }
+      case 'annotation/exit':
+        return this.handleAnnotationExit(msg.shapes, msg.viewport, sender);
+
+      // --- manual capture actions ---
+      case 'screenshot/capture': {
+        const tabId = await this.activeSessionTabId();
+        if (tabId >= 0) await this.screenshots.capture(tabId, 'manual');
+        return { ok: true };
+      }
+      case 'marker/add':
+        this.addMarker(msg.name);
+        return { ok: true };
+      case 'note/add':
+        this.recordEvent({ type: 'note', payload: { text: msg.text } });
+        return { ok: true };
+      case 'annotation/toggle': {
+        const annotating = await this.toggleAnnotation();
+        return { ok: true, annotating };
+      }
+      case 'file/attach':
+        return this.handleFileAttach(msg);
+
+      // --- voice ---
+      case 'mic/toggle': {
+        try {
+          await this.setMic(msg.on);
+          return { ok: true, micOn: this.micOn };
+        } catch (e) {
+          return { ok: false, micOn: this.micOn, error: errMessage(e) };
+        }
+      }
+      case 'transcription/retry': {
+        const events = await getEvents(msg.sessionId);
+        const ev = events.find(
+          (e) => e.id === msg.eventId && e.type === 'voice-segment',
+        );
+        if (ev) this.enqueueTranscription(ev, msg.sessionId);
+        return { ok: true };
+      }
+
+      // --- audio (offscreen -> bg) ---
+      case 'audio/segment':
+        return this.handleAudioSegment(msg);
+      case 'audio/level':
+        broadcast({ kind: 'mic/level', level: msg.level });
+        return { ok: true };
+
+      // --- audio control echoes (bg -> offscreen); harmless no-op here ---
+      case 'audio/start':
+      case 'audio/pause':
+      case 'audio/resume':
+      case 'audio/stop':
+        return { ok: true };
+
+      // --- data reads ---
+      case 'events/get':
+        return { events: await getEvents(msg.sessionId) };
+      case 'assets/getMeta':
+        return { assets: await getAssetsMeta(msg.sessionId) };
+
+      // --- export / storage ---
+      case 'export/estimate': {
+        const session = await getSession(msg.sessionId);
+        if (!session) return { estimates: [] };
+        const events = await getEvents(msg.sessionId);
+        const assets = await getAssetsMeta(msg.sessionId);
+        return { estimates: estimateForLevels(events, assets, session) };
+      }
+      case 'storage/estimate':
+        return storageEstimate();
+
+      default:
+        return { ok: false, error: `Unhandled message: ${(msg as { kind: string }).kind}` };
+    }
+  }
+
+  private async handleFileBlob(
+    event: RawEvent,
+    dataUrl: string,
+    sender: chrome.runtime.MessageSender,
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (!this.current) return { ok: false, error: 'No active session.' };
+    const p = event.payload as FilePayload;
+    const blob = await dataUrlToBlob(dataUrl);
+    const asset = await this.putAssetBlob('file', blob, p.mime);
+    this.recordEvent({
+      type: 'file-captured',
+      tabId: event.tabId ?? sender.tab?.id,
+      payload: { ...p, assetId: asset.id, size: asset.size },
+    });
+    return { ok: true };
+  }
+
+  private async handleFileAttach(msg: {
+    fileName: string;
+    mime: string;
+    dataUrl: string;
+    note?: string;
+  }): Promise<{ ok: boolean; error?: string }> {
+    if (!this.current) return { ok: false, error: 'No active session.' };
+    const blob = await dataUrlToBlob(msg.dataUrl);
+    const asset = await this.putAssetBlob('file', blob, msg.mime);
+    this.recordEvent({
+      type: 'file-attached',
+      payload: {
+        assetId: asset.id,
+        fileName: msg.fileName,
+        mime: msg.mime,
+        size: asset.size,
+        note: msg.note,
+      },
+    });
+    return { ok: true };
+  }
+
+  private async handleAnnotationExit(
+    shapes: unknown,
+    viewport: { w: number; h: number },
+    sender: chrome.runtime.MessageSender,
+  ): Promise<{ ok: boolean }> {
+    this.annotating = false;
+    broadcast({ kind: 'annotation/state', annotating: false });
+
+    const senderTab = sender.tab?.id;
+    const tabId =
+      senderTab !== undefined && this.isSessionTab(senderTab)
+        ? senderTab
+        : await this.activeSessionTabId();
+
+    // Grab the annotated view; capture() emits a screenshot through recordEvent,
+    // which records its assetId in `lastAnnotationShot`.
+    this.lastAnnotationShot = undefined;
+    if (tabId >= 0) await this.screenshots.capture(tabId, 'annotation');
+
+    const shapeList: AnnotationShape[] = Array.isArray(shapes)
+      ? (shapes as AnnotationShape[])
+      : [];
+    const payload: AnnotationPayload = {
+      shapes: shapeList,
+      screenshotAssetId: this.lastAnnotationShot,
+      viewport,
+    };
+    this.recordEvent({
+      type: 'annotation',
+      tabId: tabId >= 0 ? tabId : undefined,
+      payload,
+    });
+    this.broadcastState();
+    return { ok: true };
+  }
+
+  private async handleAudioSegment(msg: {
+    sessionId: string;
+    tStart: number;
+    tEnd: number;
+    dataUrl: string;
+    mime: string;
+  }): Promise<{ ok: boolean }> {
+    const session = this.current;
+    if (!session) return { ok: false };
+    const blob = await dataUrlToBlob(msg.dataUrl);
+    const asset = await this.putAssetBlob('audio', blob, msg.mime);
+    const ev = this.recordEvent({
+      type: 'voice-segment',
+      payload: {
+        assetId: asset.id,
+        tStart: msg.tStart,
+        tEnd: msg.tEnd,
+        transcript: null,
+      },
+    });
+    if (ev) this.enqueueTranscription(ev, session.id);
+    return { ok: true };
+  }
+
+  // --------------------------------------------------------------------------
+  // Commands (keyboard shortcuts)
+  // --------------------------------------------------------------------------
+
+  private async onCommand(command: string): Promise<void> {
+    if (!this.current) return;
+    if (command === 'toggle-annotation') {
+      await this.toggleAnnotation();
+    } else if (command === 'add-marker') {
+      this.addMarker();
+    }
+  }
+
+  private addMarker(name?: string): void {
+    const count = this.current?.counts.marker ?? 0;
+    this.recordEvent({
+      type: 'marker',
+      payload: { name: name ?? `Marker ${count + 1}` },
+    });
+  }
+
+  private async toggleAnnotation(): Promise<boolean> {
+    this.annotating = !this.annotating;
+    const tabId = await this.activeSessionTabId();
+    if (tabId >= 0) {
+      await sendToTab(tabId, { kind: 'content/annotate', on: this.annotating });
+    }
+    broadcast({ kind: 'annotation/state', annotating: this.annotating });
+    this.broadcastState();
+    return this.annotating;
+  }
+
+  // --------------------------------------------------------------------------
+  // Audio / offscreen
+  // --------------------------------------------------------------------------
+
+  private async setMic(on: boolean): Promise<void> {
+    if (on) {
+      const session = this.current;
+      if (!session) throw new Error('No active session to narrate.');
+      if (!(await this.isMicGranted())) {
+        await this.requestMicPermission();
+      }
+      await this.ensureOffscreen();
+      this.sendToOffscreen({
+        kind: 'audio/start',
+        sessionId: session.id,
+        startedAt: this.sessionStartEpoch,
+      });
+      this.micOn = true;
+    } else {
+      this.sendToOffscreen({ kind: 'audio/stop' });
+      this.micOn = false;
+      await this.closeOffscreen().catch(() => {});
+    }
+    this.broadcastState();
+  }
+
+  private sendToOffscreen(
+    msg: Extract<
+      RequestMessage,
+      { kind: 'audio/start' | 'audio/pause' | 'audio/resume' | 'audio/stop' }
+    >,
+  ): void {
+    // Reaches the offscreen document's onMessage listener; the background's own
+    // listener treats these as no-ops.
+    void chrome.runtime.sendMessage(msg).catch(() => {});
+  }
+
+  private async isMicGranted(): Promise<boolean> {
+    try {
+      const got = await chrome.storage.local.get(STORAGE_KEYS.micGranted);
+      return got[STORAGE_KEYS.micGranted] === true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Open the visible permission page and wait until the grant is recorded. */
+  private async requestMicPermission(): Promise<void> {
+    const url = chrome.runtime.getURL(MIC_PERMISSION_PATH);
+    const tab = await chrome.tabs.create({ url });
+    const openedTabId = tab.id;
+
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = (): void => {
+        clearTimeout(timer);
+        chrome.storage.onChanged.removeListener(onChanged);
+        chrome.tabs.onRemoved.removeListener(onRemoved);
+      };
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('Timed out waiting for microphone permission.'));
+      }, 120_000);
+      const onChanged = (
+        changes: { [key: string]: chrome.storage.StorageChange },
+        area: string,
+      ): void => {
+        if (area === 'local' && changes[STORAGE_KEYS.micGranted]?.newValue === true) {
+          cleanup();
+          resolve();
+        }
+      };
+      const onRemoved = (closedTabId: number): void => {
+        if (closedTabId !== openedTabId) return;
+        void this.isMicGranted().then((granted) => {
+          cleanup();
+          if (granted) resolve();
+          else reject(new Error('Microphone permission was not granted.'));
+        });
+      };
+      chrome.storage.onChanged.addListener(onChanged);
+      chrome.tabs.onRemoved.addListener(onRemoved);
+    });
+  }
+
+  private async ensureOffscreen(): Promise<void> {
+    if (await this.hasOffscreen()) return;
+    await chrome.offscreen.createDocument({
+      url: chrome.runtime.getURL(OFFSCREEN_PATH),
+      reasons: [chrome.offscreen.Reason.USER_MEDIA],
+      justification: 'Record microphone narration during a session.',
+    });
+  }
+
+  private async closeOffscreen(): Promise<void> {
+    if (await this.hasOffscreen()) await chrome.offscreen.closeDocument();
+  }
+
+  private async hasOffscreen(): Promise<boolean> {
+    try {
+      const contexts = await chrome.runtime.getContexts({
+        contextTypes: [chrome.runtime.ContextType.OFFSCREEN_DOCUMENT],
+      });
+      return contexts.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Transcription queue (sequential)
+  // --------------------------------------------------------------------------
+
+  private enqueueTranscription(event: SessionEvent, sessionId: string): void {
+    this.transTotal += 1;
+    this.transQueue.push({ sessionId, event });
+    void this.drainTranscription();
+  }
+
+  private async drainTranscription(): Promise<void> {
+    if (this.transRunning) return;
+    this.transRunning = true;
+    try {
+      for (;;) {
+        const job = this.transQueue.shift();
+        if (!job) break;
+        await this.runTranscription(job.sessionId, job.event);
+        this.transDone += 1;
+        broadcast({
+          kind: 'transcription/progress',
+          sessionId: job.sessionId,
+          done: this.transDone,
+          total: this.transTotal,
+        });
+      }
+    } finally {
+      this.transRunning = false;
+      // Reset counters once the queue is fully drained.
+      this.transDone = 0;
+      this.transTotal = 0;
+    }
+  }
+
+  private async runTranscription(
+    sessionId: string,
+    event: SessionEvent,
+  ): Promise<void> {
+    const payload = event.payload as VoiceSegmentPayload;
+    // Make sure the base event is durable before we overwrite it (put by id).
+    await this.writer?.flush().catch(() => {});
+
+    try {
+      const config = await this.loadTranscriptionConfig();
+      if (!config) return; // no provider configured — leave transcript null
+
+      const asset = await getAsset(payload.assetId);
+      if (!asset) return;
+
+      const result = await transcribe(asset.blob, config);
+      const updated = {
+        ...event,
+        payload: {
+          ...payload,
+          transcript: result.text,
+          words: result.words,
+          provider: config.provider,
+          transcriptionError: undefined,
+        },
+      } as SessionEvent;
+      await appendEvents([updated]);
+      this.updateRecent(updated);
+    } catch (e) {
+      const updated = {
+        ...event,
+        payload: { ...payload, transcriptionError: errMessage(e) },
+      } as SessionEvent;
+      await appendEvents([updated]).catch(() => {});
+      this.updateRecent(updated);
+    }
+  }
+
+  private async transcribePending(sessionId: string): Promise<void> {
+    try {
+      const events = await getEvents(sessionId);
+      for (const e of events) {
+        if (e.type !== 'voice-segment') continue;
+        const p = e.payload as VoiceSegmentPayload;
+        if (p.transcript === null || p.transcript === undefined) {
+          this.enqueueTranscription(e, sessionId);
+        }
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  private async loadTranscriptionConfig(): Promise<TranscriptionConfig | null> {
+    try {
+      const got = await chrome.storage.local.get(STORAGE_KEYS.transcription);
+      const cfg = got[STORAGE_KEYS.transcription] as
+        | Partial<TranscriptionConfig>
+        | undefined;
+      if (!cfg || !cfg.provider || !cfg.apiKey) return null;
+      return cfg as TranscriptionConfig;
+    } catch {
+      return null;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Asset storage helpers
+  // --------------------------------------------------------------------------
+
+  private readonly storeScreenshot = async (
+    jpegBase64: string,
+  ): Promise<{ assetId: string; size: number }> => {
+    const bytes = base64ToBytes(jpegBase64);
+    const blob = new Blob([bytes], { type: 'image/jpeg' });
+    const asset = await this.putAssetBlob('screenshot', blob, 'image/jpeg');
+    return { assetId: asset.id, size: asset.size };
+  };
+
+  private readonly storeBodyAsset = async (
+    text: string,
+    mime: string,
+    base64: boolean,
+  ): Promise<string> => {
+    const type = mime || 'application/octet-stream';
+    const blob = base64
+      ? new Blob([base64ToBytes(text)], { type })
+      : new Blob([text], { type });
+    const asset = await this.putAssetBlob('net-body', blob, type);
+    return asset.id;
+  };
+
+  private async putAssetBlob(
+    kind: AssetKind,
+    blob: Blob,
+    mime?: string,
+  ): Promise<Asset> {
+    const asset: Asset = {
+      id: newId('ast'),
+      sessionId: this.current?.id ?? '',
+      kind,
+      mime: mime || blob.type || 'application/octet-stream',
+      size: blob.size,
+      blob,
+    };
+    await putAsset(asset);
+    if (this.current) this.current.assetBytes += asset.size;
+    return asset;
+  }
+
+  // --------------------------------------------------------------------------
+  // Rehydration after a service-worker restart
+  // --------------------------------------------------------------------------
+
+  private async rehydrate(): Promise<void> {
+    if (this.current) return;
+    try {
+      const sessions = await listSessions();
+      const live = sessions.find(
+        (s) => s.status === 'recording' || s.status === 'paused',
+      );
+      if (!live) return;
+
+      this.current = live;
+      this.sessionStartEpoch = live.startedAt;
+      this.paused = live.status === 'paused';
+      this.micOn = false;
+      this.annotating = false;
+      this.recent = [];
+      this.lastError = undefined;
+      this.lastAnnotationShot = undefined;
+      this.writer = new EventWriter();
+      this.network.reset();
+      this.console.reset();
+      this.screenshots.reset();
+
+      const primary =
+        live.tabs.find((t) => t.role === 'primary') ?? live.tabs[0];
+      this.lastActiveSessionTab = primary?.tabId;
+
+      // Best-effort re-attach to any surviving tab.
+      for (const t of live.tabs) {
+        try {
+          await chrome.tabs.get(t.tabId);
+          await this.dbg.attach(t.tabId);
+          t.attached = true;
+          t.attachedAt = Date.now();
+          delete t.detachedAt;
+          await sendToTab(t.tabId, { kind: 'content/setActive', active: true });
+        } catch {
+          t.attached = false;
+        }
+      }
+
+      this.multitab.start();
+      this.registerNavListeners();
+      this.startHeartbeat();
+
+      this.recordEvent({
+        type: 'session-note',
+        payload: {
+          kind: 'rehydrate',
+          text: 'Recorder restarted; a brief capture gap may have occurred.',
+        },
+      });
+      await this.persistSession();
+      this.broadcastState();
+    } catch {
+      /* nothing to recover */
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Small utilities
+  // --------------------------------------------------------------------------
+
+  private isSessionTab(tabId: number): boolean {
+    if (!this.current) return false;
+    return this.current.tabs.some((t) => t.tabId === tabId);
+  }
+
+  private activeSettings(): CaptureSettings {
+    return this.current?.settings ?? makeDefaultSettings();
+  }
+
+  /** Resolve the session tab a manual action should target. */
+  private async activeSessionTabId(): Promise<number> {
+    const session = this.current;
+    if (!session) return -1;
+
+    try {
+      const [active] = await chrome.tabs.query({
+        active: true,
+        lastFocusedWindow: true,
+      });
+      if (active?.id !== undefined && this.isSessionTab(active.id)) {
+        return active.id;
+      }
+    } catch {
+      /* fall through */
+    }
+
+    if (
+      this.lastActiveSessionTab !== undefined &&
+      this.isSessionTab(this.lastActiveSessionTab)
+    ) {
+      return this.lastActiveSessionTab;
+    }
+
+    const primary =
+      session.tabs.find((t) => t.role === 'primary') ?? session.tabs[0];
+    return primary ? primary.tabId : -1;
+  }
+
+  private async loadDefaultSettings(): Promise<Partial<CaptureSettings>> {
+    try {
+      const got = await chrome.storage.local.get(STORAGE_KEYS.defaultSettings);
+      const stored = got[STORAGE_KEYS.defaultSettings] as
+        | Partial<CaptureSettings>
+        | undefined;
+      return stored ?? {};
+    } catch {
+      return {};
+    }
+  }
+
+  private startHeartbeat(): void {
+    chrome.alarms.create(HEARTBEAT_ALARM, { periodInMinutes: 0.4 });
+  }
+
+  private stopHeartbeat(): void {
+    void chrome.alarms.clear(HEARTBEAT_ALARM);
+  }
+
+  private async persistSession(): Promise<void> {
+    if (!this.current) return;
+    try {
+      await updateSession(this.current);
+    } catch {
+      /* transient — the next heartbeat retries */
+    }
+  }
+
+  private buildState(): AppState {
+    const session = this.current;
+    return {
+      session,
+      recentEvents: [...this.recent],
+      recording:
+        !!session &&
+        (session.status === 'recording' || session.status === 'paused'),
+      paused: this.paused,
+      micOn: this.micOn,
+      annotating: this.annotating,
+      attachedTabIds: this.dbg.attachedTabs(),
+      error: this.lastError,
+    };
+  }
+
+  private broadcastState(): void {
+    broadcast({ kind: 'state/update', state: this.buildState() });
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Entry point
+// ----------------------------------------------------------------------------
+
 export default defineBackground(() => {
-  console.log('[session-recorder] background booted');
+  const orchestrator = new Orchestrator();
+  orchestrator.init();
 });

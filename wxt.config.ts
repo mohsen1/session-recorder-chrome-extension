@@ -43,20 +43,5 @@ export default defineConfig({
         description: 'Drop a marker at the current moment',
       },
     },
-    web_accessible_resources: [
-      {
-        // annotation overlay + injected assets need to be reachable from pages
-        resources: ['annotation-overlay.js', 'icon/*'],
-        matches: ['<all_urls>'],
-      },
-    ],
-  },
-  // Open the side panel when the toolbar icon is clicked.
-  hooks: {
-    'build:manifestGenerated': (_wxt, manifest) => {
-      (manifest as Record<string, unknown>).side_panel = {
-        default_path: 'sidepanel/index.html',
-      };
-    },
   },
 });

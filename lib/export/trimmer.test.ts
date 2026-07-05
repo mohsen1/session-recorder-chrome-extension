@@ -1,0 +1,174 @@
+/**
+ * Tests for the verbosity trimmer: monotonic size reduction across levels,
+ * survival of protected events at every level, and collapse of repeated
+ * requests. Built on the synthetic `SessionBuilder` fixture.
+ */
+
+import { describe, expect, it } from 'vitest';
+import { SessionBuilder } from '@/lib/fixtures/session-builder';
+import { isProtected } from '@/lib/session/events';
+import type {
+  AssetMeta,
+  SessionEvent,
+  VerbosityLevel,
+} from '@/lib/session/types';
+import {
+  applyLevel,
+  collapseRepeatedRequests,
+  type TrimContext,
+} from './trimmer';
+
+/** Rendered-size proxy: serialized length of the event stream. */
+const sizeOf = (events: SessionEvent[]): number =>
+  JSON.stringify(events).length;
+
+/** A moderate (<4KB) but valid JSON body so shape-summary can parse it. */
+function jsonBody(n: number): string {
+  return JSON.stringify({
+    items: Array.from({ length: n }, (_, i) => ({
+      id: i,
+      name: `item-${i}`,
+      value: i * 7,
+    })),
+  });
+}
+
+function buildFixture(): {
+  events: SessionEvent[];
+  ctx: TrimContext;
+} {
+  const b = new SessionBuilder();
+
+  b.nav('https://app.example.com/dashboard', 'Dashboard');
+  b.screenshot('nav');
+
+  // Rich interaction descriptors (stripped at L3).
+  b.click('Open orders');
+  b.input('search', 'widgets');
+
+  // Static assets + analytics noise → dropped at L1.
+  b.net('GET', 'https://cdn.example.com/logo.png', {
+    status: 200,
+    mime: 'image/png',
+  });
+  b.net('GET', 'https://cdn.example.com/app.css', {
+    status: 200,
+    mime: 'text/css',
+  });
+  b.net('GET', 'https://www.google-analytics.com/collect?v=1', {
+    status: 200,
+  });
+
+  // A mutating request with a JSON body → truncate/shape/drop across levels.
+  b.net('POST', 'https://api.example.com/api/orders', {
+    status: 201,
+    reqBody: jsonBody(60),
+    resBody: jsonBody(60),
+    mime: 'application/json',
+  });
+
+  // Repeated GETs on the same templated path → collapsed at L2.
+  for (const id of [1, 2, 3, 4]) {
+    b.net('GET', `https://api.example.com/api/users/${id}`, {
+      status: 200,
+      resBody: '{"ok":true}',
+      mime: 'application/json',
+    });
+  }
+
+  // Consecutive duplicate console logs → deduped at L1.
+  b.consoleLog('log', 'render tick');
+  b.consoleLog('log', 'render tick');
+  b.consoleLog('log', 'render tick');
+
+  // A run of scrolls → coalesced at L1.
+  b.scroll();
+  b.scroll();
+  b.scroll();
+  b.scroll();
+
+  // Plain interaction screenshots → dropped at L1.
+  b.screenshot('interaction');
+  b.screenshot('interaction');
+  // Kept through L2 by annotation/error triggers, dropped at L3 (manifest-only).
+  b.screenshot('annotation');
+  b.screenshot('error');
+
+  // Protected signals — must survive every level verbatim.
+  b.marker('Checkpoint');
+  b.note('remember this step');
+  b.error('Boom: something failed');
+  b.annotation([{ tool: 'rect' }]);
+  b.voice('spoken walkthrough', 1000, 4000);
+  b.file('import.csv', 2048);
+
+  const { session, events, assets } = b.build();
+  const assetsById = new Map<string, AssetMeta>(
+    assets.map((a) => {
+      const { blob: _blob, ...meta } = a;
+      return [a.id, meta];
+    }),
+  );
+  return { events, ctx: { assetsById, settings: session.settings } };
+}
+
+describe('trimmer', () => {
+  it('reduces rendered size at each higher verbosity level', () => {
+    const { events, ctx } = buildFixture();
+    const levels: VerbosityLevel[] = ['L0', 'L1', 'L2', 'L3'];
+    const sizes = levels.map((lvl) => sizeOf(applyLevel(events, lvl, ctx)));
+    const [s0, s1, s2, s3] = sizes as [number, number, number, number];
+
+    expect(s1).toBeLessThan(s0);
+    expect(s2).toBeLessThan(s1);
+    expect(s3).toBeLessThan(s2);
+  });
+
+  it('never mutates the input events', () => {
+    const { events, ctx } = buildFixture();
+    const snapshot = JSON.stringify(events);
+    for (const lvl of ['L1', 'L2', 'L3'] as VerbosityLevel[]) {
+      applyLevel(events, lvl, ctx);
+    }
+    expect(JSON.stringify(events)).toBe(snapshot);
+  });
+
+  it('keeps every protected event at all levels', () => {
+    const { events, ctx } = buildFixture();
+    const protectedIds = events.filter(isProtected).map((e) => e.id);
+    // Sanity: fixture actually contains protected events.
+    expect(protectedIds.length).toBeGreaterThanOrEqual(6);
+
+    for (const lvl of ['L0', 'L1', 'L2', 'L3'] as VerbosityLevel[]) {
+      const out = applyLevel(events, lvl, ctx);
+      const ids = new Set(out.map((e) => e.id));
+      for (const pid of protectedIds) {
+        expect(ids.has(pid)).toBe(true);
+      }
+    }
+  });
+
+  it('collapses repeated requests into a single marker event', () => {
+    const { events, ctx } = buildFixture();
+
+    const isUsersReq = (e: SessionEvent): boolean =>
+      e.type === 'net-request' && e.payload.url.includes('/api/users/');
+
+    const before = events.filter(isUsersReq).length;
+    expect(before).toBe(4);
+
+    const out = collapseRepeatedRequests()(events, ctx);
+    const after = out.filter(isUsersReq).length;
+    expect(after).toBeLessThan(before);
+
+    const collapsedMarkers = out.filter(
+      (e) => e.type === 'net-request' && e.payload.collapsed !== undefined,
+    );
+    expect(collapsedMarkers.length).toBe(1);
+    const marker = collapsedMarkers[0];
+    if (marker && marker.type === 'net-request' && marker.payload.collapsed) {
+      expect(marker.payload.collapsed.count).toBeGreaterThan(0);
+      expect(Array.isArray(marker.payload.collapsed.statuses)).toBe(true);
+    }
+  });
+});
