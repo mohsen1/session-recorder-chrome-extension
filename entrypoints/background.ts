@@ -153,6 +153,8 @@ class Orchestrator {
   private lastStopped: Session | null = null;
   /** Synchronous guard so concurrent rehydrate() calls don't double-run. */
   private rehydrating = false;
+  /** True while the mic is streaming live transcripts (vs batch segments). */
+  private micStreaming = false;
 
   // --- navigation listeners (bound refs so we can unregister) ---
   private navRegistered = false;
@@ -407,15 +409,20 @@ class Orchestrator {
     if (!session) return;
     if (this.isSessionTab(tabId)) return;
 
+    // Only follow into real web pages. chrome://, chrome-extension://, about:,
+    // devtools:, view-source: and the like can't be debugged and aren't part of
+    // the app being recorded — attaching there only produces a failed attach.
+    let tab: chrome.tabs.Tab | undefined;
+    try {
+      tab = await chrome.tabs.get(tabId);
+    } catch {
+      tab = undefined;
+    }
+    const url = tab?.url ?? tab?.pendingUrl ?? '';
+    if (!/^https?:\/\//i.test(url)) return;
+
     try {
       await this.dbg.attach(tabId);
-
-      let tab: chrome.tabs.Tab | undefined;
-      try {
-        tab = await chrome.tabs.get(tabId);
-      } catch {
-        tab = undefined;
-      }
 
       const now = Date.now();
       const info: TabInfo = {
@@ -454,6 +461,10 @@ class Orchestrator {
     this.broadcastState();
 
     if (this.micOn) await this.setMic(false).catch(() => {});
+
+    // Emit any still-open websockets (e.g. a chat socket) WITH their accumulated
+    // frames before we detach — otherwise the conversation is lost.
+    this.network.flushOpen();
 
     await this.writer?.flush().catch(() => {});
     this.writer?.dispose();
@@ -774,6 +785,13 @@ class Orchestrator {
         broadcast({ kind: 'mic/level', level: msg.level });
         return { ok: true };
 
+      // --- live streaming transcription (offscreen -> bg) ---
+      case 'transcript/final':
+        return this.handleTranscriptFinal(msg);
+      case 'transcript/interim':
+        broadcast({ kind: 'transcript/live', text: msg.text, final: false });
+        return { ok: true };
+
       // --- audio control echoes (bg -> offscreen); harmless no-op here ---
       case 'audio/start':
       case 'audio/pause':
@@ -910,6 +928,28 @@ class Orchestrator {
     if (!session) return { ok: false };
     const blob = await dataUrlToBlob(msg.dataUrl);
     const asset = await this.putAssetBlob('audio', blob, msg.mime);
+
+    if (this.micStreaming) {
+      // Streaming mode: transcripts already arrived live as their own
+      // voice-segment events. This is the full-session audio file — attach it to
+      // the first streamed segment so it lands in the export; if there were no
+      // transcripts, keep a bare audio-only segment.
+      const attached = await this.attachAudioToSegment(session.id, asset.id);
+      if (!attached) {
+        this.recordEvent({
+          type: 'voice-segment',
+          payload: {
+            assetId: asset.id,
+            tStart: msg.tStart,
+            tEnd: msg.tEnd,
+            transcript: null,
+          },
+        });
+      }
+      return { ok: true };
+    }
+
+    // Batch mode: create a voice-segment and transcribe it after the fact.
     const ev = this.recordEvent({
       type: 'voice-segment',
       payload: {
@@ -921,6 +961,51 @@ class Orchestrator {
     });
     if (ev) this.enqueueTranscription(ev, session.id);
     return { ok: true };
+  }
+
+  /** Record a live streaming transcript as a real-time voice-segment event. */
+  private handleTranscriptFinal(msg: {
+    sessionId: string;
+    tStart: number;
+    tEnd: number;
+    text: string;
+    words?: { word: string; t: number }[];
+    provider: string;
+  }): { ok: boolean } {
+    const session = this.current;
+    if (!session) return { ok: false };
+    this.recordEvent({
+      // Stamp the event at the moment the utterance BEGAN so it interleaves into
+      // the timeline next to what the user was doing/seeing as they said it.
+      at: this.sessionStartEpoch + msg.tStart,
+      type: 'voice-segment',
+      payload: {
+        tStart: msg.tStart,
+        tEnd: msg.tEnd,
+        transcript: msg.text,
+        words: msg.words,
+        streamed: true,
+        provider: msg.provider,
+      },
+    });
+    broadcast({ kind: 'transcript/live', text: msg.text, final: true });
+    return { ok: true };
+  }
+
+  /** Attach an audio asset to the first voice-segment that lacks one. */
+  private async attachAudioToSegment(
+    sessionId: string,
+    assetId: string,
+  ): Promise<boolean> {
+    await this.writer?.flush();
+    const events = await getEvents(sessionId);
+    const target = events.find(
+      (e) => e.type === 'voice-segment' && !e.payload.assetId,
+    );
+    if (!target || target.type !== 'voice-segment') return false;
+    target.payload.assetId = assetId;
+    await appendEvents([target]);
+    return true;
   }
 
   // --------------------------------------------------------------------------
@@ -967,19 +1052,23 @@ class Orchestrator {
         await this.requestMicPermission();
       }
       await this.ensureOffscreen();
-      // Await the offscreen's getUserMedia result: only claim the mic is on if
-      // recording actually started. A rejection (device in use, no device,
-      // revoked permission) leaves micOn false and surfaces the error.
+      // Hand the transcription config to the offscreen doc so it can stream live
+      // (Deepgram). Await the getUserMedia result: only claim the mic is on if
+      // recording actually started.
+      const config = await this.loadTranscriptionConfig();
       const res = await this.sendToOffscreen({
         kind: 'audio/start',
         sessionId: session.id,
         startedAt: this.sessionStartEpoch,
+        transcription: config,
       });
       if (res && res.ok) {
         this.micOn = true;
+        this.micStreaming = res.streaming === true;
         this.lastError = undefined;
       } else {
         this.micOn = false;
+        this.micStreaming = false;
         this.lastError =
           (res && res.error) || 'Could not start the microphone.';
         await this.closeOffscreen().catch(() => {});
@@ -990,6 +1079,7 @@ class Orchestrator {
       // up-to-30s of narration is lost to the destroy-before-flush race).
       await this.sendToOffscreen({ kind: 'audio/stop' });
       this.micOn = false;
+      this.micStreaming = false;
       await this.closeOffscreen().catch(() => {});
     }
     this.broadcastState();
@@ -1000,7 +1090,9 @@ class Orchestrator {
       RequestMessage,
       { kind: 'audio/start' | 'audio/pause' | 'audio/resume' | 'audio/stop' }
     >,
-  ): Promise<{ ok: boolean; error?: string } | undefined> {
+  ): Promise<
+    { ok: boolean; error?: string; streaming?: boolean } | undefined
+  > {
     // Reaches the offscreen document's onMessage listener; the OFFSCREEN_MARKER
     // tells the background's own request handler to ignore it, so only the
     // offscreen document responds. Returns that response so callers can await
@@ -1127,6 +1219,7 @@ class Orchestrator {
       const config = await this.loadTranscriptionConfig();
       if (!config) return; // no provider configured — leave transcript null
 
+      if (!payload.assetId) return; // streamed segment: no audio to batch-transcribe
       const asset = await getAsset(payload.assetId);
       if (!asset) return;
 

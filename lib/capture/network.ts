@@ -44,6 +44,8 @@ export interface NetworkDeps {
 /** In-flight accumulation for a single request or WebSocket. */
 interface PartialRequest {
   requestId: string;
+  /** Tab that owns this request; needed to emit still-open sockets on flush. */
+  tabId?: number;
   method?: string;
   url?: string;
   reqHeaders: Record<string, string>;
@@ -96,13 +98,13 @@ export class NetworkCapturer {
           this.onLoadingFailed(tabId, params);
           break;
         case 'Network.webSocketCreated':
-          this.onWebSocketCreated(params);
+          this.onWebSocketCreated(tabId, params);
           break;
         case 'Network.webSocketFrameSent':
-          this.onWebSocketFrame('sent', params);
+          this.onWebSocketFrame(tabId, 'sent', params);
           break;
         case 'Network.webSocketFrameReceived':
-          this.onWebSocketFrame('recv', params);
+          this.onWebSocketFrame(tabId, 'recv', params);
           break;
         case 'Network.webSocketClosed':
           this.onWebSocketClosed(tabId, params);
@@ -118,6 +120,22 @@ export class NetworkCapturer {
   /** Drop all in-flight state (e.g. between sessions). */
   reset(): void {
     this.pending.clear();
+  }
+
+  /**
+   * Emit every still-pending WebSocket record with its accumulated frames, then
+   * drop it from `pending`. Called by the background on session stop: a socket
+   * that never fired `webSocketClosed` would otherwise be lost entirely (with
+   * all of its frames). In-flight normal requests are left untouched — only
+   * WebSockets are flushed here. A record flushed this way is removed from
+   * `pending`, so a later `webSocketClosed` will not double-emit it.
+   */
+  flushOpen(): void {
+    for (const [requestId, p] of Array.from(this.pending.entries())) {
+      if (p.websocket !== true) continue;
+      this.pending.delete(requestId);
+      this.emitRequest(p.tabId ?? -1, p, {});
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -226,6 +244,7 @@ export class NetworkCapturer {
         responseBody = await this.buildResponseBody(
           rawText,
           base64,
+          p.respHeaders,
           p.mime,
           settings,
         );
@@ -257,10 +276,14 @@ export class NetworkCapturer {
   // WebSockets
   // --------------------------------------------------------------------------
 
-  private onWebSocketCreated(params: Record<string, unknown>): void {
+  private onWebSocketCreated(
+    tabId: number,
+    params: Record<string, unknown>,
+  ): void {
     const requestId = asString(params.requestId);
     if (!requestId) return;
     const p = this.ensure(requestId);
+    p.tabId = tabId;
     p.websocket = true;
     p.method = 'GET';
     p.resourceType = 'WebSocket';
@@ -274,12 +297,14 @@ export class NetworkCapturer {
   }
 
   private onWebSocketFrame(
+    tabId: number,
     dir: 'sent' | 'recv',
     params: Record<string, unknown>,
   ): void {
     const requestId = asString(params.requestId);
     if (!requestId) return;
     const p = this.ensure(requestId);
+    p.tabId = tabId;
     p.websocket = true;
     const frames = (p.wsFrames ??= []);
     if (frames.length >= WS_FRAME_CAP) return;
@@ -320,9 +345,18 @@ export class NetworkCapturer {
   private async buildResponseBody(
     rawText: string,
     base64: boolean,
+    headers: Record<string, string>,
     mime: string | undefined,
     settings: CaptureSettings,
   ): Promise<NetBody> {
+    // Binary / compressed textual bodies (gzip analytics beacons, protobuf, …)
+    // would otherwise be inlined as pages of mojibake. Replace them with a short
+    // human marker BEFORE redaction/truncation. base64 bodies are already binary
+    // and handled by the base64 path below.
+    if (!base64 && isProbablyBinary(rawText, headers)) {
+      return binaryBodyMarker(rawText, mime, getHeader(headers, 'content-encoding'));
+    }
+
     let text = rawText;
     // Redaction only applies to textual bodies (base64 payloads are binary).
     if (!base64 && settings.redactionEnabled) {
@@ -359,9 +393,15 @@ export class NetworkCapturer {
 
   private buildRequestBody(
     rawText: string,
+    headers: Record<string, string>,
     mime: string | undefined,
     settings: CaptureSettings,
   ): NetBody {
+    // Same binary guard as responses (e.g. gzip-compressed request beacons).
+    if (isProbablyBinary(rawText, headers)) {
+      return binaryBodyMarker(rawText, mime, getHeader(headers, 'content-encoding'));
+    }
+
     let text = rawText;
     if (settings.redactionEnabled) {
       text = redactBody(text, mime, settings.customRedaction).text;
@@ -414,6 +454,7 @@ export class NetworkCapturer {
     if (p.requestBodyText !== undefined) {
       payload.requestBody = this.buildRequestBody(
         p.requestBodyText,
+        p.reqHeaders,
         reqContentType,
         settings,
       );
@@ -486,6 +527,53 @@ function getHeader(
     if (k.toLowerCase() === lower) return v;
   }
   return undefined;
+}
+
+/** Content-encodings that mean the body bytes are compressed (binary). */
+const BINARY_CONTENT_ENCODINGS = /\b(?:gzip|br|deflate|zstd)\b/i;
+/** Content-types that are inherently binary/streaming, not readable text. */
+const BINARY_CONTENT_TYPES = /octet-stream|protobuf|grpc|event-stream/i;
+
+/**
+ * Heuristic: is this textual body actually binary/compressed and thus useless
+ * (and huge) to inline? True when a content-encoding marks it compressed, the
+ * content-type is a known binary/stream type, or the text is >~15% non-printable
+ * characters (control chars or U+FFFD replacement chars from a bad decode).
+ */
+function isProbablyBinary(
+  text: string,
+  headers: Record<string, string>,
+): boolean {
+  const enc = getHeader(headers, 'content-encoding');
+  if (enc && BINARY_CONTENT_ENCODINGS.test(enc)) return true;
+  const ct = getHeader(headers, 'content-type');
+  if (ct && BINARY_CONTENT_TYPES.test(ct)) return true;
+
+  if (text.length === 0) return false;
+  let nonPrintable = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c < 9 || (c > 13 && c < 32) || c === 0xfffd) nonPrintable++;
+  }
+  return nonPrintable / text.length > 0.15;
+}
+
+/** Short human marker standing in for an un-shown binary body. */
+function binaryBodyMarker(
+  text: string,
+  mime: string | undefined,
+  enc: string | undefined,
+): NetBody {
+  const bytes = new TextEncoder().encode(text).length;
+  const body: NetBody = {
+    present: true,
+    originalSize: bytes,
+    truncated: false,
+    base64: false,
+    text: `«binary body — ${bytes} bytes${enc ? ', ' + enc : ''}, not shown»`,
+  };
+  if (mime) body.mime = mime;
+  return body;
 }
 
 interface Truncation {

@@ -30,6 +30,13 @@ export interface ScreenshotDeps {
 /** Per-tab debounce window for the `every-interaction` policy. */
 const DEBOUNCE_MS = 500;
 
+/**
+ * Longest-side cap for stored screenshots. Retina captures come in at ~2500px
+ * and cost hundreds of KB each; anything above this is downscaled (aspect
+ * preserved) and re-encoded before storage to keep the exported session small.
+ */
+const MAX_SHOT_DIM = 1400;
+
 /** Event types that trigger a shot under the `every-interaction` policy. */
 const EVERY_INTERACTION_TYPES: ReadonlySet<SessionEvent['type']> =
   new Set<SessionEvent['type']>([
@@ -60,6 +67,17 @@ function base64ToBlob(base64: string, mime: string): Blob {
     bytes[i] = binary.charCodeAt(i);
   }
   return new Blob([bytes], { type: mime });
+}
+
+/** Encode a Blob's bytes as a raw (non-prefixed) base64 string. */
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  const chunk = 0x8000; // avoid arg-count limits on String.fromCharCode
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
 }
 
 export class ScreenshotScheduler {
@@ -135,13 +153,43 @@ export class ScreenshotScheduler {
         settings.screenshotQuality,
       );
 
-      const blob = base64ToBlob(data, 'image/jpeg');
-      const bitmap = await createImageBitmap(blob);
-      const width = bitmap.width;
-      const height = bitmap.height;
+      const originalBlob = base64ToBlob(data, 'image/jpeg');
+      const bitmap = await createImageBitmap(originalBlob);
+      const srcW = bitmap.width;
+      const srcH = bitmap.height;
+
+      // Downscale retina/oversized shots before storing: they dominate the
+      // exported session size. Anything within MAX_SHOT_DIM is kept verbatim to
+      // avoid a needless (and lossy) re-encode.
+      let storeBase64 = data;
+      let storeBlob = originalBlob;
+      let width = srcW;
+      let height = srcH;
+      const longest = Math.max(srcW, srcH);
+      if (longest > MAX_SHOT_DIM) {
+        const scale = MAX_SHOT_DIM / longest;
+        width = Math.max(1, Math.round(srcW * scale));
+        height = Math.max(1, Math.round(srcH * scale));
+        const canvas = new OffscreenCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(bitmap, 0, 0, width, height);
+          const quality = Math.min(1, Math.max(0, settings.screenshotQuality / 100));
+          storeBlob = await canvas.convertToBlob({
+            type: 'image/jpeg',
+            quality,
+          });
+          storeBase64 = await blobToBase64(storeBlob);
+        } else {
+          // No 2D context: fall back to the original, undownscaled dimensions.
+          width = srcW;
+          height = srcH;
+        }
+      }
       bitmap.close();
 
-      const ahash = await averageHashFromBlob(blob);
+      // Hash the image we actually store so dedup compares like-for-like.
+      const ahash = await averageHashFromBlob(storeBlob);
 
       // Explicit, user-driven captures are never deduped: a manual shot is
       // always wanted, and an annotation-exit shot MUST produce an asset so the
@@ -157,7 +205,7 @@ export class ScreenshotScheduler {
         return; // near-duplicate — drop without storing or emitting
       }
 
-      const { assetId } = await this.deps.storeScreenshot(data);
+      const { assetId } = await this.deps.storeScreenshot(storeBase64);
       this.deps.emit({
         type: 'screenshot',
         tabId,

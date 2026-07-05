@@ -21,6 +21,7 @@ import type {
   SessionEvent,
   VerbosityLevel,
 } from '@/lib/session/types';
+import { buildAnchorMap } from './anchor';
 
 export interface RenderInput {
   session: Session;
@@ -54,11 +55,12 @@ export function renderReport(input: RenderInput): string {
   const events = sortedEvents(input.events);
   const lines: string[] = [];
 
+  const anchors = buildAnchorMap(events);
   renderHeader(input, events, lines);
   lines.push('');
   lines.push('## Timeline');
   lines.push('');
-  for (const e of events) renderEvent(e, input, lines);
+  for (const e of events) renderEvent(e, input, lines, anchors);
 
   renderAppendices(events, input, lines);
 
@@ -178,6 +180,7 @@ function renderEvent(
   e: SessionEvent,
   input: RenderInput,
   lines: string[],
+  anchors?: Map<string, string>,
 ): void {
   const clock = `[${formatClock(e.t)}]`;
   const tab = tabSuffix(e.tabId);
@@ -330,7 +333,10 @@ function renderEvent(
           : p.transcriptionError
             ? `(transcription failed: ${oneLine(p.transcriptionError)})`
             : '(no transcript)';
-      lines.push(`> 🎙️ ${clock} ${escapeInline(text)}`);
+      // Smart anchoring: note what the user was doing as they spoke.
+      const anchor = anchors?.get(e.id);
+      const where = anchor ? ` _(while ${escapeInline(anchor)})_` : '';
+      lines.push(`> 🎙️ ${clock}${where} ${escapeInline(text)}`);
       break;
     }
 

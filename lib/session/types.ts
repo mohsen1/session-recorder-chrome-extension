@@ -338,13 +338,22 @@ export interface AnnotationStartPayload {
 }
 
 export interface VoiceSegmentPayload {
-  assetId: string;
+  /**
+   * Audio asset backing this segment. Optional: real-time streaming produces
+   * one voice-segment per spoken utterance (transcript only), and the full
+   * session audio is attached to a single segment as one asset.
+   */
+  assetId?: string;
   tStart: number; // ms from session start
   tEnd: number;
   transcript: string | null;
   words?: { word: string; t: number }[];
   transcriptionError?: string;
   provider?: string;
+  /** True when produced live by a streaming recognizer (vs post-hoc batch). */
+  streamed?: boolean;
+  /** Best-effort descriptor of what the user was doing/looking at while speaking. */
+  anchorContext?: string;
 }
 
 export interface FilePayload {

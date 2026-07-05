@@ -48,28 +48,53 @@ export async function transcribe(
   return getProvider(config.provider).transcribe(audio, config);
 }
 
-export const PROVIDERS: {
+export interface ProviderMeta {
   id: TranscriptionConfig['provider'];
   label: string;
   defaultBaseUrl: string;
+  /** Latest batch/transcription model (as of 2026). */
   defaultModel: string;
-}[] = [
-  {
-    id: 'openai',
-    label: 'OpenAI (Whisper)',
-    defaultBaseUrl: 'https://api.openai.com/v1',
-    defaultModel: 'whisper-1',
-  },
+  /** True when the provider offers real-time streaming (used by default). */
+  streaming: boolean;
+  /** Live websocket base URL + model, when streaming is supported. */
+  streamUrl?: string;
+  streamModel?: string;
+}
+
+// Model defaults track the current (2026) recommended models:
+//  - Deepgram: nova-3 (streaming ws, interim+final, word timings) — best real-time.
+//  - OpenAI:   gpt-4o-transcribe (whisper-1 is retiring ~2026-06).
+//  - ElevenLabs: scribe_v2 (+ scribe_v2_realtime streaming).
+export const PROVIDERS: ProviderMeta[] = [
   {
     id: 'deepgram',
-    label: 'Deepgram',
+    label: 'Deepgram (Nova-3)',
     defaultBaseUrl: 'https://api.deepgram.com/v1/listen',
-    defaultModel: 'nova-2',
+    defaultModel: 'nova-3',
+    streaming: true,
+    streamUrl: 'wss://api.deepgram.com/v1/listen',
+    streamModel: 'nova-3',
   },
   {
+    // Scribe v2 Realtime exists, but only Deepgram's live path is wired here;
+    // ElevenLabs uses fine-grained batch segments (still near-real-time).
     id: 'elevenlabs',
-    label: 'ElevenLabs (Scribe)',
+    label: 'ElevenLabs (Scribe v2)',
     defaultBaseUrl: 'https://api.elevenlabs.io/v1/speech-to-text',
-    defaultModel: 'scribe_v1',
+    defaultModel: 'scribe_v2',
+    streaming: false,
+  },
+  {
+    id: 'openai',
+    label: 'OpenAI (gpt-4o-transcribe)',
+    defaultBaseUrl: 'https://api.openai.com/v1',
+    defaultModel: 'gpt-4o-transcribe',
+    streaming: false,
   },
 ];
+
+export function providerMeta(
+  id: TranscriptionConfig['provider'],
+): ProviderMeta | undefined {
+  return PROVIDERS.find((p) => p.id === id);
+}

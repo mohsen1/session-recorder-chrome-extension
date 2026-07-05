@@ -43,6 +43,15 @@ const LONG_HEX_RE = /^[0-9a-f]{16,}$/i;
 const ANALYTICS_HOST_RE =
   /(^|\.)(google-analytics|googletagmanager|doubleclick|googlesyndication|google\.com\/(ads|pagead)|segment\.(io|com)|mixpanel|amplitude|heap(analytics)?|hotjar|fullstory|mouseflow|clarity\.ms|sentry|bugsnag|datadoghq|newrelic|nr-data|intercom|drift|optimizely|launchdarkly|facebook\.com\/tr|connect\.facebook|analytics|telemetry|metrics|track(ing)?|stats?)\b/i;
 
+/**
+ * URL *path* signatures of analytics/telemetry ingest endpoints. These catch
+ * first-party / self-hosted collectors (e.g. an app POSTing to `/ingest/i/v0/e`)
+ * that `ANALYTICS_HOST_RE` misses because the host is the app's own domain.
+ * Matched per path segment so `e` only fires on `/e`, not inside `/version`.
+ */
+const ANALYTICS_PATH_RE =
+  /(^|\/)(ingest|collect|track|batch|amplitude|segment|mixpanel|posthog|rudderstack|sentry|datadog|fullstory|hotjar|clarity|intercom|google-analytics|gtag|gtm|doubleclick|e)(\/|$)/i;
+
 const STATIC_RESOURCE_TYPES = new Set([
   'image',
   'font',
@@ -274,12 +283,18 @@ function isStaticOrAnalytics(p: NetRequestPayload): boolean {
     return true;
   }
   let host = '';
+  let path = p.url;
   try {
-    host = new URL(p.url).host;
+    const u = new URL(p.url);
+    host = u.host;
+    path = u.pathname;
   } catch {
     host = p.url;
+    const q = p.url.indexOf('?');
+    path = q >= 0 ? p.url.slice(0, q) : p.url;
   }
-  return ANALYTICS_HOST_RE.test(host) || ANALYTICS_HOST_RE.test(p.url);
+  if (ANALYTICS_HOST_RE.test(host) || ANALYTICS_HOST_RE.test(p.url)) return true;
+  return ANALYTICS_PATH_RE.test(path);
 }
 
 /**

@@ -19,6 +19,10 @@ import type {
   SessionEvent,
   VerbosityLevel,
 } from './session/types';
+import type { TranscriptionConfig } from './transcription/provider';
+
+/** Transcription config handed to the offscreen doc for live streaming. */
+export type StreamTranscriptionConfig = TranscriptionConfig;
 
 // ----------------------------------------------------------------------------
 // Request messages (X -> background)
@@ -56,13 +60,16 @@ export type RequestMessage =
   // --- export (sidepanel -> bg or self-handled) ---
   | { kind: 'export/estimate'; sessionId: string }
   // --- offscreen lifecycle (bg <-> offscreen) ---
-  | { kind: 'audio/start'; sessionId: string; startedAt: number }
+  | { kind: 'audio/start'; sessionId: string; startedAt: number; transcription?: StreamTranscriptionConfig | null }
   | { kind: 'audio/pause' }
   | { kind: 'audio/resume' }
   | { kind: 'audio/stop' }
   // --- offscreen -> bg ---
   | { kind: 'audio/segment'; sessionId: string; tStart: number; tEnd: number; dataUrl: string; mime: string }
   | { kind: 'audio/level'; level: number }
+  // --- live streaming transcription (offscreen -> bg) ---
+  | { kind: 'transcript/final'; sessionId: string; tStart: number; tEnd: number; text: string; words?: { word: string; t: number }[]; provider: string }
+  | { kind: 'transcript/interim'; sessionId: string; text: string }
   // --- storage ---
   | { kind: 'storage/estimate' };
 
@@ -119,6 +126,8 @@ export type ResponseFor = {
   'audio/stop': { ok: boolean };
   'audio/segment': { ok: boolean };
   'audio/level': { ok: boolean };
+  'transcript/final': { ok: boolean };
+  'transcript/interim': { ok: boolean };
   'storage/estimate': { usage: number; quota: number };
 };
 
@@ -132,7 +141,9 @@ export type BroadcastMessage =
   | { kind: 'export/progress'; sessionId: string; phase: string; pct: number }
   | { kind: 'transcription/progress'; sessionId: string; done: number; total: number }
   | { kind: 'mic/level'; level: number }
-  | { kind: 'annotation/state'; annotating: boolean };
+  | { kind: 'annotation/state'; annotating: boolean }
+  // Live (interim) transcript for the recording ticker.
+  | { kind: 'transcript/live'; text: string; final: boolean };
 
 // ----------------------------------------------------------------------------
 // Transport helpers

@@ -10,7 +10,14 @@
  * AnalyserNode posts throttled `audio/level` RMS updates for the live meter.
  */
 import { sendMessage } from '@/lib/messaging';
-import type { RequestMessage } from '@/lib/messaging';
+import type { RequestMessage, StreamTranscriptionConfig } from '@/lib/messaging';
+import {
+  buildDeepgramLiveUrl,
+  deepgramSubprotocols,
+  parseDeepgramMessage,
+  DEEPGRAM_CLOSE_MESSAGE,
+  DEEPGRAM_SAMPLE_RATE,
+} from '@/lib/transcription/deepgram-live';
 
 const MIME_PREFERRED = 'audio/webm;codecs=opus';
 const SEGMENT_MS = 30_000;
@@ -41,6 +48,12 @@ let state: RecState = 'idle';
 let stopReason: StopReason | null = null;
 let segmentTimer: ReturnType<typeof setInterval> | null = null;
 let levelTimer: ReturnType<typeof setInterval> | null = null;
+
+// --- live streaming transcription (Deepgram) ---
+let streamSocket: WebSocket | null = null;
+let streamNode: ScriptProcessorNode | null = null;
+let streamProvider = '';
+let streaming = false;
 
 /** ms elapsed relative to the session's `startedAt`. */
 function elapsed(): number {
@@ -157,6 +170,7 @@ function teardown(): void {
     clearInterval(segmentTimer);
     segmentTimer = null;
   }
+  stopStreaming();
   stopLevelLoop();
 
   if (recorder && recorder.state !== 'inactive') {
@@ -195,10 +209,122 @@ function teardown(): void {
   state = 'idle';
 }
 
+/**
+ * Open a Deepgram live stream and pipe linear16 PCM as the user speaks.
+ * Interim results feed the ticker; final results become real-time voice-segment
+ * events with word-level timings. Best-effort: any failure leaves `streaming`
+ * false and the caller falls back to batch segments. Returns true if wired up.
+ */
+function startStreaming(config: StreamTranscriptionConfig): boolean {
+  if (!stream || !audioCtx) return false;
+  try {
+    const url = buildDeepgramLiveUrl(config, {
+      sampleRate: DEEPGRAM_SAMPLE_RATE,
+      interim: true,
+    });
+    const sock = new WebSocket(url, deepgramSubprotocols(config.apiKey));
+    sock.binaryType = 'arraybuffer';
+    const inRate = audioCtx.sampleRate;
+
+    // ScriptProcessor is deprecated but the simplest reliable PCM tap in an
+    // offscreen document. Output stays silent (no passthrough / feedback).
+    const node = audioCtx.createScriptProcessor(4096, 1, 1);
+    node.onaudioprocess = (e) => {
+      if (sock.readyState !== WebSocket.OPEN || state !== 'recording') return;
+      const input = e.inputBuffer.getChannelData(0);
+      const pcm = downsampleToPcm16(input, inRate, DEEPGRAM_SAMPLE_RATE);
+      if (pcm.byteLength > 0) sock.send(pcm);
+    };
+    sourceNode?.connect(node);
+    node.connect(audioCtx.destination);
+
+    sock.onmessage = (ev) => {
+      if (typeof ev.data !== 'string') return;
+      const p = parseDeepgramMessage(ev.data);
+      if (p.kind === 'other') return;
+      if (p.kind === 'interim') {
+        void sendMessage({ kind: 'transcript/interim', sessionId, text: p.text }).catch(
+          () => {},
+        );
+        return;
+      }
+      // final
+      const tStart = Math.round(baseOffset + p.start * 1000);
+      const tEnd = Math.round(baseOffset + (p.start + p.duration) * 1000);
+      const words = p.words.map((w) => ({
+        word: w.word,
+        t: Math.round(baseOffset + w.t * 1000),
+      }));
+      void sendMessage({
+        kind: 'transcript/final',
+        sessionId,
+        tStart,
+        tEnd,
+        text: p.text,
+        words,
+        provider: streamProvider,
+      }).catch(() => {});
+    };
+    sock.onerror = () => {
+      /* keep recording audio; transcripts just stop */
+    };
+
+    streamSocket = sock;
+    streamNode = node;
+    streamProvider = config.provider;
+    streaming = true;
+    return true;
+  } catch {
+    streaming = false;
+    return false;
+  }
+}
+
+function stopStreaming(): void {
+  try {
+    if (streamSocket && streamSocket.readyState === WebSocket.OPEN) {
+      streamSocket.send(DEEPGRAM_CLOSE_MESSAGE);
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    streamNode?.disconnect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    streamSocket?.close();
+  } catch {
+    /* ignore */
+  }
+  streamNode = null;
+  streamSocket = null;
+  streaming = false;
+}
+
+/** Linear-resample a Float32 mono buffer to 16-bit PCM at `outRate`. */
+function downsampleToPcm16(
+  input: Float32Array,
+  inRate: number,
+  outRate: number,
+): ArrayBuffer {
+  const ratio = inRate / outRate;
+  const outLen = Math.floor(input.length / ratio);
+  const out = new Int16Array(outLen);
+  for (let i = 0; i < outLen; i += 1) {
+    const s = input[Math.floor(i * ratio)] ?? 0;
+    const clamped = Math.max(-1, Math.min(1, s));
+    out[i] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
+  }
+  return out.buffer;
+}
+
 async function handleStart(
   id: string,
   startedAt: number,
-): Promise<{ ok: boolean; error?: string }> {
+  transcription?: StreamTranscriptionConfig | null,
+): Promise<{ ok: boolean; error?: string; streaming?: boolean }> {
   // A start while already active replaces the prior recording cleanly.
   if (state !== 'idle') teardown();
 
@@ -230,9 +356,19 @@ async function handleStart(
     /* metering is best-effort; recording continues without it */
   }
 
+  // Real-time streaming transcription (Deepgram). If it wires up, we record the
+  // audio as ONE continuous file (no 30s rotation) since transcripts are already
+  // persisted live; otherwise we keep the rotating-segment batch path.
+  streaming = false;
+  if (transcription && transcription.provider === 'deepgram' && transcription.apiKey) {
+    streaming = startStreaming(transcription);
+  }
+
   startRecorder();
-  segmentTimer = setInterval(rotateSegment, SEGMENT_MS);
-  return { ok: true };
+  if (!streaming) {
+    segmentTimer = setInterval(rotateSegment, SEGMENT_MS);
+  }
+  return { ok: true, streaming };
 }
 
 function handlePause(): void {
@@ -286,7 +422,7 @@ chrome.runtime.onMessage.addListener((raw, _sender, sendResponse) => {
   switch (msg.kind) {
     case 'audio/start': {
       const m = raw as Extract<RequestMessage, { kind: 'audio/start' }>;
-      void handleStart(m.sessionId, m.startedAt).then((res) =>
+      void handleStart(m.sessionId, m.startedAt, m.transcription).then((res) =>
         sendResponse(res),
       );
       return true; // async response

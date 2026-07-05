@@ -94,6 +94,20 @@ function slugOf(url: string): string {
   }
 }
 
+/**
+ * Deterministic content key for a blob's bytes. Used to collapse byte-identical
+ * assets to a single zip file. FNV-1a 32-bit salted with the byte length so a
+ * collision would need both the same length and the same hash.
+ */
+function contentHash(bytes: Uint8Array): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i += 1) {
+    h ^= bytes[i]!;
+    h = Math.imul(h, 0x01000193);
+  }
+  return `fnv:${bytes.length}:${(h >>> 0).toString(16)}`;
+}
+
 /** Ensure a path is unique within the archive by suffixing `-2`, `-3`, ... */
 function uniquePath(path: string, used: Set<string>): string {
   if (!used.has(path)) {
@@ -257,7 +271,33 @@ export async function buildBundle(
 
   // 2) Assign zip-relative paths to still-referenced assets.
   const { pathById } = planAssetPaths(trimmed, assets);
-  const assetPath = (id: string): string | undefined => pathById.get(id);
+
+  // 2b) Dedupe byte-identical asset blobs. Assets sharing a content key (its
+  // sha256 when known, else a hash of the bytes we must read for the zip) are
+  // written to the archive exactly once — the first assigned path wins — and
+  // every event/link referencing any asset in the group resolves to that one
+  // path. This kills the common case of the same large response body being
+  // captured several times over a session.
+  const assetById = new Map(assets.map((a) => [a.id, a]));
+  const bytesByPath = new Map<string, Uint8Array>();
+  const pathByKey = new Map<string, string>();
+  const dedupById = new Map<string, string>();
+  for (const [id, path] of pathById) {
+    const asset = assetById.get(id);
+    if (!asset) continue;
+    const bytes = new Uint8Array(await asset.blob.arrayBuffer());
+    const key = asset.sha256 ?? contentHash(bytes);
+    const survivor = pathByKey.get(key);
+    if (survivor === undefined) {
+      pathByKey.set(key, path);
+      bytesByPath.set(path, bytes);
+      dedupById.set(id, path);
+    } else {
+      dedupById.set(id, survivor);
+    }
+  }
+
+  const assetPath = (id: string): string | undefined => dedupById.get(id);
 
   // 3) Text artifacts.
   const report = renderReport({
@@ -275,7 +315,7 @@ export async function buildBundle(
     assetPath,
   });
 
-  const mappedEvents = trimmed.map((e) => mapEventAssets(e, pathById));
+  const mappedEvents = trimmed.map((e) => mapEventAssets(e, dedupById));
   const sessionJson = JSON.stringify(
     { session, events: mappedEvents },
     null,
@@ -300,12 +340,8 @@ export async function buildBundle(
     { path: 'transcript.json', text: JSON.stringify(transcript, null, 2) },
   ];
 
-  // 4) Every included asset as raw bytes.
-  const assetById = new Map(assets.map((a) => [a.id, a]));
-  for (const [id, path] of pathById) {
-    const asset = assetById.get(id);
-    if (!asset) continue;
-    const bytes = new Uint8Array(await asset.blob.arrayBuffer());
+  // 4) Every surviving (deduped) asset as raw bytes, written once.
+  for (const [path, bytes] of bytesByPath) {
     files.push({ path, bytes });
   }
 
