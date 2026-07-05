@@ -10,22 +10,22 @@ We prefix every path with a single root directory named after the session, so th
 
 ```
 <session-name>/
-  report.md            # the LLM entry point — self-sufficient at L2/L3
+  report.md            # the LLM entry point; self-sufficient at L2/L3
   session.json         # trimmed event stream + session meta, asset refs → zip paths
   MANIFEST.md          # index of every included asset (path, kind, size)
   transcript.json      # voice segments (timestamps + transcript), when audio was recorded
   screenshots/
-    001-0004.jpg       # {seq}-{mmss}.jpg — seq order, timestamp in the name
+    001-0004.jpg       # {seq}-{mmss}.jpg: seq order, timestamp in the name
     002-0011.jpg
     …
   network/
-    001-api.example.com-todos.json   # {seq}-{host}-{path-slug}.json — full request/response
+    001-api.example.com-todos.json   # {seq}-{host}-{path-slug}.json: full request/response
     …
   files/
-    import.csv         # {original-name} — files the user uploaded/attached
+    import.csv         # {original-name}: files the user uploaded/attached
     …
   audio/
-    001.webm           # {seq}.webm — recorded voice segments
+    001.webm           # {seq}.webm: recorded voice segments
     …
 ```
 
@@ -43,10 +43,10 @@ Levels are cumulative transform pipelines, not budget solvers. Each higher level
 
 | Level | Target | What it contains |
 | ----- | ------ | ---------------- |
-| L0 — full | everything | No trimming. Full request and response bodies up to the capture cap, every screenshot, every event. The complete fidelity that lives in IndexedDB. |
-| L1 — standard | about 150k tokens | Static-asset requests (images, fonts, css, and analytics hosts) collapsed to one summary line; response bodies truncated to the first 4 KB (original size noted); consecutive scrolls coalesced; consecutive duplicate console lines deduped with counts; screenshots thinned to key moments; near-duplicate screenshots already folded. |
-| L2 — compact | about 50k tokens | Everything in L1, plus JSON bodies reduced to a shape summary (keys, types, and array lengths, for example `{ users: Array(50) of { id, name, email } }`); repeated calls to the same endpoint collapsed to the first occurrence plus a `×N similar` marker (requests with a differing status stay full, because anomalies are signal); screenshots kept only for annotations and errors. |
-| L3 — minimal | about 15k tokens | Everything in L2, plus network bodies dropped except those linked to an error or `status >= 400`; interactions stripped to element text and selector only; screenshots reduced to a filename manifest. The result is a narrative skeleton: navigations, clicks, transcript, markers and notes, annotations, and errors with request and response one-liners. |
+| L0 (full) | everything | No trimming. Full request and response bodies up to the capture cap, every screenshot, every event. The complete fidelity that lives in IndexedDB. |
+| L1 (standard) | about 150k tokens | Static-asset requests (images, fonts, css, and analytics hosts) collapsed to one summary line; response bodies truncated to the first 4 KB (original size noted); consecutive scrolls coalesced; consecutive duplicate console lines deduped with counts; screenshots thinned to key moments; near-duplicate screenshots already folded. |
+| L2 (compact) | about 50k tokens | Everything in L1, plus JSON bodies reduced to a shape summary (keys, types, and array lengths, for example `{ users: Array(50) of { id, name, email } }`); repeated calls to the same endpoint collapsed to the first occurrence plus a `×N similar` marker (requests with a differing status stay full, because anomalies are signal); screenshots kept only for annotations and errors. |
+| L3 (minimal) | about 15k tokens | Everything in L2, plus network bodies dropped except those linked to an error or `status >= 400`; interactions stripped to element text and selector only; screenshots reduced to a filename manifest. The result is a narrative skeleton: navigations, clicks, transcript, markers and notes, annotations, and errors with request and response one-liners. |
 
 Pick the lowest level that fits the target model's context window while still containing the bodies and screenshots the question needs. For most debugging, L2 works best: it stays readable and self-sufficient while fitting comfortably in a large context. Drop to L3 only when the session is very long or the model's window is tight. Go to L1 or L0 when you specifically need full response bodies.
 
@@ -73,7 +73,7 @@ Follow these steps in order:
 
 ### Suggested prompt
 
-> You are a debugging assistant. Below is `report.md` — a chronological recording
+> You are a debugging assistant. Below is `report.md`, a chronological recording
 > of a user session in a web app, captured by a browser extension. Timestamps are
 > `[mm:ss]` from the start of the session and are the join key across events,
 > screenshots, and the voice transcript. Section headings (`##`) mark navigations
@@ -84,7 +84,7 @@ Follow these steps in order:
 >
 > Please:
 > 1. Summarize what the user was trying to do, step by step.
-> 2. Identify what went wrong — the first error and its likely root cause, citing
+> 2. Identify what went wrong: the first error and its likely root cause, citing
 >    the `[mm:ss]` timestamps and the specific requests/console lines involved.
 > 3. Suggest the concrete code change or investigation that would fix it.
 >

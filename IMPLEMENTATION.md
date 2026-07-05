@@ -4,7 +4,7 @@ This plan is the build companion to `PLAN.md`. It has 8 phases, and each phase e
 
 ---
 
-## Phase 0 — de-risking spikes (half a day)
+## Phase 0: de-risking spikes (half a day)
 
 Run 3 throwaway experiments before you commit to the architecture. Each one is a minimal extension that proves a single risky assumption.
 
@@ -16,7 +16,7 @@ Exit criteria: all 3 spikes confirmed, with findings noted at the top of this fi
 
 ---
 
-## Phase 1 — scaffold and session core
+## Phase 1: scaffold and session core
 
 Goal: the record button captures interaction events, persists them, and shows them live. No debugger yet.
 
@@ -48,7 +48,7 @@ Goal: the record button captures interaction events, persists them, and shows th
 
 ### 1.6 Interaction capture content script
 Listeners (capture phase, `all_frames: true`):
-- `click`: build an element descriptor with `buildDescriptor(el)` — tag, id, `aria-label` or role, visible text (up to 80 chars), a best-effort CSS selector (id, then data-testid, then a short ancestor path), and the bounding box
+- `click`: build an element descriptor with `buildDescriptor(el)`: tag, id, `aria-label` or role, visible text (up to 80 chars), a best-effort CSS selector (id, then data-testid, then a short ancestor path), and the bounding box
 - `input` and `change`: debounce 800 ms per element. Redact password fields and sensitive-named fields to `«redacted»`, but always keep the field's label, name, and placeholder.
 - `scroll`: coalesce, recording only after 300 ms of idle, as `{from, to, container}`
 - `keydown`: capture only Enter, Escape, Tab, and modifier-chords
@@ -65,7 +65,7 @@ Exit criteria: record on a demo SPA. Clicks, typing, routes, and scrolls appear 
 
 ---
 
-## Phase 2 — deep capture
+## Phase 2: deep capture
 
 Goal: capture network bodies, console, errors, multiple tabs, redaction, and screenshot policies. This is the riskiest phase, so it follows the spikes directly.
 
@@ -99,7 +99,7 @@ on Network.loadingFailed(e):
 - websockets: `webSocketCreated`, `FrameSent`, and `FrameReceived` produce one `net-request` event per socket with an appended frame log (frames capped)
 - config knobs (on the options page later): the inline body cap (default 256 KB) and the overflow-to-asset cap (default 2 MB)
 
-### 2.3 Redaction (`lib/capture/redaction`) — pure functions, unit-tested
+### 2.3 Redaction (`lib/capture/redaction`): pure functions, unit-tested
 - `redactHeaders(headers)`: apply a case-insensitive blocklist, replacing matches with `«redacted»`
 - `redactBody(text, mime)`: for JSON, walk it recursively:
 
@@ -116,7 +116,7 @@ walk(node):
 - the network assembler applies redaction before `recordEvent`, so raw secrets never reach IndexedDB. Custom rules merge with the defaults (the Phase 8 options UI).
 
 ### 2.4 Console and exceptions
-- `Runtime.consoleAPICalled` → a `console` event (level and formatted args — stringify with a depth cap of 3 and a length cap of 2 KB)
+- `Runtime.consoleAPICalled` → a `console` event (level and formatted args; stringify with a depth cap of 3 and a length cap of 2 KB)
 - `Runtime.exceptionThrown` → an `error` event with the message and stack
 - `Log.entryAdded` → network and security warnings the console API misses
 - dedup at capture: collapse identical consecutive console messages within 1 second into one event with a counter. This guards against log-spam loops flooding storage.
@@ -146,7 +146,7 @@ on tabs.onRemoved:
   - every-interaction: subscribe to click, nav, spa-route, and scroll-end events from the funnel, and debounce 500 ms per tab
   - key-moments: subscribe to nav, spa-route, `error`, net-request with status ≥ 400, and annotation-exit
   - both policies also include the manual button
-- dedup with an average-hash (8×8 grayscale) of each capture. If the hamming distance to the previous shot on that tab is ≤ the threshold, do not store it — increment a repeat counter on the prior screenshot event instead.
+- dedup with an average-hash (8×8 grayscale) of each capture. If the hamming distance to the previous shot on that tab is ≤ the threshold, do not store it; increment a repeat counter on the prior screenshot event instead.
 
 ### 2.7 Service worker resilience
 - rehydration: when the SW starts, check storage for a session in the `recording` state. If you find one, restore the in-memory state, re-attach the debugger to surviving tabs, re-inject content scripts, and emit a `note` event ("recorder restarted, gap of N seconds possible").
@@ -156,14 +156,14 @@ Exit criteria: record a session against a real SaaS app. API request and respons
 
 ---
 
-## Phase 3 — export v1 (full fidelity)
+## Phase 3: export v1 (full fidelity)
 
 Goal: produce a zip with `report.md`, `session.json`, and assets at L0. Doing this before trimming, annotations, and voice means every later feature is validated against real output.
 
 ### 3.1 Schema freeze
 - review every event payload shape that Phases 1 and 2 produce, then write `docs/event-schema.md` (one section per event type, with field meanings). This document is the contract for the renderer and trimmer. Later phases may add event types but not change existing shapes.
 
-### 3.2 Markdown renderer (`lib/export/markdown`) — pure function: `(session, events, assets, level) → string`
+### 3.2 Markdown renderer (`lib/export/markdown`): pure function: `(session, events, assets, level) → string`
 - header block: app URLs, date, duration, tab registry, capture settings, the level used, and an event-count table
 - body: a single chronological walk. Format each type by rule:
   - interactions → one-liners: `[00:42] CLICK "Submit order" (button#checkout, tab 1)`
@@ -189,7 +189,7 @@ Exit criteria: a recorded session downloads as a zip. Pasting `report.md` into C
 
 ---
 
-## Phase 4 — trimming engine
+## Phase 4: trimming engine
 
 Goal: L1–L3 levels with live token estimates. These are all pure functions in `lib/export/trimmer`, the most unit-testable code in the project.
 
@@ -197,7 +197,7 @@ Goal: L1–L3 levels with live token estimates. These are all pure functions in 
 - a table assigns each event a static score (see PLAN.md §5): marker, annotation, and narration-adjacent events rank highest, then error, then mutating requests (POST/PUT/DELETE/PATCH), then nav, then click, then GET xhr/fetch, then static asset, then scroll
 - narration-adjacent means any event within ±5 seconds of a voice segment gets a score boost, because the user was talking about it. Build it now; it activates when voice lands in Phase 6.
 
-### 4.2 Compaction transforms — each a pure `(events) → events` pass
+### 4.2 Compaction transforms: each a pure `(events) → events` pass
 - `truncateBodies(maxBytes)`: keep the head and note the original size
 - `bodyToShapeSummary`: turn JSON into a structural sketch:
 
@@ -240,7 +240,7 @@ Exit criteria: a deliberately long fixture session (500 or more requests, log sp
 
 ---
 
-## Phase 5 — annotation mode
+## Phase 5: annotation mode
 
 ### 5.1 Overlay lifecycle (`content/annotations`)
 - toggle it with a side panel button or a `chrome.commands` shortcut. It injects a full-viewport container in a shadow DOM (for style isolation), with `position: fixed` and a max z-index, and it swallows all pointer and key events, so the page is frozen while you annotate.
@@ -262,7 +262,7 @@ Exit criteria: annotate mid-recording. The zip contains the annotated screenshot
 
 ---
 
-## Phase 6 — voice narration
+## Phase 6: voice narration
 
 ### 6.1 Permission flow
 - on the first mic toggle, open the dedicated permission page (from Spike B), request `getUserMedia`, and close it on grant. Persist a "mic granted" flag, so later sessions skip straight to recording.
@@ -277,13 +277,13 @@ Exit criteria: annotate mid-recording. The zip contains the annotated screenshot
 
 ### 6.4 Pipeline
 - queue in the background: segments transcribe as they close (during recording), one at a time with retry and backoff. Failures leave `transcript: null` and note the error. The post-stop view shows progress ("7/9 segments transcribed") with per-segment retry.
-- the renderer interleaves transcript text at segment timestamps as blockquoted narration — visually distinct and never trimmed. Word-level timestamps, when the provider gives them, let the renderer split a segment across events happening mid-segment.
+- the renderer interleaves transcript text at segment timestamps as blockquoted narration, visually distinct and never trimmed. Word-level timestamps, when the provider gives them, let the renderer split a segment across events happening mid-segment.
 
 Exit criteria: narrate while you click through a bug repro. The report interleaves speech with the actions being described at the right timestamps. Audio files are present in the zip. With no key configured, it degrades cleanly to audio-only with a report note.
 
 ---
 
-## Phase 7 — files, markers, and notes
+## Phase 7: files, markers, and notes
 
 ### 7.1 Upload interception (`content/file-capture`)
 - listen for `change` on `input[type=file]` (capture phase, which works for hidden inputs triggered by styled buttons) and for `drop` events with `dataTransfer.files`
@@ -299,7 +299,7 @@ Exit criteria: uploading a CSV into a demo app lands the same CSV in the zip wit
 
 ---
 
-## Phase 8 — hardening and polish
+## Phase 8: hardening and polish
 
 - edge-case matrix (a manual test checklist, run against 3–4 real SaaS apps): an SPA with client routing and a service worker; an OAuth popup flow; a page that navigates cross-origin mid-session; an iframe-heavy app; a page with a CSP that blocks inline styles (the annotation overlay); a 60-minute session with polling (storage and trimmer behavior); and DevTools-open conflict messaging
 - performance: tune the event buffer, make sure blobs never pass through runtime messaging (write from the capturing context, or transfer via asset ids), and make sure exporting a 500 MB session does not run out of memory (stream the zip entries)
@@ -314,11 +314,11 @@ Exit criteria: the full matrix passes. A stranger can install from the README, r
 
 ## Cross-cutting practices
 
-- testing: concentrate unit tests where the logic is pure and intricate — trimmer transforms, redaction, the markdown renderer, shape summary, and request collapsing (golden files with fixture sessions). Validate capture code through the per-phase manual checklists plus a bundled `demo/` test page (buttons that fire fetches, errors, file inputs, and log spam) served locally for repeatable manual runs.
+- testing: concentrate unit tests where the logic is pure and intricate: trimmer transforms, redaction, the markdown renderer, shape summary, and request collapsing (golden files with fixture sessions). Validate capture code through the per-phase manual checklists plus a bundled `demo/` test page (buttons that fire fetches, errors, file inputs, and log spam) served locally for repeatable manual runs.
 - the paste-test as regression gate: from Phase 3 onward, every phase ends by pasting a fresh `report.md` into an LLM and asking it to reconstruct the session. If its answer degrades, the product has regressed, whatever the unit tests say.
 - event funnel discipline: every new capture source goes through `recordEvent`. Every new event type gets a schema-doc entry, a renderer rule, a trimmer classification (protected, droppable, or compactable), and an importance score. An exhaustiveness check on the event-type union enforces this, so forgetting one is a compile error.
 - permissions hygiene: add each permission in the phase that needs it, with a line in the README explaining why it is required
 
 ## Sequencing rationale
 
-Phases 1 to 4 build the spine: capture, persist, export, then trim. Each of Phases 5, 6, and 7 is an independent capture source that plugs into the existing funnel and renderer, so after Phase 4 you can reorder or parallelize them if priorities shift. Export lands early, in Phase 3, because report quality is the product — every later feature is judged by what it does to `report.md`.
+Phases 1 to 4 build the spine: capture, persist, export, then trim. Each of Phases 5, 6, and 7 is an independent capture source that plugs into the existing funnel and renderer, so after Phase 4 you can reorder or parallelize them if priorities shift. Export lands early, in Phase 3, because report quality is the product: every later feature is judged by what it does to `report.md`.

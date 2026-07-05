@@ -63,7 +63,7 @@ Buttons. Primary buttons use an accent fill. Secondary buttons use a surface wit
 
 Ticker. Show a monospace `[mm:ss]` in `--muted` and the event text in `--ink-2`, one row per event, with hairline separators. Use small type icons as simple glyphs, not emoji. Put the newest event on top and keep it quiet.
 
-Level cards for export. Present the radio group as selectable cards. The selected card gets a 1px accent ring and a faint accent tint. Show `~Nk tokens` in mono and a one-line "omits ..." note in `--muted`. If a level's estimate is over about 180k tokens, add a small `--warn` note that reads "large — may exceed model limits" and default the selection to L1.
+Level cards for export. Present the radio group as selectable cards. The selected card gets a 1px accent ring and a faint accent tint. Show `~Nk tokens` in mono and a one-line "omits ..." note in `--muted`. If a level's estimate is over about 180k tokens, add a small `--warn` note that reads "large: may exceed model limits" and default the selection to L1.
 
 Record state. Use a small pulsing `--accent` dot, never a flashing full bar.
 

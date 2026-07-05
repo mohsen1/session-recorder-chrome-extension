@@ -155,7 +155,7 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
                   <span className="level__omits">{omitNote(est)}</span>
                   {est && est.tokens > TOKEN_WARN_LIMIT && (
                     <span className="level__warn">
-                      large — may exceed model limits
+                      large: may exceed model limits
                     </span>
                   )}
                 </span>

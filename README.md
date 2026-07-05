@@ -9,60 +9,46 @@
   Record a web session. Get an LLM-ready bug report.
 </p>
 
-This Chrome extension (Manifest V3) records a web session of someone using a web
-app — interactions, full network traffic, screenshots, real-time voice
-narration, annotations, and files — and exports a zip that stays on your
-machine. The zip's `report.md` is written for an LLM coding agent to read, so
-the agent can reproduce bugs and analyze behavior.
-
-We built it with WXT, React, and TypeScript. Nothing leaves your machine except
-optional voice transcription, which you configure and opt into.
-
-- what the extension does and why: [`PLAN.md`](./PLAN.md)
-- how it's built, phase by phase: [`IMPLEMENTATION.md`](./IMPLEMENTATION.md)
-- module interfaces, the build contract: [`docs/internal-api.md`](./docs/internal-api.md)
-- event payload reference: [`docs/event-schema.md`](./docs/event-schema.md)
-- report format and how to prompt an agent with it: [`docs/report-format.md`](./docs/report-format.md)
+This Chrome extension (Manifest V3) records a full session of someone using a
+web app: interactions, network traffic, screenshots, real-time voice narration,
+annotations, and files. It exports a zip that stays on your machine. The zip's
+`report.md` is written for an LLM coding agent, so the agent can reproduce bugs
+and analyze behavior.
 
 ## What it captures
 
-- network — request and response bodies, headers, timing, and websockets through `chrome.debugger` and the CDP `Network` domain
-- console logs, exceptions, and failed requests through CDP `Runtime` and `Log`
-- clicks, inputs, scrolls, and keys through a content script in the ISOLATED world
-- navigations and SPA route changes through `chrome.webNavigation`, which fires on `pushState`
-- screenshots through CDP `Page.captureScreenshot`, at a configurable frequency with near-duplicates deduped
-- voice narration through an offscreen `MediaRecorder`, segmented, with optional cloud transcription
-- annotations through an in-page shadow-DOM canvas overlay, saved as vector shapes plus an annotated screenshot
-- files through intercepted `<input type=file>` and drag-drop, plus manual attach
-- markers and notes through side-panel buttons and keyboard shortcuts
+- network: request and response bodies, headers, timing, and websockets, through `chrome.debugger` (CDP)
+- console logs, exceptions, and failed requests
+- clicks, inputs, scrolls, and keys, through a content script
+- navigations and SPA route changes, through `chrome.webNavigation`
+- screenshots at a configurable frequency, with near-duplicates deduped
+- voice narration through an offscreen `MediaRecorder`, with optional cloud transcription
+- annotations drawn on the page, saved as vector shapes plus a screenshot
+- files uploaded to the app, plus files you attach yourself
+- markers and notes from side-panel buttons and keyboard shortcuts
 
-Everything flows through one funnel in the background service worker and
-persists to IndexedDB. So a session survives service-worker restarts, and you
-can re-export it at any verbosity level afterward.
+Every event flows through one funnel in the background service worker and
+persists to IndexedDB. A session survives service-worker restarts, and you can
+re-export it at any verbosity level later.
 
 ### Redaction (on by default)
 
-The extension masks auth headers (`authorization`, `cookie`, `set-cookie`, and
-more), token-like JSON or form fields
-(`/token|secret|password|api[-_]?key|session|auth|…/i`), sensitive URL params,
-and password or sensitive input values at capture time. Raw secrets never touch
-disk. You configure this on the options page, and you can override it per
-session.
+The extension masks auth headers, token-like JSON and form fields, sensitive URL
+params, and password inputs at capture time. Raw secrets never touch disk. You
+can add rules or turn redaction off per session on the options page.
 
 ### Deterministic trimming (no LLM)
 
-The extension captures sessions at full fidelity and trims them at export time
-into 4 deterministic levels. Each level shows a live token estimate.
+Sessions are captured at full fidelity and trimmed at export into 4 levels, each
+with a live token estimate:
 
-- L0 Full — everything: full bodies and all screenshots
-- L1 Standard (about 150k tokens) — bodies cut to 4 KB, static assets collapsed, scrolls coalesced
-- L2 Compact (about 50k tokens) — bodies reduced to a JSON shape summary, repeated requests collapsed, screenshots thinned
-- L3 Minimal (about 15k tokens) — a narrative skeleton: interactions as text, non-error bodies dropped
+- L0 Full: everything
+- L1 Standard (about 150k tokens): bodies cut to 4 KB, static assets and analytics collapsed
+- L2 Compact (about 50k tokens): bodies reduced to a JSON shape summary, repeated requests collapsed
+- L3 Minimal (about 15k tokens): a narrative skeleton
 
-The extension never trims these at any level: voice transcript, annotations and
-their screenshots, markers and notes, errors (console, exception, 4xx-5xx with
-request context), and file metadata. These are the signals you gave about what
-mattered.
+No level ever trims your explicit signals: the voice transcript, annotations,
+markers, notes, errors, and file metadata.
 
 ## Install (load unpacked)
 
@@ -71,77 +57,59 @@ pnpm install
 pnpm build            # -> .output/chrome-mv3
 ```
 
-Then in Chrome, open `chrome://extensions`, enable Developer mode, click
-Load unpacked, and select `.output/chrome-mv3`. Click the toolbar icon to open
-the side panel, then click Record.
+In Chrome, open `chrome://extensions`, enable Developer mode, click Load
+unpacked, and select `.output/chrome-mv3`. Click the toolbar icon to open the
+side panel, then click Record.
 
-> While recording, Chrome shows a "… is being debugged" banner. This is
-> expected: it is how the extension taps the full network and console streams.
-> If the debugger cannot attach (DevTools are open on the tab, or another
-> debugger is present), the session degrades gracefully. The extension still
-> records interactions, navigation, voice, annotations, and files, and the
-> report notes the gap.
+> While recording, Chrome shows a "... is being debugged" banner. That is how
+> the extension taps the network and console streams. If the debugger cannot
+> attach, the session still records interactions, navigation, voice,
+> annotations, and files, and the report notes the gap.
 
-## Develop
+## Develop and test
 
 ```bash
 pnpm dev              # WXT dev server with HMR
-pnpm compile          # typecheck the extension
-pnpm test             # unit + integration (vitest)
+pnpm compile          # typecheck
+pnpm test             # unit and integration tests (vitest)
+pnpm test:e2e         # Playwright end-to-end (add :headed for a visible browser)
 ```
 
-## Test
-
-```bash
-pnpm test             # 100+ unit/integration tests (pure logic: trimmer,
-                      # redaction, markdown, shape-summary, storage, export pipeline)
-pnpm test:e2e         # end-to-end: builds the extension, loads it into Chromium
-                      # via Playwright, records a real session against demo/, and
-                      # validates the exported zip's report.md
-pnpm test:e2e:headed  # same, with a visible browser window
-```
-
-The E2E suite ([`e2e/`](./e2e)) drives the actual extension. It loads the
-extension into a persistent Chromium context, starts a recording, interacts with
-the bundled [`demo/`](./demo) page, and exports through the real side-panel UI
-(intercepting `chrome.downloads`). It then unzips the result and asserts that
-`report.md` contains the actions and marker you performed, while confirming
-redaction held: a typed password never appears anywhere in the output.
+The end-to-end suite in [`e2e/`](./e2e) loads the built extension into
+Chromium, records a session against the bundled [`demo/`](./demo) page, exports
+through the real side-panel UI, and checks the zip: the report contains the
+actions and marker, and a typed password appears nowhere in the output.
 
 ## Voice narration and transcription (optional)
 
-Talk over the recording to explain what's happening. With Deepgram (Nova-3)
-configured, the extension transcribes narration in real time over a streaming
-websocket. Each utterance becomes its own timeline entry the moment you finish
-saying it, stamped at the moment you began speaking. So the report shows
-narration "while clicking 'Checkout'" rather than one late blob. Other providers
-(OpenAI gpt-4o-transcribe, ElevenLabs Scribe v2) transcribe in fine-grained
-batches.
+Talk while you record to explain what's happening. With Deepgram (Nova-3)
+configured, the extension transcribes in real time over a streaming websocket.
+Each utterance lands on the timeline stamped at the moment you began speaking,
+so the report reads: narration "while clicking 'Checkout'". OpenAI
+(gpt-4o-transcribe) and ElevenLabs (Scribe v2) transcribe in batches instead.
 
-On the options page, open Transcription and pick a provider, base URL, model,
-and API key. The extension stores the key in `chrome.storage.local` only. Model
-defaults track the current (2026) recommended models. Without a key, sessions
-keep the raw audio and note that segments are untranscribed.
+Set the provider, model, and API key on the options page. The key stays in
+`chrome.storage.local`. Without a key, sessions keep the raw audio.
 
 ## Using a report with an LLM agent
 
-Unzip the export and give `report.md` to your coding agent (Claude Code, Cursor,
-and others). It is a chronological narrative with `[mm:ss]` timestamps that join
-interactions, network summaries, console and errors, narration, and
-annotations. It is self-sufficient at L2 and L3 without opening the asset files.
-See [`docs/report-format.md`](./docs/report-format.md) for a suggested prompt.
+Unzip the export and give `report.md` to your coding agent. It is a
+chronological narrative with `[mm:ss]` timestamps joining interactions, network
+summaries, errors, narration, and annotations. At L2 and L3 it stands alone
+without the asset files. See [`docs/report-format.md`](./docs/report-format.md)
+for a suggested prompt.
 
 ## Why we need each permission
 
-- `debugger` — full network, console, and exception capture through CDP (the "being debugged" banner)
-- `sidePanel` — the recording and export UI
-- `tabs` and `webNavigation` — multi-tab tracking, navigation, and SPA-route events
-- `scripting` — content-script activation
-- `storage` and `unlimitedStorage` — persist sessions, events, and assets in IndexedDB
-- `offscreen` — `MediaRecorder` for voice, since service workers cannot use `getUserMedia`
-- `downloads` — save the exported zip
-- `alarms` — a heartbeat that flushes the event buffer while recording
-- `<all_urls>` — the recorder must work on whatever SaaS app you point it at
+- `debugger`: network, console, and exception capture through CDP
+- `sidePanel`: the recording and export UI
+- `tabs` and `webNavigation`: multi-tab tracking and navigation events
+- `scripting`: content-script activation
+- `storage` and `unlimitedStorage`: sessions live in IndexedDB
+- `offscreen`: `MediaRecorder` for voice
+- `downloads`: save the exported zip
+- `alarms`: flush the event buffer while recording
+- `<all_urls>`: record whatever app you point it at
 
 ## Project layout
 
@@ -159,6 +127,6 @@ demo/                local test page that exercises every capture path
 
 ## Not in v1
 
-These are out of scope for v1: video recording, backend upload or shareable
-links, LLM-powered summarization, Firefox and Safari ports, and DOM snapshot or
-replay. See [`PLAN.md`](./PLAN.md) §11.
+Video recording, backend upload and shareable links, LLM-powered summarization,
+Firefox and Safari ports, and DOM snapshot replay. See [`PLAN.md`](./PLAN.md)
+§11.
