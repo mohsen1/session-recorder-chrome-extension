@@ -148,6 +148,14 @@ export type ContentMessage =
 
 const CONTENT_MARKER = '__sr_content__';
 
+/**
+ * Marks a message the background sends toward the offscreen document
+ * (audio/start|pause|resume|stop). It is broadcast on the shared runtime
+ * channel, so this marker tells the background's OWN request handler to ignore
+ * it (only the offscreen listener should act + respond).
+ */
+export const OFFSCREEN_MARKER = '__sr_offscreen__';
+
 /** Send a content-directed message to a specific tab (all frames). */
 export async function sendToTab(
   tabId: number,
@@ -190,7 +198,12 @@ export function onMessage(
   ) => Promise<unknown> | unknown,
 ): void {
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg && (msg[BROADCAST_MARKER] || msg[CONTENT_MARKER])) return false; // not a request
+    if (
+      msg &&
+      (msg[BROADCAST_MARKER] || msg[CONTENT_MARKER] || msg[OFFSCREEN_MARKER])
+    ) {
+      return false; // not a request the background should answer
+    }
     Promise.resolve(handler(msg as RequestMessage, sender))
       .then((res) => sendResponse(res))
       .catch((err) =>

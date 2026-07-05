@@ -18,6 +18,7 @@
 import { defineContentScript } from 'wxt/sandbox';
 import { buildDescriptor } from '@/lib/dom/descriptor';
 import { onContentMessage, sendMessage } from '@/lib/messaging';
+import { ANNOTATION_HOST_ID } from '@/lib/dom/overlay';
 import type {
   AnnotationShape,
   AnnotationTool,
@@ -29,7 +30,7 @@ import type {
 const MAX_Z = 2147483647;
 const DEFAULT_COLOR = '#ff3b30';
 const DEFAULT_STROKE = 4;
-const HOST_ID = '__session_recorder_annotation_host__';
+const HOST_ID = ANNOTATION_HOST_ID;
 
 interface ToolSpec {
   tool: AnnotationTool;
@@ -702,8 +703,14 @@ class AnnotationEditor {
 
   // -- finish ---------------------------------------------------------------
 
-  /** Cancel: tear down with no message. */
+  /** Cancel: reset the background's annotating flag (no shot / no event), then
+   * tear down. Empty shapes signal a pure cancel to the background. */
   cancel(): void {
+    void sendMessage({
+      kind: 'annotation/exit',
+      shapes: [],
+      viewport: { w: window.innerWidth, h: window.innerHeight },
+    }).catch(() => {});
     this.teardown();
   }
 
@@ -731,6 +738,12 @@ class AnnotationEditor {
       }
     }
     this.host.style.pointerEvents = prevPointer;
+
+    // Hide the recorder's own toolbar (and any open text input) so the
+    // background's annotated screenshot captures only the user's drawings, not
+    // our chrome. The canvas with the drawings stays visible.
+    this.toolbar.style.display = 'none';
+    if (this.textInput) this.textInput.style.display = 'none';
 
     // Send and await so the background can screenshot the still-visible
     // drawings before we remove the overlay.

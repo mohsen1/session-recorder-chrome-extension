@@ -17,6 +17,7 @@ import { defineBackground } from 'wxt/sandbox';
 import {
   broadcast,
   onMessage,
+  OFFSCREEN_MARKER,
   sendToTab,
   type AppState,
   type RequestMessage,
@@ -73,11 +74,24 @@ const HEARTBEAT_ALARM = 'sr-heartbeat';
 const OFFSCREEN_PATH = 'offscreen.html';
 const MIC_PERMISSION_PATH = 'mic-permission.html';
 
-/** Event types still accepted while paused — the user's explicit signals. */
+/**
+ * Event types still accepted while paused: the user's explicit signals, plus
+ * every asset-backed event. The latter is important because these events are
+ * only emitted AFTER their blob has already been persisted (a manual screenshot,
+ * an annotation-exit shot, a file the user attached, or the final voice segment
+ * flushed as the recorder pauses). Dropping them here would orphan the stored
+ * asset and inflate `assetBytes` with bytes nothing references.
+ */
 const ALLOWED_WHILE_PAUSED: ReadonlySet<EventType> = new Set<EventType>([
   'marker',
   'note',
   'session-note',
+  'voice-segment',
+  'screenshot',
+  'annotation',
+  'annotation-start',
+  'file-captured',
+  'file-attached',
 ]);
 
 /** Console methods routed to the console capturer (everything else is Network.*). */
@@ -135,6 +149,10 @@ class Orchestrator {
   private lastAnnotationShot: string | undefined;
   /** Set only on the last error, surfaced in broadcast state. */
   private lastError: string | undefined;
+  /** The most recently stopped session, kept in state until dismissed/replaced. */
+  private lastStopped: Session | null = null;
+  /** Synchronous guard so concurrent rehydrate() calls don't double-run. */
+  private rehydrating = false;
 
   // --- navigation listeners (bound refs so we can unregister) ---
   private navRegistered = false;
@@ -328,6 +346,7 @@ class Orchestrator {
 
     // Prime in-memory state before capture can fire.
     this.current = session;
+    this.lastStopped = null;
     this.sessionStartEpoch = now;
     this.paused = false;
     this.micOn = false;
@@ -343,24 +362,22 @@ class Orchestrator {
 
     await createSession(session);
 
-    // Attach the debugger; a failure here aborts the whole start cleanly.
+    // Attach the debugger for deep capture (network / console / screenshots).
+    // A failure here (DevTools open on the tab, another debugger such as an
+    // automation harness already attached, or a restricted page) does NOT abort
+    // the session — we degrade gracefully: interaction, navigation, marker,
+    // note, voice, annotation and file capture all still work; only the
+    // CDP-backed streams are unavailable. The gap is recorded as a loud
+    // session-note so the report is honest about it.
+    let degradedReason: string | undefined;
     try {
       await this.dbg.attach(tabId);
+      primary.attached = true;
+      primary.attachedAt = Date.now();
     } catch (e) {
-      const error = errMessage(e);
-      session.status = 'idle';
-      this.lastError = error;
-      this.broadcastState();
-      // Never actually recorded — drop the phantom session record.
-      this.current = null;
-      this.writer?.dispose();
-      this.writer = null;
-      await deleteSession(session.id).catch(() => {});
-      return { ok: false, error };
+      degradedReason = errMessage(e);
+      this.lastError = degradedReason;
     }
-
-    primary.attached = true;
-    primary.attachedAt = Date.now();
 
     this.multitab.start();
     this.registerNavListeners();
@@ -369,6 +386,17 @@ class Orchestrator {
     await sendToTab(tabId, { kind: 'content/setActive', active: true });
     await this.persistSession();
     this.broadcastState();
+
+    if (degradedReason) {
+      this.recordEvent({
+        type: 'session-note',
+        tabId,
+        payload: {
+          kind: 'warning',
+          text: `Deep capture unavailable (network/console/screenshots off): ${degradedReason}. Interactions, navigation, voice, annotations and files are still being recorded.`,
+        },
+      });
+    }
 
     return { ok: true, session };
   }
@@ -447,6 +475,11 @@ class Orchestrator {
     await updateSession(session);
 
     this.current = null;
+    // Keep the just-stopped session visible in AppState so the side panel lands
+    // on the post-stop review (summary + transcription + export) instead of the
+    // idle screen. The panel drops it once the user hits "Done"; a new
+    // recording clears it in start().
+    this.lastStopped = session;
     this.writer = null;
     this.paused = false;
     this.micOn = false;
@@ -465,7 +498,7 @@ class Orchestrator {
     if (!session) return { ok: false };
     this.paused = true;
     session.status = 'paused';
-    if (this.micOn) this.sendToOffscreen({ kind: 'audio/pause' });
+    if (this.micOn) void this.sendToOffscreen({ kind: 'audio/pause' });
     await this.persistSession();
     this.broadcastState();
     return { ok: true };
@@ -476,7 +509,7 @@ class Orchestrator {
     if (!session) return { ok: false };
     this.paused = false;
     session.status = 'recording';
-    if (this.micOn) this.sendToOffscreen({ kind: 'audio/resume' });
+    if (this.micOn) void this.sendToOffscreen({ kind: 'audio/resume' });
     await this.persistSession();
     this.broadcastState();
     return { ok: true };
@@ -620,6 +653,23 @@ class Orchestrator {
   // Message dispatch
   // --------------------------------------------------------------------------
 
+  /**
+   * Test-only entry point: drive the real message dispatcher directly, without
+   * a live extension view. Used by the Playwright E2E suite (via a service-worker
+   * `evaluate`) so recording can be started against an explicit tab id — which
+   * also sidesteps the chrome.debugger/automation-CDP conflict by exercising the
+   * graceful degraded path. Not reachable from web pages.
+   */
+  dispatchForTest(msg: RequestMessage, senderTabId?: number): Promise<unknown> {
+    const sender = {
+      tab:
+        senderTabId !== undefined
+          ? ({ id: senderTabId } as chrome.tabs.Tab)
+          : undefined,
+    } as chrome.runtime.MessageSender;
+    return Promise.resolve(this.handleMessage(msg, sender));
+  }
+
   private async handleMessage(
     msg: RequestMessage,
     sender: chrome.runtime.MessageSender,
@@ -761,6 +811,20 @@ class Orchestrator {
     if (!this.current) return { ok: false, error: 'No active session.' };
     const p = event.payload as FilePayload;
     const blob = await dataUrlToBlob(dataUrl);
+
+    // Enforce the session's configured file cap here (the content script only
+    // applies a coarse client-side guard). Oversized files are recorded as
+    // metadata only — no blob stored.
+    const cap = this.current.settings.fileCapBytes;
+    if (blob.size > cap) {
+      this.recordEvent({
+        type: 'file-captured',
+        tabId: event.tabId ?? sender.tab?.id,
+        payload: { ...p, size: blob.size, metadataOnly: true, assetId: undefined },
+      });
+      return { ok: true };
+    }
+
     const asset = await this.putAssetBlob('file', blob, p.mime);
     this.recordEvent({
       type: 'file-captured',
@@ -800,6 +864,17 @@ class Orchestrator {
     this.annotating = false;
     broadcast({ kind: 'annotation/state', annotating: false });
 
+    const shapeList: AnnotationShape[] = Array.isArray(shapes)
+      ? (shapes as AnnotationShape[])
+      : [];
+
+    // A cancel (Escape / ✗) sends an empty shape list: just reset the annotating
+    // state, with no screenshot and no annotation event.
+    if (shapeList.length === 0) {
+      this.broadcastState();
+      return { ok: true };
+    }
+
     const senderTab = sender.tab?.id;
     const tabId =
       senderTab !== undefined && this.isSessionTab(senderTab)
@@ -810,10 +885,6 @@ class Orchestrator {
     // which records its assetId in `lastAnnotationShot`.
     this.lastAnnotationShot = undefined;
     if (tabId >= 0) await this.screenshots.capture(tabId, 'annotation');
-
-    const shapeList: AnnotationShape[] = Array.isArray(shapes)
-      ? (shapes as AnnotationShape[])
-      : [];
     const payload: AnnotationPayload = {
       shapes: shapeList,
       screenshotAssetId: this.lastAnnotationShot,
@@ -896,14 +967,28 @@ class Orchestrator {
         await this.requestMicPermission();
       }
       await this.ensureOffscreen();
-      this.sendToOffscreen({
+      // Await the offscreen's getUserMedia result: only claim the mic is on if
+      // recording actually started. A rejection (device in use, no device,
+      // revoked permission) leaves micOn false and surfaces the error.
+      const res = await this.sendToOffscreen({
         kind: 'audio/start',
         sessionId: session.id,
         startedAt: this.sessionStartEpoch,
       });
-      this.micOn = true;
+      if (res && res.ok) {
+        this.micOn = true;
+        this.lastError = undefined;
+      } else {
+        this.micOn = false;
+        this.lastError =
+          (res && res.error) || 'Could not start the microphone.';
+        await this.closeOffscreen().catch(() => {});
+      }
     } else {
-      this.sendToOffscreen({ kind: 'audio/stop' });
+      // Await the stop handshake so the offscreen has emitted + delivered its
+      // final segment BEFORE we tear the document down (otherwise the last
+      // up-to-30s of narration is lost to the destroy-before-flush race).
+      await this.sendToOffscreen({ kind: 'audio/stop' });
       this.micOn = false;
       await this.closeOffscreen().catch(() => {});
     }
@@ -915,10 +1000,14 @@ class Orchestrator {
       RequestMessage,
       { kind: 'audio/start' | 'audio/pause' | 'audio/resume' | 'audio/stop' }
     >,
-  ): void {
-    // Reaches the offscreen document's onMessage listener; the background's own
-    // listener treats these as no-ops.
-    void chrome.runtime.sendMessage(msg).catch(() => {});
+  ): Promise<{ ok: boolean; error?: string } | undefined> {
+    // Reaches the offscreen document's onMessage listener; the OFFSCREEN_MARKER
+    // tells the background's own request handler to ignore it, so only the
+    // offscreen document responds. Returns that response so callers can await
+    // the start result / stop-flush completion.
+    return chrome.runtime
+      .sendMessage({ ...msg, [OFFSCREEN_MARKER]: true })
+      .catch(() => undefined);
   }
 
   private async isMicGranted(): Promise<boolean> {
@@ -1141,7 +1230,11 @@ class Orchestrator {
   // --------------------------------------------------------------------------
 
   private async rehydrate(): Promise<void> {
-    if (this.current) return;
+    if (this.current || this.rehydrating) return;
+    // Synchronous flag: init() and onStartup/onInstalled can all fire rehydrate
+    // on cold start; without this guard they race past the `await listSessions()`
+    // and double-attach / emit duplicate rehydrate notes.
+    this.rehydrating = true;
     try {
       const sessions = await listSessions();
       const live = sessions.find(
@@ -1195,6 +1288,8 @@ class Orchestrator {
       this.broadcastState();
     } catch {
       /* nothing to recover */
+    } finally {
+      this.rehydrating = false;
     }
   }
 
@@ -1270,7 +1365,8 @@ class Orchestrator {
   }
 
   private buildState(): AppState {
-    const session = this.current;
+    // Fall back to the just-stopped session so the panel can show its review.
+    const session = this.current ?? this.lastStopped;
     return {
       session,
       recentEvents: [...this.recent],
@@ -1297,4 +1393,9 @@ class Orchestrator {
 export default defineBackground(() => {
   const orchestrator = new Orchestrator();
   orchestrator.init();
+  // Test hook for the E2E suite (service-worker global only; not web-exposed).
+  (globalThis as Record<string, unknown>).__srTest = (
+    msg: RequestMessage,
+    senderTabId?: number,
+  ) => orchestrator.dispatchForTest(msg, senderTabId);
 });

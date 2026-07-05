@@ -246,7 +246,9 @@ function SessionReview({
     if (voice.length === 0) return null;
     const done = voice.filter(
       (e) =>
-        e.type === 'voice-segment' && e.payload.transcript !== null,
+        e.type === 'voice-segment' &&
+        (e.payload.transcript !== null ||
+          e.payload.transcriptionError !== undefined),
     ).length;
     return { done, total: voice.length };
   }, [events]);

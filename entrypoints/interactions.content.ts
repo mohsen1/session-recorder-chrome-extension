@@ -11,6 +11,7 @@
 import { defineContentScript } from 'wxt/sandbox';
 
 import { buildDescriptor, bestSelector, isSensitiveInput } from '@/lib/dom/descriptor';
+import { isAnnotationOverlay } from '@/lib/dom/overlay';
 import { onContentMessage, sendMessage } from '@/lib/messaging';
 import type {
   EventPayloadMap,
@@ -128,6 +129,9 @@ export default defineContentScript({
     const onClick = (e: MouseEvent): void => {
       const target = e.target;
       if (!(target instanceof Element)) return;
+      // Clicks land on the annotation overlay (retargeted to its host) while the
+      // user is drawing — those are recorder chrome, not page interactions.
+      if (isAnnotationOverlay(target)) return;
       post('click', {
         descriptor: buildDescriptor(target),
         modifiers: modifiersOf(e),
@@ -138,6 +142,7 @@ export default defineContentScript({
     const onInput = (e: Event): void => {
       const target = e.target;
       if (!(target instanceof Element)) return;
+      if (isAnnotationOverlay(target)) return;
       const el = target;
       const existing = inputTimers.get(el);
       if (existing) clearTimeout(existing);
@@ -178,6 +183,7 @@ export default defineContentScript({
 
     const onKeyDown = (e: KeyboardEvent): void => {
       if (MODIFIER_KEYS.has(e.key)) return;
+      if (isAnnotationOverlay(e.target)) return; // typing an annotation label
       const chord = e.ctrlKey || e.metaKey || e.altKey;
       if (!chord && !NAMED_KEYS.has(e.key)) return;
       const focused = document.activeElement;

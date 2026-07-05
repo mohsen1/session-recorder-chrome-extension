@@ -143,8 +143,14 @@ export class ScreenshotScheduler {
 
       const ahash = await averageHashFromBlob(blob);
 
+      // Explicit, user-driven captures are never deduped: a manual shot is
+      // always wanted, and an annotation-exit shot MUST produce an asset so the
+      // annotation event has a backing image. Only automatic capture (interaction
+      // / nav / key-moment / error) is subject to near-duplicate suppression.
+      const explicit = trigger === 'manual' || trigger === 'annotation';
       const last = this.lastHashByTab.get(tabId);
       if (
+        !explicit &&
         last !== undefined &&
         hammingHex(ahash, last) <= settings.screenshotDedupThreshold
       ) {

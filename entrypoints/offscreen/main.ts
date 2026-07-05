@@ -91,7 +91,7 @@ function startRecorder(): void {
  * Assembles the collected chunks into one complete WebM Blob, emits it, then
  * either restarts for the next segment or tears down.
  */
-function handleStop(): void {
+async function handleStop(): Promise<void> {
   const blob = new Blob(chunks, { type: mimeType });
   const tStart = segStart;
   const tEnd = elapsed();
@@ -99,15 +99,24 @@ function handleStop(): void {
   stopReason = null;
   chunks = [];
 
-  void emitSegment(blob, tStart, tEnd);
+  // Await delivery so a full stop only completes after the final segment has
+  // actually been handed to the background (it tears this document down as soon
+  // as we resolve, which would otherwise kill an in-flight segment).
+  await emitSegment(blob, tStart, tEnd);
 
   if (reason === 'segment') {
     if (state === 'recording') startRecorder();
   } else if (reason === 'stop') {
     teardown();
+    const resolve = stopFlushResolve;
+    stopFlushResolve = null;
+    if (resolve) resolve();
   }
   // 'pause': stay stopped; recorder is left inactive until resume.
 }
+
+/** Resolves the pending full-stop once its final segment has been delivered. */
+let stopFlushResolve: (() => void) | null = null;
 
 /** Rotate to a fresh segment on the 30s cadence. */
 function rotateSegment(): void {
@@ -243,10 +252,10 @@ function handleResume(): void {
   startLevelLoop();
 }
 
-function handleStopControl(): void {
+function handleStopControl(): Promise<void> {
   if (state === 'idle') {
     teardown();
-    return;
+    return Promise.resolve();
   }
   // Prevent the cadence timer from racing the shutdown.
   if (segmentTimer !== null) {
@@ -255,14 +264,19 @@ function handleStopControl(): void {
   }
   stopLevelLoop();
 
-  if (recorder && recorder.state === 'recording') {
-    state = 'idle';
-    stopReason = 'stop';
-    recorder.stop(); // handleStop emits the final segment, then teardown()
-  } else {
-    // Paused: recorder is already inactive, nothing left to flush.
-    teardown();
+  const rec = recorder;
+  if (rec && rec.state === 'recording') {
+    // Resolve only once handleStop has emitted + delivered the final segment.
+    return new Promise<void>((resolve) => {
+      stopFlushResolve = resolve;
+      state = 'idle';
+      stopReason = 'stop';
+      rec.stop();
+    });
   }
+  // Paused: recorder is already inactive, nothing left to flush.
+  teardown();
+  return Promise.resolve();
 }
 
 chrome.runtime.onMessage.addListener((raw, _sender, sendResponse) => {
@@ -286,9 +300,10 @@ chrome.runtime.onMessage.addListener((raw, _sender, sendResponse) => {
       sendResponse({ ok: true });
       return false;
     case 'audio/stop':
-      handleStopControl();
-      sendResponse({ ok: true });
-      return false;
+      // Respond only after the final segment has been flushed + delivered, so
+      // the background can safely tear down the offscreen document.
+      void handleStopControl().then(() => sendResponse({ ok: true }));
+      return true; // async response
     default:
       return false; // not ours (broadcasts, other requests)
   }
