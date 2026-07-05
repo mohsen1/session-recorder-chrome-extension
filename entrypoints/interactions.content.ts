@@ -46,6 +46,11 @@ export default defineContentScript({
   runAt: 'document_start',
   matchAboutBlank: true,
   main() {
+    // Guard against double-injection (manifest load + record-start injection).
+    const w = window as unknown as { __srInteractions?: boolean };
+    if (w.__srInteractions) return;
+    w.__srInteractions = true;
+
     let active = false;
 
     // Pending per-element input debounce timers.

@@ -385,6 +385,7 @@ class Orchestrator {
     this.registerNavListeners();
     this.startHeartbeat();
 
+    await this.ensureContentScripts(tabId);
     await sendToTab(tabId, { kind: 'content/setActive', active: true });
     await this.persistSession();
     this.broadcastState();
@@ -436,6 +437,7 @@ class Orchestrator {
       };
       session.tabs.push(info);
 
+      await this.ensureContentScripts(tabId);
       await sendToTab(tabId, { kind: 'content/setActive', active: true });
       this.recordEvent({
         type: 'tab-opened',
@@ -1318,6 +1320,33 @@ class Orchestrator {
     return asset;
   }
 
+  /**
+   * Inject the content scripts into a tab that is being recorded.
+   *
+   * Manifest-declared content scripts only run when a page loads, so a tab that
+   * was already open when recording starts has none. Without this, interaction
+   * capture, file capture, and annotation silently do nothing on that tab (the
+   * debugger-based network and console capture still works, which is why the bug
+   * looks like "annotate does nothing" rather than "recording is dead"). We
+   * inject into all frames; each script guards against double-injection, so a
+   * later manifest load on navigation does not double-bind. Restricted pages
+   * (chrome://, the web store) reject injection, which we ignore.
+   */
+  private async ensureContentScripts(tabId: number): Promise<void> {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId, allFrames: true },
+        files: [
+          'content-scripts/interactions.js',
+          'content-scripts/annotations.js',
+          'content-scripts/file-capture.js',
+        ],
+      });
+    } catch {
+      /* restricted page or no host access — capture degrades, not fatal */
+    }
+  }
+
   // --------------------------------------------------------------------------
   // Rehydration after a service-worker restart
   // --------------------------------------------------------------------------
@@ -1360,6 +1389,7 @@ class Orchestrator {
           t.attached = true;
           t.attachedAt = Date.now();
           delete t.detachedAt;
+          await this.ensureContentScripts(t.tabId);
           await sendToTab(t.tabId, { kind: 'content/setActive', active: true });
         } catch {
           t.attached = false;

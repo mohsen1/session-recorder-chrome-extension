@@ -883,6 +883,12 @@ export default defineContentScript({
   allFrames: false,
   runAt: 'document_idle',
   main() {
+    // Guard against double-injection: the background injects this script into
+    // already-open tabs on record start, and the manifest injects it on load.
+    const w = window as unknown as { __srAnnotate?: boolean };
+    if (w.__srAnnotate) return;
+    w.__srAnnotate = true;
+
     let editor: AnnotationEditor | null = null;
 
     onContentMessage((msg) => {

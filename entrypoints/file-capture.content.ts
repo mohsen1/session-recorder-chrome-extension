@@ -23,6 +23,11 @@ export default defineContentScript({
   allFrames: true,
   runAt: 'document_idle',
   main() {
+    // Guard against double-injection (manifest load + record-start injection).
+    const w = window as unknown as { __srFileCapture?: boolean };
+    if (w.__srFileCapture) return;
+    w.__srFileCapture = true;
+
     let active = false;
 
     /** Read a File as a data URL. */
