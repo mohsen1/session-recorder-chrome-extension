@@ -113,9 +113,19 @@ export const useSidepanel = create<SidepanelStore>((set, get) => ({
             break;
           case 'event/tick':
             set((s) => {
-              const recentEvents = [...s.recentEvents, evt.event].slice(
-                -MAX_TICKER,
+              // Upsert by id: a re-broadcast of an existing event (for example a
+              // voice segment whose transcript just arrived) replaces it in place
+              // rather than duplicating it.
+              const idx = s.recentEvents.findIndex(
+                (e) => e.id === evt.event.id,
               );
+              let recentEvents: SessionEvent[];
+              if (idx >= 0) {
+                recentEvents = s.recentEvents.slice();
+                recentEvents[idx] = evt.event;
+              } else {
+                recentEvents = [...s.recentEvents, evt.event].slice(-MAX_TICKER);
+              }
               const session = s.session
                 ? { ...s.session, counts: evt.counts }
                 : s.session;

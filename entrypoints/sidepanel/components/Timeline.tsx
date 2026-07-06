@@ -28,6 +28,7 @@ import {
   Paperclip,
   FileUp,
   Info,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import { formatClock } from '@/lib/export/markdown';
@@ -56,7 +57,11 @@ export function Timeline(): React.JSX.Element {
 
   const toBottom = () => {
     const el = scrollRef.current;
-    if (el && stickRef.current) el.scrollTop = el.scrollHeight;
+    if (!el || !stickRef.current) return;
+    // Wait for layout (thumbnails, wrapping) to settle before pinning.
+    requestAnimationFrame(() => {
+      if (stickRef.current) el.scrollTop = el.scrollHeight;
+    });
   };
 
   const onScroll = () => {
@@ -80,37 +85,116 @@ export function Timeline(): React.JSX.Element {
     return () => ro.disconnect();
   }, []);
 
+  const items = groupItems(events);
+
   return (
     <div className="tl" ref={scrollRef} onScroll={onScroll}>
       {events.length === 0 ? (
         <p className="tl__empty">Waiting for activity…</p>
       ) : (
         <ul className="tl__list" ref={listRef}>
-          {events.map((e) => {
-            const v = visualFor(e);
-            return (
-              <li key={e.id} className={`tl-row tl-row--${v.tone}`}>
-                <span className="tl-time">{formatClock(e.t)}</span>
-                <span className="tl-icon" aria-hidden="true">
-                  <v.Icon size={15} strokeWidth={1.75} />
-                </span>
-                <span className="tl-body">
-                  <span className="tl-line">
-                    <span className="tl-label">{v.label}</span>
-                    {v.meta && <span className="tl-meta">{v.meta}</span>}
-                  </span>
-                  {v.sub && <span className="tl-sub">{v.sub}</span>}
-                </span>
-                {v.thumbAssetId && (
-                  <AssetThumb assetId={v.thumbAssetId} alt={v.label} />
-                )}
-              </li>
-            );
-          })}
+          {items.map((item) =>
+            item.kind === 'event' ? (
+              <EventRow key={item.event.id} event={item.event} />
+            ) : (
+              <NetGroup key={item.id} events={item.events} />
+            ),
+          )}
         </ul>
       )}
     </div>
   );
+}
+
+function EventRow({ event }: { event: SessionEvent }): React.JSX.Element {
+  const v = visualFor(event);
+  return (
+    <li className={`tl-row tl-row--${v.tone}`}>
+      <span className="tl-time">{formatClock(event.t)}</span>
+      <span className="tl-icon" aria-hidden="true">
+        <v.Icon size={15} strokeWidth={1.75} />
+      </span>
+      <span className="tl-body">
+        <span className="tl-line">
+          <span className="tl-label">{v.label}</span>
+          {v.meta && <span className="tl-meta">{v.meta}</span>}
+        </span>
+        {v.sub && <span className="tl-sub">{v.sub}</span>}
+      </span>
+      {v.thumbAssetId && <AssetThumb assetId={v.thumbAssetId} alt={v.label} />}
+    </li>
+  );
+}
+
+/** Consecutive network requests, collapsed into a disclosure to cut clutter. */
+function NetGroup({ events }: { events: SessionEvent[] }): React.JSX.Element {
+  const errors = events.filter(
+    (e) =>
+      e.type === 'net-request' &&
+      (e.payload.failed ||
+        (typeof e.payload.status === 'number' && e.payload.status >= 400)),
+  ).length;
+  return (
+    <li className="tl-netgroup">
+      <details>
+        <summary className="tl-row tl-row--muted">
+          <span className="tl-time">{formatClock(events[0]!.t)}</span>
+          <span className="tl-icon" aria-hidden="true">
+            <Globe size={15} strokeWidth={1.75} />
+          </span>
+          <span className="tl-body">
+            <span className="tl-line">
+              <span className="tl-label">{events.length} network requests</span>
+              {errors > 0 && (
+                <span className="tl-meta tl-netgroup__err">
+                  {errors} failed
+                </span>
+              )}
+            </span>
+          </span>
+          <ChevronRight size={14} className="tl-netgroup__chev" />
+        </summary>
+        <ul className="tl-netgroup__list">
+          {events.map((e) => (
+            <EventRow key={e.id} event={e} />
+          ))}
+        </ul>
+      </details>
+    </li>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Grouping: fold runs of >= 3 consecutive network requests into one group.
+// ----------------------------------------------------------------------------
+
+type TimelineItem =
+  | { kind: 'event'; event: SessionEvent }
+  | { kind: 'netgroup'; id: string; events: SessionEvent[] };
+
+const NET_GROUP_MIN = 3;
+
+function groupItems(events: SessionEvent[]): TimelineItem[] {
+  const items: TimelineItem[] = [];
+  let run: SessionEvent[] = [];
+  const flush = () => {
+    if (run.length >= NET_GROUP_MIN) {
+      items.push({ kind: 'netgroup', id: `ng-${run[0]!.id}`, events: run });
+    } else {
+      for (const e of run) items.push({ kind: 'event', event: e });
+    }
+    run = [];
+  };
+  for (const e of events) {
+    if (e.type === 'net-request') {
+      run.push(e);
+    } else {
+      flush();
+      items.push({ kind: 'event', event: e });
+    }
+  }
+  flush();
+  return items;
 }
 
 function truncate(s: string, n = 52): string {

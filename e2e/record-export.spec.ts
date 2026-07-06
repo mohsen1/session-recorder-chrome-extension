@@ -57,6 +57,9 @@ test('records interactions and exports a readable, valid zip', async ({
   await page.fill('#f-user', 'ada lovelace');
   await page.click('#btn-post');
   await page.fill('#f-pass', 'hunter2'); // must be redacted
+  // Same-origin request so a net-request is captured deterministically, without
+  // depending on the demo page's external endpoints being reachable.
+  await page.evaluate(() => fetch(`/probe-${Date.now()}`).catch(() => {}));
   // Let the input debounce (800ms) flush, plus a click to blur.
   await page.waitForTimeout(1000);
   await page.click('#btn-console-error');

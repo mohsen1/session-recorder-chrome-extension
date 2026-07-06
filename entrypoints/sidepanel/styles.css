@@ -587,7 +587,46 @@ button {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px 14px 10px;
+  /* generous bottom padding so the newest row clears the pinned capture bar */
+  padding: 6px 14px 18px;
+}
+
+/* ---- Network group (collapsible) ---- */
+
+.tl-netgroup {
+  list-style: none;
+}
+
+.tl-netgroup details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.tl-netgroup details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tl-netgroup__chev {
+  align-self: center;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+  flex: 0 0 auto;
+}
+
+.tl-netgroup details[open] .tl-netgroup__chev {
+  transform: rotate(90deg);
+}
+
+.tl-netgroup__err {
+  color: var(--danger);
+}
+
+.tl-netgroup__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 1px solid var(--line);
+  margin-left: calc(5ch + 8px + 8px);
 }
 
 .tl__empty {
@@ -877,6 +916,17 @@ button {
   text-overflow: ellipsis;
 }
 
+.review__saved {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ok);
+}
+
 .summary {
   display: flex;
   align-items: center;
@@ -930,6 +980,14 @@ button {
 .transcribe__count {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+.transcribe--done {
+  color: var(--ok);
+}
+
+.transcribe--done .transcribe__label {
+  color: var(--ok);
 }
 
 /* ---- Export ---- */

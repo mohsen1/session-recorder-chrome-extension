@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Clock, Database, Layers, Settings, X } from 'lucide-react';
+import { Check, Clock, Database, Layers, Settings, X } from 'lucide-react';
 import { getEvents, getSession } from '@/lib/storage';
 import { formatClock } from '@/lib/export/markdown';
 import type {
@@ -327,15 +327,28 @@ function SessionReview({
           {closeLabel}
         </button>
         <span className="review__name">{session?.name ?? '…'}</span>
+        {closeLabel === 'Done' && (
+          <span className="review__saved">
+            <Check size={13} strokeWidth={2.5} />
+            Saved
+          </span>
+        )}
       </div>
 
       {loadError && <p className="export__error">{loadError}</p>}
 
       {session && <Summary session={session} />}
 
-      {progress && (
+      {progress && progress.total > 0 && progress.done >= progress.total && (
+        <div className="transcribe transcribe--done">
+          <Check size={14} strokeWidth={2.5} />
+          <span className="transcribe__label">Transcription complete</span>
+        </div>
+      )}
+
+      {progress && progress.total > 0 && progress.done < progress.total && (
         <div className="transcribe">
-          <span className="transcribe__label">Transcription</span>
+          <span className="transcribe__label">Transcribing…</span>
           <div className="transcribe__bar">
             <div
               className="transcribe__fill"

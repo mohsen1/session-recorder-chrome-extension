@@ -297,6 +297,15 @@ class Orchestrator {
   private updateRecent(event: SessionEvent): void {
     const idx = this.recent.findIndex((e) => e.id === event.id);
     if (idx >= 0) this.recent[idx] = event;
+    // Re-broadcast so the live timeline reflects the change (for example a
+    // voice segment whose transcript just finished). The store upserts by id.
+    if (this.current) {
+      broadcast({
+        kind: 'event/tick',
+        event,
+        counts: this.current.counts,
+      });
+    }
   }
 
   // --------------------------------------------------------------------------
