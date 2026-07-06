@@ -19,8 +19,8 @@ import type {
   SessionEvent,
 } from '@/lib/session/types';
 import {
-  CAPTURE_DETAIL_LEVELS,
   DEFAULT_SETTINGS,
+  settingsForDetail,
   STORAGE_KEYS,
 } from '@/lib/session/settings';
 
@@ -40,6 +40,7 @@ export interface SidepanelStore {
   recording: boolean;
   paused: boolean;
   micOn: boolean;
+  videoOn: boolean;
   annotating: boolean;
   attachedTabIds: number[];
   error?: string;
@@ -64,6 +65,7 @@ export interface SidepanelStore {
   pauseRecording: () => Promise<void>;
   resumeRecording: () => Promise<void>;
   toggleMic: () => Promise<void>;
+  toggleVideo: () => Promise<void>;
   toggleAnnotate: () => Promise<void>;
   addMarker: () => Promise<void>;
   addNote: (text: string) => Promise<void>;
@@ -84,6 +86,7 @@ function appStatePatch(state: AppState): Partial<SidepanelStore> {
     recording: state.recording,
     paused: state.paused,
     micOn: state.micOn,
+    videoOn: state.videoOn,
     annotating: state.annotating,
     attachedTabIds: state.attachedTabIds ?? [],
     error: state.error,
@@ -96,6 +99,7 @@ export const useSidepanel = create<SidepanelStore>((set, get) => ({
   recording: false,
   paused: false,
   micOn: false,
+  videoOn: false,
   annotating: false,
   attachedTabIds: [],
   error: undefined,
@@ -223,6 +227,17 @@ export const useSidepanel = create<SidepanelStore>((set, get) => ({
     }
   },
 
+  toggleVideo: async () => {
+    const on = !get().videoOn;
+    try {
+      const res = await sendMessage({ kind: 'video/toggle', on });
+      if (res.ok) set({ videoOn: res.videoOn, error: undefined });
+      else set({ error: res.error ?? 'Tab video capture unavailable.' });
+    } catch (err) {
+      set({ error: describeError(err) });
+    }
+  },
+
   toggleAnnotate: async () => {
     try {
       const res = await sendMessage({ kind: 'annotation/toggle' });
@@ -302,22 +317,37 @@ export async function saveScreenshotPolicy(
 }
 
 /**
- * Persist a capture-detail preset (screenshot policy + pointer sensitivity) into
- * the global defaults, from the Record button's detail slider.
+ * Persist a capture-detail preset (screenshot policy + pointer sensitivity +
+ * body-capture caps) into the global defaults, from the Record button's
+ * detail slider.
  */
 export async function saveCaptureDetail(index: number): Promise<void> {
-  const preset =
-    CAPTURE_DETAIL_LEVELS[
-      Math.max(0, Math.min(CAPTURE_DETAIL_LEVELS.length - 1, index))
-    ];
-  if (!preset) return;
+  const overrides = settingsForDetail(index);
+  if (!overrides) return;
   const current = await loadDefaultSettings();
-  const next: CaptureSettings = {
-    ...current,
-    screenshotPolicy: preset.screenshotPolicy,
-    hoverDwellMs: preset.hoverDwellMs,
-  };
+  const next: CaptureSettings = { ...current, ...overrides };
   await chrome.storage.local.set({ [STORAGE_KEYS.defaultSettings]: next });
+}
+
+/** Persist the API-spec capture opt-in into the global capture defaults. */
+export async function saveCaptureApiSpec(on: boolean): Promise<void> {
+  const current = await loadDefaultSettings();
+  const next: CaptureSettings = { ...current, captureApiSpec: on };
+  await chrome.storage.local.set({ [STORAGE_KEYS.defaultSettings]: next });
+}
+
+/** Whether tab-video capture should start automatically with a recording. */
+export async function loadVideoFromStart(): Promise<boolean> {
+  try {
+    const stored = await chrome.storage.local.get(STORAGE_KEYS.videoFromStart);
+    return stored[STORAGE_KEYS.videoFromStart] === true;
+  } catch {
+    return false;
+  }
+}
+
+export async function saveVideoFromStart(on: boolean): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.videoFromStart]: on });
 }
 
 /** Human-readable byte size (e.g. `1.4 MB`). */
@@ -330,15 +360,4 @@ export function formatBytes(bytes: number): string {
   return `${value >= 100 || i === 0 ? Math.round(value) : value.toFixed(1)} ${unit}`;
 }
 
-/**
- * Zip / download folder name for a session, e.g. `session-2026-07-05-1432`.
- * Matches the layout described in PLAN.md §5 and used by the bundle builder.
- */
-export function sessionFolderName(session: Session): string {
-  const d = new Date(session.startedAt);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return (
-    `session-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` +
-    `-${p(d.getHours())}${p(d.getMinutes())}`
-  );
-}
+export { sessionFolderName } from '@/lib/util/naming';

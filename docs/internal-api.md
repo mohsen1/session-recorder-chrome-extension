@@ -135,6 +135,7 @@ Behavior:
 - `responseReceived` records status, statusText, response headers, mimeType, and timing
 - `loadingFinished` immediately calls `send(tabId,'Network.getResponseBody',{requestId})`. If `base64Encoded`, keep the body as base64 (mark base64). Apply redaction (when settings.redactionEnabled) to headers, url, and text. Truncate text to `inlineBodyCapBytes` (mark truncated plus originalSize). If the original is `≤ assetBodyCapBytes`, also call `storeBodyAsset` and set `responseBody.assetId`. Emit `{type:'net-request', tabId, payload}`
 - `loadingFailed` emits with `failed:true, failureReason`
+- when `settings.captureApiSpec` is on and the request is API-ish (`isApiIsh` from `lib/export/openapi.ts`: XHR/fetch or JSON, not websocket/static/telemetry), the stored-copy cap is raised to `max(assetBodyCapBytes, API_SPEC_BODY_CAP_BYTES)` and overflowing REQUEST bodies are stored via `storeBodyAsset` too (emit defers until the store settles); inline truncation is unchanged
 - websockets: `webSocketCreated` opens a pending ws; `webSocketFrameSent/Received` append to `wsFrames` (cap about 100 frames, text cap 2KB each); `webSocketClosed` emits. Set `websocket:true`
 - getResponseBody can reject when the body is evicted. Catch it and emit with `responseBody.present=false`
 - apply redaction here, before emit. Import it from `./redaction`

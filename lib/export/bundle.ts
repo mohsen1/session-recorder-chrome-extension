@@ -21,6 +21,7 @@ import type { TokenEstimate } from '@/lib/messaging';
 import { applyLevel } from './trimmer';
 import type { TrimContext } from './trimmer';
 import { renderManifest, renderReport } from './markdown';
+import { apiBodyAssetIds, buildOpenApiSpec } from './openapi';
 import { estimateTokens } from './tokens';
 
 export interface ExportFile {
@@ -148,6 +149,7 @@ function planAssetPaths(events: SessionEvent[], assets: Asset[]): AssetPlan {
 
   let shotSeq = 0;
   let audioSeq = 0;
+  let videoSeq = 0;
   let netSeq = 0;
 
   const assign = (id: string | undefined, make: () => string): void => {
@@ -174,6 +176,12 @@ function planAssetPaths(events: SessionEvent[], assets: Asset[]): AssetPlan {
         assign(e.payload.assetId, () => {
           audioSeq += 1;
           return `audio/${seq(audioSeq)}-${mmss(e.t)}.webm`;
+        });
+        break;
+      case 'video-segment':
+        assign(e.payload.assetId, () => {
+          videoSeq += 1;
+          return `video/${seq(videoSeq)}-${mmss(e.t)}.webm`;
         });
         break;
       case 'file-captured':
@@ -223,6 +231,9 @@ function mapEventAssets(
       break;
     case 'voice-segment':
       clone.payload.assetId = map(clone.payload.assetId) as string;
+      break;
+    case 'video-segment':
+      clone.payload.assetId = map(clone.payload.assetId);
       break;
     case 'file-captured':
     case 'file-attached':
@@ -299,6 +310,36 @@ export async function buildBundle(
 
   const assetPath = (id: string): string | undefined => dedupById.get(id);
 
+  // 2c) Compile the OpenAPI spec from the UNTRIMMED events (opt-in). Using the
+  // full event list keeps the spec identical at every level — L2/L3 body
+  // stripping must not starve it. Full stored bodies are read straight from
+  // the asset blobs; they need not survive into the zip themselves.
+  let openapiFile: ExportFile | undefined;
+  let openapi: { path: string; endpointCount: number } | undefined;
+  if (session.settings.captureApiSpec) {
+    const bodyTextById = new Map<string, string>();
+    for (const id of apiBodyAssetIds(events)) {
+      const asset = assetById.get(id);
+      if (!asset || asset.kind !== 'net-body') continue;
+      try {
+        bodyTextById.set(id, await asset.blob.text());
+      } catch {
+        /* unreadable blob — the inline (possibly truncated) copy is skipped */
+      }
+    }
+    const compiled = buildOpenApiSpec(events, (id) => bodyTextById.get(id), {
+      name: session.name,
+      startedAt: session.startedAt,
+    });
+    if (compiled) {
+      openapiFile = {
+        path: 'openapi.json',
+        text: JSON.stringify(compiled.spec, null, 2),
+      };
+      openapi = { path: 'openapi.json', endpointCount: compiled.endpointCount };
+    }
+  }
+
   // 3) Text artifacts.
   const report = renderReport({
     session,
@@ -306,6 +347,7 @@ export async function buildBundle(
     assets: assetsMeta,
     level,
     assetPath,
+    ...(openapi ? { openapi } : {}),
   });
   const manifest = renderManifest({
     session,
@@ -339,6 +381,7 @@ export async function buildBundle(
     { path: 'MANIFEST.md', text: manifest },
     { path: 'transcript.json', text: JSON.stringify(transcript, null, 2) },
   ];
+  if (openapiFile) files.push(openapiFile);
 
   // 4) Every surviving (deduped) asset as raw bytes, written once.
   for (const [path, bytes] of bytesByPath) {
@@ -356,6 +399,7 @@ const OMIT_ORDER: [SessionEvent['type'], string][] = [
   ['scroll', 'scroll events'],
   ['console', 'console logs'],
   ['key', 'keystrokes'],
+  ['text-select', 'text selections'],
   ['input', 'form input values'],
   ['click', 'clicks'],
   ['screenshot', 'screenshots'],
@@ -398,6 +442,11 @@ function omittedCategories(
   }
   if (collapsed) out.push('repeated requests');
 
+  // thinVideo keeps the video-segment event but drops its file at L2+.
+  const hasVideoFile = (evts: SessionEvent[]): boolean =>
+    evts.some((e) => e.type === 'video-segment' && e.payload.assetId != null);
+  if (hasVideoFile(full) && !hasVideoFile(trimmed)) out.push('video files');
+
   return out;
 }
 
@@ -420,6 +469,8 @@ export function estimateForLevels(
         return `screenshots/${id}.jpg`;
       case 'audio':
         return `audio/${id}.webm`;
+      case 'video':
+        return `video/${id}.webm`;
       case 'file':
         return `files/${id}`;
       case 'net-body':

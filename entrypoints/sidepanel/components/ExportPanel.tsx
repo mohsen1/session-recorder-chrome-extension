@@ -107,6 +107,9 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
         const trimmed = applyLevel(events, level, ctx);
         const urls = new Map<string, string>();
         for (const a of assets) {
+          // Images only, deliberately: embedding multi-MB video/audio blobs as
+          // data URLs would explode the standalone HTML. Video-segment lines
+          // render there without a link.
           if (a.kind === 'screenshot' || a.mime.startsWith('image/')) {
             urls.set(a.id, await fileToDataUrl(a.blob));
           }

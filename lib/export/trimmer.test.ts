@@ -46,6 +46,11 @@ function buildFixture(): {
   b.click('Open orders');
   b.input('search', 'widgets');
 
+  // A settled text selection and its deselection: the selection survives
+  // through L2, the cleared marker is dropped at L1+, both are gone at L3.
+  b.textSelect('the quarterly revenue figure');
+  b.textSelect('', { cleared: true });
+
   // Static assets + analytics noise → dropped at L1.
   b.net('GET', 'https://cdn.example.com/logo.png', {
     status: 200,
@@ -93,6 +98,9 @@ function buildFixture(): {
   // Kept through L2 by annotation/error triggers, dropped at L3 (manifest-only).
   b.screenshot('annotation');
   b.screenshot('error');
+
+  // A video take: the event line survives every level, the file only L0/L1.
+  b.video(6000, 12000);
 
   // Protected signals — must survive every level verbatim.
   b.marker('Checkpoint');
@@ -145,6 +153,63 @@ describe('trimmer', () => {
       for (const pid of protectedIds) {
         expect(ids.has(pid)).toBe(true);
       }
+    }
+  });
+
+  it('keeps selections through L2, drops cleared at L1+, drops all at L3', () => {
+    const { events, ctx } = buildFixture();
+    const selections = (evts: SessionEvent[]) =>
+      evts.filter((e) => e.type === 'text-select');
+
+    // Sanity: fixture holds one selection + one cleared marker.
+    const all = selections(events);
+    expect(all.length).toBe(2);
+    expect(all.filter((e) => e.type === 'text-select' && e.payload.cleared).length).toBe(1);
+
+    const l0 = selections(applyLevel(events, 'L0', ctx));
+    expect(l0.length).toBe(2);
+
+    for (const lvl of ['L1', 'L2'] as VerbosityLevel[]) {
+      const out = selections(applyLevel(events, lvl, ctx));
+      expect(out.length).toBe(1);
+      const only = out[0];
+      expect(only && only.type === 'text-select' && only.payload.cleared).toBe(false);
+      expect(
+        only && only.type === 'text-select' ? only.payload.text : undefined,
+      ).toBe('the quarterly revenue figure');
+    }
+
+    expect(selections(applyLevel(events, 'L3', ctx)).length).toBe(0);
+  });
+
+  it('text-select events are not protected', () => {
+    const { events } = buildFixture();
+    for (const e of events) {
+      if (e.type === 'text-select') expect(isProtected(e)).toBe(false);
+    }
+  });
+
+  it('keeps video segments at every level but drops the file at L2+', () => {
+    const { events, ctx } = buildFixture();
+    const vids = (evts: SessionEvent[]) =>
+      evts.filter(
+        (e): e is Extract<SessionEvent, { type: 'video-segment' }> =>
+          e.type === 'video-segment',
+      );
+    expect(vids(events).length).toBe(1);
+
+    for (const lvl of ['L0', 'L1'] as VerbosityLevel[]) {
+      const out = vids(applyLevel(events, lvl, ctx));
+      expect(out.length).toBe(1);
+      expect(out[0]?.payload.assetId).toBeTruthy();
+    }
+    for (const lvl of ['L2', 'L3'] as VerbosityLevel[]) {
+      const out = vids(applyLevel(events, lvl, ctx));
+      expect(out.length).toBe(1);
+      expect(out[0]?.payload.assetId).toBeUndefined();
+      // The span survives so the report line still reads correctly.
+      expect(out[0]?.payload.tStart).toBe(6000);
+      expect(out[0]?.payload.tEnd).toBe(12000);
     }
   });
 

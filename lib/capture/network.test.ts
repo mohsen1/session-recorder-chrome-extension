@@ -17,6 +17,7 @@ const SETTINGS: CaptureSettings = {
   hoverDwellMs: 0,
   screenshotQuality: 70,
   screenshotDedupThreshold: 4,
+  captureApiSpec: false,
 };
 
 function makeCapturer(overrides: Partial<NetworkDeps> = {}): {
@@ -110,6 +111,134 @@ describe('NetworkCapturer WebSockets', () => {
     });
     cap.flushOpen();
     expect(emitted).toHaveLength(0);
+  });
+});
+
+describe('NetworkCapturer API-spec full-body capture', () => {
+  const API_SETTINGS: CaptureSettings = { ...SETTINGS, captureApiSpec: true };
+  // Over both the inline cap (64 KB) and the asset cap (512 KB), under 10 MB.
+  const bigJson = `{"data":"${'x'.repeat(600 * 1024)}"}`;
+
+  function finishXhr(
+    cap: NetworkCapturer,
+    url: string,
+    opts?: { postData?: string },
+  ): void {
+    const rid = 'r-api';
+    cap.handle(1, 'Network.requestWillBeSent', {
+      requestId: rid,
+      request: {
+        method: opts?.postData ? 'POST' : 'GET',
+        url,
+        headers: { 'content-type': 'application/json' },
+        ...(opts?.postData ? { postData: opts.postData } : {}),
+      },
+      type: 'XHR',
+    });
+    cap.handle(1, 'Network.responseReceived', {
+      requestId: rid,
+      response: {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+        mimeType: 'application/json',
+      },
+    });
+    cap.handle(1, 'Network.loadingFinished', { requestId: rid });
+  }
+
+  it('stores the full response body past the normal asset cap when the flag is on', async () => {
+    const storeBodyAsset = vi.fn(async () => 'asset-api');
+    const { cap, emitted } = makeCapturer({
+      getSettings: () => API_SETTINGS,
+      send: vi.fn(async () => ({ body: bigJson, base64Encoded: false })),
+      storeBodyAsset,
+    });
+    finishXhr(cap, 'https://api.example.com/v1/users');
+    await vi.waitFor(() => expect(emitted).toHaveLength(1));
+
+    const body = payloadOf(emitted[0]!).responseBody!;
+    expect(body.truncated).toBe(true);
+    expect(body.assetId).toBe('asset-api');
+    expect(storeBodyAsset).toHaveBeenCalledWith(
+      bigJson,
+      'application/json',
+      false,
+    );
+  });
+
+  it('respects the old asset cap for the same body when the flag is off', async () => {
+    const storeBodyAsset = vi.fn(async () => 'asset-api');
+    const { cap, emitted } = makeCapturer({
+      send: vi.fn(async () => ({ body: bigJson, base64Encoded: false })),
+      storeBodyAsset,
+    });
+    finishXhr(cap, 'https://api.example.com/v1/users');
+    await vi.waitFor(() => expect(emitted).toHaveLength(1));
+
+    const body = payloadOf(emitted[0]!).responseBody!;
+    expect(body.truncated).toBe(true);
+    expect(body.assetId).toBeUndefined();
+    expect(storeBodyAsset).not.toHaveBeenCalled();
+  });
+
+  it('stores an overflowing request body as an asset when the flag is on', async () => {
+    const storeBodyAsset = vi.fn(async () => 'asset-req');
+    const { cap, emitted } = makeCapturer({
+      getSettings: () => API_SETTINGS,
+      send: vi.fn(async () => ({ body: '{"ok":true}', base64Encoded: false })),
+      storeBodyAsset,
+    });
+    finishXhr(cap, 'https://api.example.com/v1/users', { postData: bigJson });
+    await vi.waitFor(() => expect(emitted).toHaveLength(1));
+
+    const body = payloadOf(emitted[0]!).requestBody!;
+    expect(body.truncated).toBe(true);
+    expect(body.assetId).toBe('asset-req');
+    expect(storeBodyAsset).toHaveBeenCalledWith(
+      bigJson,
+      'application/json',
+      false,
+    );
+  });
+
+  it('never raises the cap for telemetry endpoints', async () => {
+    const storeBodyAsset = vi.fn(async () => 'asset-tel');
+    const { cap, emitted } = makeCapturer({
+      getSettings: () => API_SETTINGS,
+      send: vi.fn(async () => ({ body: bigJson, base64Encoded: false })),
+      storeBodyAsset,
+    });
+    finishXhr(cap, 'https://api.segment.io/v1/batch', { postData: bigJson });
+    await vi.waitFor(() => expect(emitted).toHaveLength(1));
+
+    const p = payloadOf(emitted[0]!);
+    expect(p.requestBody!.assetId).toBeUndefined();
+    expect(p.responseBody!.assetId).toBeUndefined();
+    expect(storeBodyAsset).not.toHaveBeenCalled();
+  });
+
+  it('never raises the cap for static assets', async () => {
+    const storeBodyAsset = vi.fn(async () => 'asset-css');
+    const { cap, emitted } = makeCapturer({
+      getSettings: () => API_SETTINGS,
+      send: vi.fn(async () => ({ body: 'x'.repeat(600 * 1024), base64Encoded: false })),
+      storeBodyAsset,
+    });
+    const rid = 'r-css';
+    cap.handle(1, 'Network.requestWillBeSent', {
+      requestId: rid,
+      request: { method: 'GET', url: 'https://cdn.example.com/app.css', headers: {} },
+      type: 'Stylesheet',
+    });
+    cap.handle(1, 'Network.responseReceived', {
+      requestId: rid,
+      response: { status: 200, headers: { 'content-type': 'text/css' }, mimeType: 'text/css' },
+    });
+    cap.handle(1, 'Network.loadingFinished', { requestId: rid });
+    await vi.waitFor(() => expect(emitted).toHaveLength(1));
+
+    expect(payloadOf(emitted[0]!).responseBody!.assetId).toBeUndefined();
+    expect(storeBodyAsset).not.toHaveBeenCalled();
   });
 });
 

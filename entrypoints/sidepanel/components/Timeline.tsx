@@ -16,12 +16,14 @@ import {
   Globe,
   Keyboard,
   ScrollText,
+  TextCursor,
   Command,
   Compass,
   ArrowLeftRight,
   Camera,
   Pencil,
   Mic,
+  Video,
   AlertCircle,
   Terminal,
   Flag,
@@ -254,6 +256,14 @@ function visualFor(e: SessionEvent): Visual {
         tone: 'muted',
       };
     }
+    case 'text-select':
+      return e.payload.cleared
+        ? { Icon: TextCursor, label: 'Selection cleared', tone: 'muted' }
+        : {
+            Icon: TextCursor,
+            label: truncate(`Selected "${e.payload.text ?? ''}"`),
+            tone: 'muted',
+          };
     case 'nav':
       return {
         Icon: Globe,
@@ -333,6 +343,16 @@ function visualFor(e: SessionEvent): Visual {
         Icon: Mic,
         label: truncate(p.transcript ?? '(audio)'),
         sub: p.anchorContext ? truncate(p.anchorContext, 40) : undefined,
+        tone: 'signal',
+      };
+    }
+    case 'video-segment': {
+      const p = e.payload;
+      const secs = Math.max(1, Math.round((p.tEnd - p.tStart) / 1000));
+      return {
+        Icon: Video,
+        label: 'Video segment',
+        meta: `${secs}s`,
         tone: 'signal',
       };
     }

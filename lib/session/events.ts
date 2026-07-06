@@ -17,6 +17,7 @@ export const IMPORTANCE_BASE: Record<EventType, number> = {
   'file-captured': 80,
   'file-attached': 80,
   'session-note': 70,
+  'video-segment': 60,
   nav: 60,
   'spa-route': 58,
   'tab-opened': 55,
@@ -26,6 +27,7 @@ export const IMPORTANCE_BASE: Record<EventType, number> = {
   click: 40,
   key: 35,
   input: 38,
+  'text-select': 30,
   screenshot: 30, // adjusted by trigger below
   console: 25, // adjusted by level below
   hover: 12,

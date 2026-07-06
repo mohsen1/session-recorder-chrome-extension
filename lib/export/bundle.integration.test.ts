@@ -9,6 +9,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { unzipSync } from 'fflate';
 
 import { SessionBuilder } from '@/lib/fixtures/session-builder';
+import { makeDefaultSettings } from '@/lib/session/settings';
 import { buildBundle, estimateForLevels } from './bundle';
 import { zipFiles } from './zip';
 import type { VerbosityLevel } from '@/lib/session/types';
@@ -88,5 +89,89 @@ describe('export pipeline (integration)', () => {
 
     // Emit a size summary for inspection.
     writeFileSync(`${OUT}/sizes.json`, JSON.stringify({ reportSizes, estimates: estimates.map((e) => ({ level: e.level, tokens: e.tokens })) }, null, 2));
+  });
+});
+
+describe('export pipeline OpenAPI compilation (captureApiSpec)', () => {
+  function apiSpecSession() {
+    const settings = { ...makeDefaultSettings(), captureApiSpec: true };
+    const b = new SessionBuilder({ name: 'API walkthrough', settings })
+      .nav('https://app.example.com/dashboard', 'Dashboard')
+      .net('POST', 'https://api.example.com/api/users', {
+        status: 200,
+        reqBody: '{"name":"Ada"}',
+        resBody: '{"id":1,"name":"Ada"}',
+      })
+      .net('GET', 'https://api.example.com/api/users/1', {
+        status: 200,
+        resBody: '{"id":1,"name":"Ada"}',
+      })
+      .net('GET', 'https://cdn.example.com/logo.png', { status: 200, mime: 'image/png' });
+    return b.build();
+  }
+
+  it('adds a valid openapi.json at every level and mentions it in report.md', async () => {
+    const { session, events, assets } = apiSpecSession();
+    for (const level of ['L0', 'L3'] as VerbosityLevel[]) {
+      const files = await buildBundle({ session, events, assets, level });
+      const openapi = files.find((f) => f.path === 'openapi.json');
+      expect(openapi?.text, `openapi.json exists at ${level}`).toBeTruthy();
+      const spec = JSON.parse(openapi!.text!) as Record<string, any>;
+      expect(spec.openapi).toBe('3.1.0');
+      // Compiled from UNTRIMMED events: bodies stripped at L3 must not starve it.
+      expect(spec.paths['/api/users'].post.responses['200']).toBeTruthy();
+      expect(spec.paths['/api/users/{userId}'].get).toBeTruthy();
+      expect(spec.paths['/logo.png']).toBeUndefined();
+
+      const report = files.find((f) => f.path === 'report.md');
+      expect(report!.text).toContain('openapi.json');
+    }
+  });
+
+  it('resolves full stored bodies from net-body assets when inline text is truncated', async () => {
+    const { session, events, assets } = apiSpecSession();
+    const full = '{"id":1,"name":"Ada","email":"ada@example.com"}';
+    assets.push({
+      id: 'asset_full',
+      sessionId: session.id,
+      kind: 'net-body',
+      mime: 'application/json',
+      size: full.length,
+      blob: new Blob([full], { type: 'application/json' }),
+    });
+    const net = events.find(
+      (e) => e.type === 'net-request' && e.payload.method === 'GET' && e.payload.url.includes('/api/users/1'),
+    ) as Extract<(typeof events)[number], { type: 'net-request' }>;
+    net.payload.responseBody = {
+      present: true,
+      mime: 'application/json',
+      text: '{"id":1,"na',
+      truncated: true,
+      originalSize: full.length,
+      assetId: 'asset_full',
+    };
+
+    const files = await buildBundle({ session, events, assets, level: 'L0' });
+    const spec = JSON.parse(files.find((f) => f.path === 'openapi.json')!.text!) as Record<string, any>;
+    const schema = spec.paths['/api/users/{userId}'].get.responses['200'].content['application/json'].schema;
+    expect(Object.keys(schema.properties).sort()).toEqual(['email', 'id', 'name']);
+  });
+
+  it('omits openapi.json when the setting is off or there is no API traffic', async () => {
+    // Flag off: same traffic, no spec, no report mention.
+    const off = richSession();
+    expect(off.session.settings.captureApiSpec).toBe(false);
+    const offFiles = await buildBundle({ ...off, level: 'L0' });
+    expect(offFiles.find((f) => f.path === 'openapi.json')).toBeUndefined();
+    expect(offFiles.find((f) => f.path === 'report.md')!.text).not.toContain('openapi.json');
+
+    // Flag on but no API requests: no spec either.
+    const settings = { ...makeDefaultSettings(), captureApiSpec: true };
+    const quiet = new SessionBuilder({ name: 'No API', settings })
+      .nav('https://app.example.com/', 'Home')
+      .click('About')
+      .build();
+    const quietFiles = await buildBundle({ ...quiet, level: 'L0' });
+    expect(quietFiles.find((f) => f.path === 'openapi.json')).toBeUndefined();
   });
 });

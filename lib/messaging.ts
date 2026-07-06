@@ -60,6 +60,8 @@ export type RequestMessage =
   // --- voice (sidepanel -> bg) ---
   | { kind: 'mic/toggle'; on: boolean }
   | { kind: 'transcription/retry'; sessionId: string; eventId: string }
+  // --- tab video (sidepanel -> bg) ---
+  | { kind: 'video/toggle'; on: boolean }
   // --- data reads (sidepanel/options -> bg) ---
   | { kind: 'events/get'; sessionId: string }
   | { kind: 'assets/getMeta'; sessionId: string }
@@ -70,9 +72,20 @@ export type RequestMessage =
   | { kind: 'audio/pause' }
   | { kind: 'audio/resume' }
   | { kind: 'audio/stop' }
+  // Tab-video controls (bg -> offscreen). `video/resume` carries a FRESH
+  // streamId: tabCapture stream ids are single-use and the paused stream is
+  // dead once its recorder stopped.
+  | { kind: 'video/start'; sessionId: string; startedAt: number; streamId: string }
+  | { kind: 'video/pause' }
+  | { kind: 'video/resume'; streamId: string }
+  | { kind: 'video/stop' }
   // --- offscreen -> bg ---
   | { kind: 'audio/segment'; sessionId: string; tStart: number; tEnd: number; dataUrl: string; mime: string }
   | { kind: 'audio/level'; level: number }
+  // A video take is unbounded in size, so the offscreen doc writes the blob to
+  // IndexedDB itself and only announces the stored asset (a data URL would
+  // exceed the runtime-message size limit after a few minutes of recording).
+  | { kind: 'video/segment'; sessionId: string; tStart: number; tEnd: number; assetId: string; size: number }
   // --- live streaming transcription (offscreen -> bg) ---
   | { kind: 'transcript/final'; sessionId: string; tStart: number; tEnd: number; text: string; words?: { word: string; t: number }[]; provider: string }
   | { kind: 'transcript/interim'; sessionId: string; text: string }
@@ -90,6 +103,7 @@ export interface AppState {
   recording: boolean;
   paused: boolean;
   micOn: boolean;
+  videoOn: boolean;
   annotating: boolean;
   attachedTabIds: number[];
   error?: string;
@@ -122,6 +136,7 @@ export type ResponseFor = {
   'annotation/toggle': { ok: boolean; annotating: boolean };
   'file/attach': { ok: boolean };
   'mic/toggle': { ok: boolean; micOn: boolean; error?: string };
+  'video/toggle': { ok: boolean; videoOn: boolean; error?: string };
   'transcription/retry': { ok: boolean };
   'events/get': { events: SessionEvent[] };
   'assets/getMeta': { assets: Array<Omit<Asset, 'blob'>> };
@@ -130,8 +145,13 @@ export type ResponseFor = {
   'audio/pause': { ok: boolean };
   'audio/resume': { ok: boolean };
   'audio/stop': { ok: boolean };
+  'video/start': { ok: boolean; error?: string };
+  'video/pause': { ok: boolean };
+  'video/resume': { ok: boolean; error?: string };
+  'video/stop': { ok: boolean };
   'audio/segment': { ok: boolean };
   'audio/level': { ok: boolean };
+  'video/segment': { ok: boolean };
   'transcript/final': { ok: boolean };
   'transcript/interim': { ok: boolean };
   'storage/estimate': { usage: number; quota: number };
@@ -175,7 +195,7 @@ const CONTENT_MARKER = '__sr_content__';
 
 /**
  * Marks a message the background sends toward the offscreen document
- * (audio/start|pause|resume|stop). It is broadcast on the shared runtime
+ * (audio/* and video/* controls). It is broadcast on the shared runtime
  * channel, so this marker tells the background's OWN request handler to ignore
  * it (only the offscreen listener should act + respond).
  */

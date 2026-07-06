@@ -1,16 +1,24 @@
 /**
- * Offscreen audio recorder.
+ * Offscreen media recorder (microphone audio + tab video).
  *
- * MV3 service workers cannot call `getUserMedia`/`MediaRecorder`, so all mic
+ * MV3 service workers cannot call `getUserMedia`/`MediaRecorder`, so all media
  * capture lives here. The background drives this document with `audio/start`,
  * `audio/pause`, `audio/resume`, `audio/stop` control messages; this module
  * cuts the microphone stream into complete 30-second WebM/Opus segments
  * (also on pause and stop) and streams them back as `audio/segment` messages
  * (Blob -> data URL, since Blobs can't cross runtime messaging). A parallel
  * AnalyserNode posts throttled `audio/level` RMS updates for the live meter.
+ * Tab video capture lives in `./video` and is driven by the `video/*` control
+ * messages dispatched at the bottom of this file.
  */
 import { sendMessage } from '@/lib/messaging';
 import type { RequestMessage, StreamTranscriptionConfig } from '@/lib/messaging';
+import {
+  handleVideoPause,
+  handleVideoResume,
+  handleVideoStart,
+  handleVideoStop,
+} from './video';
 import {
   buildDeepgramLiveUrl,
   deepgramSubprotocols,
@@ -439,6 +447,27 @@ chrome.runtime.onMessage.addListener((raw, _sender, sendResponse) => {
       // Respond only after the final segment has been flushed + delivered, so
       // the background can safely tear down the offscreen document.
       void handleStopControl().then(() => sendResponse({ ok: true }));
+      return true; // async response
+    case 'video/start': {
+      const m = raw as Extract<RequestMessage, { kind: 'video/start' }>;
+      void handleVideoStart(m.sessionId, m.startedAt, m.streamId).then((res) =>
+        sendResponse(res),
+      );
+      return true; // async response
+    }
+    case 'video/pause':
+      handleVideoPause();
+      sendResponse({ ok: true });
+      return false;
+    case 'video/resume': {
+      const m = raw as Extract<RequestMessage, { kind: 'video/resume' }>;
+      void handleVideoResume(m.streamId).then((res) => sendResponse(res));
+      return true; // async response
+    }
+    case 'video/stop':
+      // Same flush handshake as audio/stop: respond only after the final
+      // segment has been delivered.
+      void handleVideoStop().then(() => sendResponse({ ok: true }));
       return true; // async response
     default:
       return false; // not ours (broadcasts, other requests)

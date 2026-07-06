@@ -22,7 +22,7 @@ export type SessionStatus =
   | 'stopping'
   | 'stopped';
 
-export type AssetKind = 'screenshot' | 'audio' | 'file' | 'net-body';
+export type AssetKind = 'screenshot' | 'audio' | 'video' | 'file' | 'net-body';
 
 export type ConsoleLevel =
   | 'log'
@@ -43,6 +43,7 @@ export type EventType =
   | 'scroll'
   | 'key'
   | 'hover'
+  | 'text-select'
   // navigation / tabs
   | 'nav'
   | 'spa-route'
@@ -59,6 +60,8 @@ export type EventType =
   | 'annotation'
   // voice
   | 'voice-segment'
+  // video
+  | 'video-segment'
   // files
   | 'file-captured'
   | 'file-attached'
@@ -134,6 +137,14 @@ export interface CaptureSettings {
    * capture-detail knob alongside `screenshotPolicy`.
    */
   hoverDwellMs: number;
+  /**
+   * Opt-in (default false): store FULL request/response bodies of API-ish
+   * requests (XHR/fetch/JSON, non-static, non-telemetry) as `net-body` assets
+   * so the export can compile an OpenAPI spec (`openapi.json`). Inline
+   * truncation for the report is unaffected; only the stored copy's cap is
+   * raised (see `API_SPEC_BODY_CAP_BYTES`).
+   */
+  captureApiSpec: boolean;
 }
 
 export interface TabInfo {
@@ -206,6 +217,23 @@ export interface HoverPayload {
   descriptor: ElementDescriptor;
   /** How long the pointer rested here, in ms. */
   dwellMs: number;
+}
+
+/**
+ * The user selected (or deselected) text on the page. Emitted after the
+ * selection settles (~500ms debounce), so drag-selection produces one event.
+ * A `cleared: true` event (no text) follows when a previously captured
+ * selection becomes empty.
+ */
+export interface TextSelectPayload {
+  /** Whitespace-normalized selection text, capped at 500 chars. Absent when `cleared`. */
+  text?: string;
+  /** True when `text` was cut at the cap. */
+  truncated?: boolean;
+  /** Common ancestor element of the selection, when resolvable. */
+  descriptor?: ElementDescriptor;
+  /** True for the single deselection event after a captured selection. */
+  cleared: boolean;
 }
 
 export interface NavPayload {
@@ -382,6 +410,18 @@ export interface VoiceSegmentPayload {
   anchorContext?: string;
 }
 
+export interface VideoSegmentPayload {
+  /**
+   * Video asset backing this segment. Optional: the L2+ trimmer keeps the
+   * event line (what was recorded, and when) but clears the file reference so
+   * multi-MB video files stay out of compact bundles.
+   */
+  assetId?: string;
+  tStart: number; // ms from session start
+  tEnd: number;
+  note?: string;
+}
+
 export interface FilePayload {
   /** Undefined when metadata-only (oversized). */
   assetId?: string;
@@ -417,6 +457,7 @@ export interface EventPayloadMap {
   scroll: ScrollPayload;
   key: KeyPayload;
   hover: HoverPayload;
+  'text-select': TextSelectPayload;
   nav: NavPayload;
   'spa-route': SpaRoutePayload;
   'tab-switch': TabSwitchPayload;
@@ -429,6 +470,7 @@ export interface EventPayloadMap {
   'annotation-start': AnnotationStartPayload;
   annotation: AnnotationPayload;
   'voice-segment': VoiceSegmentPayload;
+  'video-segment': VideoSegmentPayload;
   'file-captured': FilePayload;
   'file-attached': FilePayload;
   marker: MarkerPayload;

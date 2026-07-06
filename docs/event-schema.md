@@ -93,6 +93,23 @@ shortcut chord.
 | `modifiers` | `string[]`                    | Held modifiers. |
 | `descriptor`| `ElementDescriptor` (optional)| The focused element, when known. |
 
+### `text-select`
+`TextSelectPayload` records a settled text selection (or its deselection). The
+content script debounces `selectionchange` (~500ms) so a drag-selection emits a
+single event once it settles. When a previously captured selection becomes
+empty, exactly one `cleared: true` event follows (deselecting when nothing was
+captured emits nothing). Selections inside sensitive fields (`isSensitiveInput`,
+for example password inputs) or any `[data-sr-redact]` region are never
+captured. The trimmer keeps selections through L2, drops `cleared` events at
+L1+, and drops all `text-select` events at L3.
+
+| Field       | Type                          | Meaning |
+| ----------- | ----------------------------- | ------- |
+| `text`      | `string` (optional)           | Selection text, whitespace-normalized and capped at 500 chars. Absent when `cleared` is true. |
+| `truncated` | `boolean` (optional)          | True when `text` was cut at the 500-char cap. |
+| `descriptor`| `ElementDescriptor` (optional)| Common ancestor element of the selection, when resolvable. |
+| `cleared`   | `boolean`                     | True for the single deselection event after a captured selection. |
+
 ---
 
 ## Navigation and tab events

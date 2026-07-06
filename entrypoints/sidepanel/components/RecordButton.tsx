@@ -1,35 +1,85 @@
 /**
  * The idle-state Record control: a split button. The main area starts a
- * recording of the active tab; the caret on its right opens a small slider that
- * sets how much detail to capture (screenshot frequency and pointer
- * sensitivity), persisted into the global capture defaults.
+ * recording of the active tab; the caret on its right opens the capture-setup
+ * popover: a detail slider (screenshot frequency, pointer sensitivity, network
+ * body caps) plus two extras — record video from the start, and build an
+ * OpenAPI spec from captured requests. All choices persist into the global
+ * capture defaults.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Video, FileJson2 } from 'lucide-react';
 import {
   CAPTURE_DETAIL_LEVELS,
   detailIndexFromSettings,
+  settingsForDetail,
 } from '@/lib/session/settings';
 import {
   loadDefaultSettings,
+  loadVideoFromStart,
+  saveCaptureApiSpec,
   saveCaptureDetail,
+  saveVideoFromStart,
   useSidepanel,
 } from '../store';
 
+/** A compact switch row inside the popover: icon, label + hint, toggle. */
+function OptionRow({
+  icon,
+  label,
+  hint,
+  on,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+  on: boolean;
+  onChange: (on: boolean) => void;
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      className="detail-opt"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+    >
+      <span className={`detail-opt__icon${on ? ' detail-opt__icon--on' : ''}`}>
+        {icon}
+      </span>
+      <span className="detail-opt__text">
+        <span className="detail-opt__label">{label}</span>
+        <span className="detail-opt__hint">{hint}</span>
+      </span>
+      <span className={`sw${on ? ' sw--on' : ''}`} aria-hidden="true">
+        <span className="sw__knob" />
+      </span>
+    </button>
+  );
+}
+
 export function RecordButton(): React.JSX.Element {
   const startRecording = useSidepanel((s) => s.startRecording);
+  const toggleVideo = useSidepanel((s) => s.toggleVideo);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState<string | undefined>();
   const [detail, setDetail] = useState(2);
+  const [videoFromStart, setVideoFromStart] = useState(false);
+  const [apiSpec, setApiSpec] = useState(false);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void loadDefaultSettings().then((s) => {
-      if (!cancelled) setDetail(detailIndexFromSettings(s));
-    });
+    void Promise.all([loadDefaultSettings(), loadVideoFromStart()]).then(
+      ([s, video]) => {
+        if (cancelled) return;
+        setDetail(detailIndexFromSettings(s));
+        setApiSpec(s.captureApiSpec);
+        setVideoFromStart(video);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -58,17 +108,19 @@ export function RecordButton(): React.JSX.Element {
         setLocalError('No active tab to record.');
         return;
       }
-      const preset = CAPTURE_DETAIL_LEVELS[detail];
-      const res = await startRecording(
-        tabId,
-        preset
-          ? {
-              screenshotPolicy: preset.screenshotPolicy,
-              hoverDwellMs: preset.hoverDwellMs,
-            }
-          : {},
-      );
-      if (!res.ok) setLocalError(res.error ?? 'Could not start recording.');
+      // Pass the choices explicitly: the storage writes are async, so the
+      // override is what makes a quick change-then-Record race-free.
+      const res = await startRecording(tabId, {
+        ...(settingsForDetail(detail) ?? {}),
+        captureApiSpec: apiSpec,
+      });
+      if (!res.ok) {
+        setLocalError(res.error ?? 'Could not start recording.');
+        return;
+      }
+      // Kick off tab-video capture with the session. Failures surface through
+      // the store's error channel without touching the running session.
+      if (videoFromStart) void toggleVideo();
     } finally {
       setBusy(false);
     }
@@ -77,6 +129,16 @@ export function RecordButton(): React.JSX.Element {
   const onDetail = (value: number) => {
     setDetail(value);
     void saveCaptureDetail(value);
+  };
+
+  const onVideo = (on: boolean) => {
+    setVideoFromStart(on);
+    void saveVideoFromStart(on);
+  };
+
+  const onApiSpec = (on: boolean) => {
+    setApiSpec(on);
+    void saveCaptureApiSpec(on);
   };
 
   const preset = CAPTURE_DETAIL_LEVELS[detail];
@@ -98,14 +160,14 @@ export function RecordButton(): React.JSX.Element {
           type="button"
           className="record-split__caret"
           onClick={() => setOpen((o) => !o)}
-          aria-label="Capture detail"
+          aria-label="Capture options"
           aria-expanded={open}
         >
           <ChevronDown size={16} strokeWidth={2.5} />
         </button>
 
         {open && (
-          <div className="detail-pop" role="dialog">
+          <div className="detail-pop" role="dialog" aria-label="Capture options">
             <div className="detail-pop__head">
               <span>Capture detail</span>
               <span className="detail-pop__level">{preset?.label}</span>
@@ -124,6 +186,25 @@ export function RecordButton(): React.JSX.Element {
               <span>More</span>
             </div>
             <p className="detail-pop__hint">{preset?.hint}</p>
+
+            <div className="detail-pop__sep" role="separator" />
+            <div className="detail-pop__head">
+              <span>Also capture</span>
+            </div>
+            <OptionRow
+              icon={<Video size={15} strokeWidth={1.9} />}
+              label="Video"
+              hint="Record the tab from the start"
+              on={videoFromStart}
+              onChange={onVideo}
+            />
+            <OptionRow
+              icon={<FileJson2 size={15} strokeWidth={1.9} />}
+              label="API spec"
+              hint="Full bodies → openapi.json in the export"
+              on={apiSpec}
+              onChange={onApiSpec}
+            />
           </div>
         )}
       </div>

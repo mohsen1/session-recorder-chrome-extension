@@ -33,6 +33,8 @@ import type {
   Session,
   SessionEvent,
   TabInfo,
+  TextSelectPayload,
+  VideoSegmentPayload,
   VoiceSegmentPayload,
 } from '@/lib/session/types';
 
@@ -205,6 +207,22 @@ export class SessionBuilder {
     return this;
   }
 
+  textSelect(
+    text: string,
+    opts?: { cleared?: boolean; truncated?: boolean; tag?: string },
+  ): this {
+    const payload: TextSelectPayload = opts?.cleared
+      ? { cleared: true }
+      : {
+          text,
+          cleared: false,
+          descriptor: descriptorFor(text.slice(0, 24), opts?.tag ?? 'p'),
+          ...(opts?.truncated ? { truncated: true } : {}),
+        };
+    this.push('text-select', payload);
+    return this;
+  }
+
   scroll(): this {
     const from = { x: 0, y: (this.seq % 5) * 200 };
     const payload: ScrollPayload = {
@@ -320,6 +338,18 @@ export class SessionBuilder {
       provider: 'openai',
     };
     this.push('voice-segment', payload);
+    return this;
+  }
+
+  video(tStart: number, tEnd: number, note?: string): this {
+    const assetId = this.addAsset('video', 'video/webm', tinyBinaryBlob('video/webm', 128));
+    const payload: VideoSegmentPayload = {
+      assetId,
+      tStart,
+      tEnd,
+      ...(note !== undefined ? { note } : {}),
+    };
+    this.push('video-segment', payload);
     return this;
   }
 

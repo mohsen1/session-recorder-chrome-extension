@@ -64,6 +64,12 @@ test('records interactions and exports a readable, valid zip', async ({
   await page.waitForTimeout(1000);
   await page.click('#btn-console-error');
   await page.waitForTimeout(400);
+  // Select the heading text, let the selection debounce (500ms) settle, then
+  // deselect so the single cleared event fires too.
+  await page.locator('h1').selectText();
+  await page.waitForTimeout(800);
+  await page.evaluate(() => window.getSelection()?.removeAllRanges());
+  await page.waitForTimeout(800);
 
   // 5) Drop a marker via the hook (explicit user signal).
   await dispatch(background, { kind: 'marker/add', name: 'BUG HERE' });
@@ -79,6 +85,17 @@ test('records interactions and exports a readable, valid zip', async ({
   const types = events.map((e) => e.type);
   expect(types).toContain('click');
   expect(types).toContain('marker');
+
+  // Text selection: one settled selection of the heading, then one cleared.
+  const selects = events.filter((e) => e.type === 'text-select');
+  expect(
+    selects.some(
+      (e) =>
+        e.payload?.cleared === false &&
+        String(e.payload?.text ?? '').includes('Demo'),
+    ),
+  ).toBe(true);
+  expect(selects.some((e) => e.payload?.cleared === true)).toBe(true);
 
   const clickTexts = events
     .filter((e) => e.type === 'click')
@@ -149,6 +166,7 @@ test('records interactions and exports a readable, valid zip', async ({
   expect(report).toContain('# Session Report');
   expect(report).toContain('GET fetch'); // a click we performed
   expect(report).toContain('BUG HERE'); // our marker
+  expect(report).toContain('SELECT'); // the text selection made it to L0
   expect(report).not.toContain('hunter2'); // redaction held
   // session.json is present and valid.
   const jsonKey = Object.keys(files).find((k) => k.endsWith('/session.json'));

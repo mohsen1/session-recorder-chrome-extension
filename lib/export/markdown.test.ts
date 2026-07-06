@@ -266,6 +266,21 @@ describe('renderReport', () => {
     expect(md).toContain('### Tabs');
   });
 
+  it('mentions the compiled API spec in the header when present', () => {
+    const md = renderReport({
+      ...buildSession(),
+      openapi: { path: 'openapi.json', endpointCount: 3 },
+    });
+    expect(md).toContain('**API spec:** `openapi.json`');
+    expect(md).toContain('3 endpoint(s)');
+  });
+
+  it('omits the API-spec header line when no spec was compiled', () => {
+    const md = renderReport(buildSession());
+    expect(md).not.toContain('API spec');
+    expect(md).not.toContain('openapi.json');
+  });
+
   it("contains a known click's text", () => {
     const md = renderReport(buildSession());
     expect(md).toContain('CLICK "Submit order" (button#checkout, tab 1)');
@@ -301,6 +316,89 @@ describe('renderReport', () => {
     expect(md).toContain('And here it crashes.');
     expect(md).toContain('MARKER');
     expect(md).toContain('Bug reproduced here');
+  });
+
+  it('renders text selections as SELECT lines with the selector', () => {
+    const input = buildSession();
+    const events: SessionEvent[] = [
+      ev({
+        t: 1000,
+        tabId: 1,
+        type: 'text-select',
+        payload: {
+          text: 'the selected words',
+          descriptor: { tag: 'p', selector: 'p.intro' },
+          cleared: false,
+        },
+      }),
+    ];
+    const md = renderReport({ ...input, events, assetPath: () => undefined });
+    expect(md).toContain('[00:01] SELECT "the selected words" (p.intro, tab 1)');
+  });
+
+  it('one-lines multi-line selections and marks truncation', () => {
+    const input = buildSession();
+    const events: SessionEvent[] = [
+      ev({
+        t: 2000,
+        tabId: 1,
+        type: 'text-select',
+        payload: {
+          text: 'first line\nsecond   line',
+          truncated: true,
+          cleared: false,
+        },
+      }),
+    ];
+    const md = renderReport({ ...input, events, assetPath: () => undefined });
+    // No descriptor: no selector parenthetical; whitespace collapsed; ellipsis
+    // marks the 500-char cap.
+    expect(md).toContain('[00:02] SELECT "first line second line…"\n');
+  });
+
+  it('renders a cleared selection without text or selector', () => {
+    const input = buildSession();
+    const events: SessionEvent[] = [
+      ev({ t: 3000, tabId: 1, type: 'text-select', payload: { cleared: true } }),
+      ev({ t: 4000, type: 'text-select', payload: { cleared: true } }),
+    ];
+    const md = renderReport({ ...input, events, assetPath: () => undefined });
+    expect(md).toContain('[00:03] SELECT cleared (tab 1)');
+    expect(md).toContain('[00:04] SELECT cleared\n');
+  });
+
+  it('renders video segments with their span and file link', () => {
+    const input = buildSession();
+    const events: SessionEvent[] = [
+      ev({
+        t: 6000,
+        type: 'video-segment',
+        payload: { assetId: 'asset_video_1', tStart: 6000, tEnd: 12000 },
+      }),
+    ];
+    const md = renderReport({
+      ...input,
+      events,
+      assetPath: (id) =>
+        id === 'asset_video_1' ? 'video/001-0006.webm' : undefined,
+    });
+    expect(md).toContain('🎬 VIDEO segment 00:06–00:12');
+    expect(md).toContain('`video/001-0006.webm`');
+  });
+
+  it('keeps the video-segment line without a link when its asset is dropped', () => {
+    const input = buildSession();
+    const events: SessionEvent[] = [
+      ev({
+        t: 6000,
+        type: 'video-segment',
+        payload: { tStart: 6000, tEnd: 12000 },
+      }),
+    ];
+    const md = renderReport({ ...input, events, assetPath: () => undefined });
+    expect(md).toContain('🎬 VIDEO segment 00:06–00:12');
+    expect(md).not.toContain('.webm');
+    expect(md).not.toContain('→');
   });
 
   it('skips screenshots whose asset is not included', () => {
@@ -351,5 +449,26 @@ describe('renderManifest', () => {
     const input = buildSession();
     const md = renderManifest({ ...input, assetPath: () => undefined });
     expect(md).toContain('No assets included');
+  });
+
+  it('describes video assets', () => {
+    const input = buildSession();
+    const assets: AssetMeta[] = [
+      {
+        id: 'asset_video_1',
+        sessionId: SESSION_ID,
+        kind: 'video',
+        mime: 'video/webm',
+        size: 2048,
+      },
+    ];
+    const md = renderManifest({
+      ...input,
+      assets,
+      assetPath: (id) =>
+        id === 'asset_video_1' ? 'video/001-0006.webm' : undefined,
+    });
+    expect(md).toContain('video/001-0006.webm');
+    expect(md).toContain('Video segment (video/webm)');
   });
 });

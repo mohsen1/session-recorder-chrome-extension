@@ -2,12 +2,13 @@
  * The mid-session capture bar, pinned to the bottom of the recording view.
  *
  * Primary row (matches the design): a mic toggle with a live level waveform,
- * plus Annotate and Marker. Above it, a slim row for the two lower-frequency
- * actions: attach a file and add a note. When the mic is on, an interim
- * transcript line shows the recognizer keeping up in real time.
+ * plus Video, Annotate, and Screenshot (a manual shot — never deduped). Above
+ * it, a slim row for the two lower-frequency actions: attach a file and add a
+ * note. When the mic is on, an interim transcript line shows the recognizer
+ * keeping up in real time.
  */
 import React, { useRef, useState } from 'react';
-import { Mic, PenLine, Flag, Paperclip } from 'lucide-react';
+import { Mic, PenLine, Camera, Paperclip, Video } from 'lucide-react';
 import { useSidepanel } from '../store';
 
 /** A small waveform whose bars scale with the live mic level. */
@@ -30,10 +31,12 @@ export function CaptureBar(): React.JSX.Element {
   const micOn = useSidepanel((s) => s.micOn);
   const micLevel = useSidepanel((s) => s.micLevel);
   const liveTranscript = useSidepanel((s) => s.liveTranscript);
+  const videoOn = useSidepanel((s) => s.videoOn);
   const annotating = useSidepanel((s) => s.annotating);
   const toggleMic = useSidepanel((s) => s.toggleMic);
+  const toggleVideo = useSidepanel((s) => s.toggleVideo);
   const toggleAnnotate = useSidepanel((s) => s.toggleAnnotate);
-  const addMarker = useSidepanel((s) => s.addMarker);
+  const captureScreenshot = useSidepanel((s) => s.captureScreenshot);
   const addNote = useSidepanel((s) => s.addNote);
   const attachFile = useSidepanel((s) => s.attachFile);
 
@@ -119,6 +122,15 @@ export function CaptureBar(): React.JSX.Element {
         </button>
         <button
           type="button"
+          className={`capture__action ${videoOn ? 'capture__action--on' : ''}`}
+          onClick={() => void toggleVideo()}
+          aria-pressed={videoOn}
+        >
+          <Video size={15} />
+          {videoOn ? 'Video on' : 'Video'}
+        </button>
+        <button
+          type="button"
           className={`capture__action ${annotating ? 'capture__action--on' : ''}`}
           onClick={() => void toggleAnnotate()}
           aria-pressed={annotating}
@@ -129,10 +141,11 @@ export function CaptureBar(): React.JSX.Element {
         <button
           type="button"
           className="capture__action"
-          onClick={() => void addMarker()}
+          onClick={() => void captureScreenshot()}
+          title="Take a screenshot (always kept, never deduped)"
         >
-          <Flag size={15} />
-          Marker
+          <Camera size={15} />
+          Screenshot
         </button>
       </div>
     </div>

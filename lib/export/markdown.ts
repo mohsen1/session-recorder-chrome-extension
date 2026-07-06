@@ -30,6 +30,8 @@ export interface RenderInput {
   level: VerbosityLevel;
   /** Zip-relative path for an asset, or undefined if it is not included. */
   assetPath: (assetId: string) => string | undefined;
+  /** Set when the bundle includes a compiled OpenAPI spec (captureApiSpec). */
+  openapi?: { path: string; endpointCount: number };
 }
 
 // ----------------------------------------------------------------------------
@@ -145,6 +147,11 @@ function renderHeader(
   lines.push(`- **Duration:** ${formatClock(durationMs)}`);
   lines.push(`- **Verbosity level:** ${input.level}`);
   lines.push(`- **Events:** ${events.length}`);
+  if (input.openapi) {
+    lines.push(
+      `- **API spec:** \`${input.openapi.path}\` (${input.openapi.endpointCount} endpoint(s) compiled from captured requests)`,
+    );
+  }
   lines.push('');
 
   // Tab registry.
@@ -252,6 +259,18 @@ function renderEvent(
       const dwell = e.payload.dwellMs ? ` for ${(e.payload.dwellMs / 1000).toFixed(1)}s` : '';
       lines.push(
         `${clock} HOVER ${noun}${lbl ? ` ${quoteLabel(lbl)}` : ''} (${selectorOf(d)}${tab})${dwell}`,
+      );
+      break;
+    }
+    case 'text-select': {
+      if (e.payload.cleared) {
+        lines.push(`${clock} SELECT cleared${tab ? ` (${tab.slice(2)})` : ''}`);
+        break;
+      }
+      const d = e.payload.descriptor;
+      const text = (e.payload.text ?? '') + (e.payload.truncated ? '…' : '');
+      lines.push(
+        `${clock} SELECT ${quoteLabel(text)}${d ? ` (${selectorOf(d)}${tab})` : ''}`,
       );
       break;
     }
@@ -378,6 +397,17 @@ function renderEvent(
       const anchor = anchors?.get(e.id);
       const where = anchor ? ` _(while ${escapeInline(anchor)})_` : '';
       lines.push(`> 🎙️ ${clock}${where} ${escapeInline(text)}`);
+      break;
+    }
+
+    // --- video -------------------------------------------------------------
+    case 'video-segment': {
+      const p = e.payload;
+      const span = `${formatClock(p.tStart)}–${formatClock(p.tEnd)}`;
+      const path = p.assetId ? input.assetPath(p.assetId) : undefined;
+      const link = path ? ` → \`${path}\`` : '';
+      const note = p.note ? ` — ${escapeInline(oneLine(p.note))}` : '';
+      lines.push(`${clock} 🎬 VIDEO segment ${span}${link}${note}`);
       break;
     }
 
@@ -679,6 +709,8 @@ function describeAsset(asset: AssetMeta): string {
       return `Screenshot (${asset.mime})`;
     case 'audio':
       return `Audio segment (${asset.mime})`;
+    case 'video':
+      return `Video segment (${asset.mime})`;
     case 'net-body':
       return `Network body (${asset.mime})`;
     case 'file':

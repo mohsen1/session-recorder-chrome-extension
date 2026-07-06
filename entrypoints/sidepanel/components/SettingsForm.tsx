@@ -527,6 +527,21 @@ export function SettingsForm(): React.JSX.Element {
           report so it stays focused on your app.
         </p>
 
+        <label className="settings__toggle">
+          <input
+            type="checkbox"
+            checked={settings.captureApiSpec}
+            onChange={(e) =>
+              patchSettings({ captureApiSpec: e.target.checked })
+            }
+          />
+          <span>Build an API spec from captured requests</span>
+        </label>
+        <p className="settings__hint">
+          Stores full request and response bodies for API calls and adds
+          openapi.json to exports. Increases storage use.
+        </p>
+
         <div className="settings__row">
           <ByteInput
             label="Inline body cap"

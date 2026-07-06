@@ -20,6 +20,7 @@ import {
 import type { TrimContext } from '@/lib/export/trimmer';
 import { buildBundle } from '@/lib/export/bundle';
 import { zipFiles } from '@/lib/export/zip';
+import { sessionFolderName } from '@/lib/util/naming';
 import { onBroadcast } from '@/lib/messaging';
 import type {
   AssetMeta,
@@ -42,7 +43,7 @@ let loaded: {
   session: Awaited<ReturnType<typeof getSession>>;
   events: SessionEvent[];
   assetsMeta: AssetMeta[];
-  imageUrls: Map<string, string>;
+  mediaUrls: Map<string, string>;
 } | null = null;
 
 const LEVELS: { id: VerbosityLevel; label: string }[] = [
@@ -102,14 +103,21 @@ async function load(): Promise<void> {
   const total = Object.values(session.counts).reduce((a, n) => a + (n ?? 0), 0);
   metaEl.textContent = `${formatClock(duration)} · ${total} events`;
 
-  const imageUrls = new Map<string, string>();
+  // Object URLs for every renderable media asset (images inline as <img>,
+  // video segments as <video>).
+  const mediaUrls = new Map<string, string>();
   for (const a of assets) {
-    if (a.kind === 'screenshot' || a.mime.startsWith('image/')) {
-      imageUrls.set(a.id, URL.createObjectURL(a.blob));
+    if (
+      a.kind === 'screenshot' ||
+      a.kind === 'video' ||
+      a.mime.startsWith('image/') ||
+      a.mime.startsWith('video/')
+    ) {
+      mediaUrls.set(a.id, URL.createObjectURL(a.blob));
     }
   }
   const assetsMeta: AssetMeta[] = assets.map(({ blob: _b, ...m }) => m);
-  loaded = { session, events, assetsMeta, imageUrls };
+  loaded = { session, events, assetsMeta, mediaUrls };
   renderLevels();
   render();
 }
@@ -132,7 +140,7 @@ function renderLevels(): void {
 
 function render(): void {
   if (!loaded || !loaded.session) return;
-  const { session, events, assetsMeta, imageUrls } = loaded;
+  const { session, events, assetsMeta, mediaUrls } = loaded;
   const ctx: TrimContext = {
     assetsById: new Map(assetsMeta.map((m) => [m.id, m])),
     settings: session.settings,
@@ -179,7 +187,7 @@ function render(): void {
       if (run.length >= 3) {
         tl.appendChild(netGroup(run));
       } else {
-        for (const r of run) tl.appendChild(eventNode(r, imageUrls));
+        for (const r of run) tl.appendChild(eventNode(r, mediaUrls));
       }
       i = j;
     } else if (e.type === 'voice-segment') {
@@ -190,10 +198,10 @@ function render(): void {
         run.push(trimmed[j]! as Extract<SessionEvent, { type: 'voice-segment' }>);
         j += 1;
       }
-      tl.appendChild(run.length >= 2 ? voiceGroup(run) : eventNode(e, imageUrls));
+      tl.appendChild(run.length >= 2 ? voiceGroup(run) : eventNode(e, mediaUrls));
       i = j;
     } else {
-      tl.appendChild(eventNode(e, imageUrls));
+      tl.appendChild(eventNode(e, mediaUrls));
       i += 1;
     }
   }
@@ -215,7 +223,7 @@ function clockOf(e: SessionEvent): HTMLElement {
   return el('span', 'r-time', formatClock(e.t));
 }
 
-function eventNode(e: SessionEvent, imageUrls: Map<string, string>): HTMLElement {
+function eventNode(e: SessionEvent, mediaUrls: Map<string, string>): HTMLElement {
   const row = el('div', 'r-row');
   switch (e.type) {
     case 'nav':
@@ -253,6 +261,14 @@ function eventNode(e: SessionEvent, imageUrls: Map<string, string>): HTMLElement
       row.className = 'r-row r-muted';
       row.append(clockOf(e), tag('scroll'), el('span', 'r-txt', 'Scrolled'));
       return row;
+    case 'text-select': {
+      row.className = 'r-row r-muted';
+      const txt = e.payload.cleared
+        ? 'Selection cleared'
+        : `Selected ${label(e.payload.text)}`;
+      row.append(clockOf(e), tag('select'), el('span', 'r-txt', txt));
+      return row;
+    }
     case 'net-request':
       return netRow(e.payload, e);
     case 'console': {
@@ -268,9 +284,16 @@ function eventNode(e: SessionEvent, imageUrls: Map<string, string>): HTMLElement
       return row;
     }
     case 'screenshot':
-      return shotBlock(e.t, imageUrls.get(e.payload.assetId ?? ''), e.payload.contextText);
+      return shotBlock(e.t, mediaUrls.get(e.payload.assetId ?? ''), e.payload.contextText);
     case 'annotation':
-      return annotationBlock(e.t, imageUrls.get(e.payload.screenshotAssetId ?? ''), e.payload.shapes.length);
+      return annotationBlock(e.t, mediaUrls.get(e.payload.screenshotAssetId ?? ''), e.payload.shapes.length);
+    case 'video-segment':
+      return videoBlock(
+        e.t,
+        mediaUrls.get(e.payload.assetId ?? ''),
+        e.payload.tStart,
+        e.payload.tEnd,
+      );
     case 'voice-segment': {
       const p = e.payload;
       const b = el('div', 'r-signal r-voice');
@@ -413,6 +436,31 @@ function annotationBlock(t: number, url: string | undefined, shapes: number): HT
   return b;
 }
 
+/** Inline playable video segment, styled like a screenshot block. */
+function videoBlock(
+  t: number,
+  url: string | undefined,
+  tStart: number,
+  tEnd: number,
+): HTMLElement {
+  const b = el('div', 'r-shot');
+  const head = el('div', 'r-shot__head');
+  head.append(
+    el('span', 'r-time', formatClock(t)),
+    tag('video'),
+    el('span', 'r-txt', `Video segment ${formatClock(tStart)}–${formatClock(tEnd)}`),
+  );
+  b.appendChild(head);
+  if (url) {
+    const video = el('video');
+    video.controls = true;
+    video.preload = 'metadata';
+    video.src = url;
+    b.appendChild(video);
+  }
+  return b;
+}
+
 function bodyPre(label: string, text: string): HTMLElement {
   const wrap = el('div', 'r-body');
   wrap.appendChild(el('div', 'r-body__label', label));
@@ -471,7 +519,7 @@ downloadBtn.addEventListener('click', async () => {
     ]);
     if (!session) return;
     const files = await buildBundle({ session, events, assets, level });
-    const folder = (session.name.replace(/[^a-z0-9-_ ]/gi, '').replace(/\s+/g, '-').toLowerCase() || 'session');
+    const folder = sessionFolderName(session);
     const bytes = await zipFiles(files, folder);
     const url = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }));
     await chrome.downloads.download({ url, filename: `${folder}.zip` });

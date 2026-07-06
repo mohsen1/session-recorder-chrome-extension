@@ -87,8 +87,11 @@ function truncateToBytes(
   return { text: decoded, truncated: true, originalSize: bytes.length };
 }
 
-/** Normalize a URL path: numeric / uuid / long-hex segments become `:id`. */
-function normalizePath(url: string): string {
+/**
+ * Normalize a URL path: numeric / uuid / long-hex segments become `:id`.
+ * Exported for reuse by the OpenAPI compiler's path templating.
+ */
+export function normalizePath(url: string): string {
   let path = url;
   try {
     path = new URL(url).pathname;
@@ -278,8 +281,13 @@ export function dropStaticAssets(): Transform {
   };
 }
 
-/** Static resources (images, fonts, css, media) that carry no debug signal. */
-function isStaticAsset(p: NetRequestPayload): boolean {
+/**
+ * Static resources (images, fonts, css, media) that carry no debug signal.
+ * The param is a Pick so the capture side can call it on partial request data.
+ */
+export function isStaticAsset(
+  p: Pick<NetRequestPayload, 'resourceType' | 'mime' | 'responseBody'>,
+): boolean {
   const rt = (p.resourceType ?? '').toLowerCase();
   if (STATIC_RESOURCE_TYPES.has(rt)) return true;
   const mime = (p.mime ?? p.responseBody?.mime ?? '').toLowerCase();
@@ -295,7 +303,7 @@ function isStaticAsset(p: NetRequestPayload): boolean {
 }
 
 /** Analytics / telemetry / tracking requests, by host or ingest-path shape. */
-function isTelemetry(p: NetRequestPayload): boolean {
+export function isTelemetry(p: Pick<NetRequestPayload, 'url'>): boolean {
   let host = '';
   let path = p.url;
   try {
@@ -376,6 +384,24 @@ export function coalesceScrolls(): Transform {
 /** Drop hover events. They are a Full-fidelity-only signal; L1+ omits them. */
 export function dropHovers(): Transform {
   return (events) => events.filter((e) => e.type !== 'hover').map(cloneEvent);
+}
+
+/**
+ * Drop `cleared: true` text-select events. The selection itself is user
+ * reading-intent worth keeping through L2, but the deselection marker is
+ * Full-fidelity-only noise; L1+ omits it.
+ */
+export function dropClearedTextSelections(): Transform {
+  return (events) =>
+    events
+      .filter((e) => !(e.type === 'text-select' && e.payload.cleared))
+      .map(cloneEvent);
+}
+
+/** Drop ALL text-select events. Minimal (L3) keeps interactions only. */
+export function dropTextSelections(): Transform {
+  return (events) =>
+    events.filter((e) => e.type !== 'text-select').map(cloneEvent);
 }
 
 /** Merge consecutive identical console events, summing their `repeat` counts. */
@@ -489,6 +515,22 @@ function clearBody(body: NetBody | undefined): void {
   body.assetId = undefined;
 }
 
+/**
+ * Keep video-segment events (the report line records that a take exists and
+ * its time span) but clear their file reference so multi-MB video files stay
+ * out of L2+ bundles — the same "keep the event, drop the bytes" treatment
+ * screenshots get via `thinScreenshots` and bodies get via `clearBody`.
+ */
+export function thinVideo(): Transform {
+  return (events) =>
+    events.map((e) => {
+      const clone = cloneEvent(e);
+      if (isProtected(clone) || clone.type !== 'video-segment') return clone;
+      clone.payload.assetId = undefined;
+      return clone;
+    });
+}
+
 /** Reduce interaction descriptors to tag/text/selector only. */
 export function interactionsToTextOnly(): Transform {
   return (events) =>
@@ -518,9 +560,12 @@ export function interactionsToTextOnly(): Transform {
 // Level plans (IMPLEMENTATION.md §4.3)
 // ----------------------------------------------------------------------------
 
+// Text selections survive L0–L2 (they signal what the user was reading);
+// deselection markers are L0-only; L3 drops selections entirely.
 const L1_TRANSFORMS: Transform[] = [
   dropStaticAssets(),
   dropHovers(),
+  dropClearedTextSelections(),
   coalesceScrolls(),
   truncateBodies(4 * 1024),
   thinScreenshots('key-moments'),
@@ -533,11 +578,13 @@ const L2_TRANSFORMS: Transform[] = [
   bodyToShapeSummary(),
   collapseRepeatedRequests(),
   thinScreenshots('annotation-error'),
+  thinVideo(),
 ];
 
 const L3_TRANSFORMS: Transform[] = [
   ...L2_TRANSFORMS,
   dropBodiesExceptErrors(),
+  dropTextSelections(),
   interactionsToTextOnly(),
   thinScreenshots('manifest-only'),
 ];

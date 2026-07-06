@@ -269,6 +269,7 @@ body {
 .r-tag--marker,
 .r-tag--note,
 .r-tag--voice,
+.r-tag--video,
 .r-tag--annotate,
 .r-tag--file {
   color: var(--accent);
@@ -396,6 +397,17 @@ body {
   border: 1px solid var(--line);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   cursor: zoom-in;
+}
+
+.r-shot video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: #000;
 }
 
 /* signals: marker / note / voice / file */

@@ -389,6 +389,101 @@ button {
   color: var(--ink-2);
 }
 
+.detail-pop__sep {
+  height: 1px;
+  margin: 14px -14px 12px;
+  background: var(--line);
+}
+
+/* Extras: switch rows (Video from start, API spec). */
+.detail-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.detail-opt__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.detail-opt__icon--on {
+  color: var(--accent);
+  background: var(--accent-tint, rgba(255, 90, 77, 0.09));
+  border-color: transparent;
+}
+
+.detail-opt__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.detail-opt__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.detail-opt__hint {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* Compact pill switch. */
+.sw {
+  flex: 0 0 auto;
+  position: relative;
+  width: 32px;
+  height: 19px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sw__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.sw--on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.sw--on .sw__knob {
+  transform: translateX(13px);
+  background: #fff;
+}
+
 /* ---- Policy quick select (legacy; retained for options page reuse) ---- */
 
 .policy {

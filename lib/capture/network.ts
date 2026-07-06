@@ -18,6 +18,8 @@ import type {
   RawEvent,
   WsFrame,
 } from '@/lib/session/types';
+import { API_SPEC_BODY_CAP_BYTES } from '@/lib/session/settings';
+import { isApiIsh } from '@/lib/export/openapi';
 import { redactBody, redactHeaders, redactUrl } from './redaction';
 
 /** Injected collaborators; see docs/internal-api.md §lib/capture/network.ts. */
@@ -247,6 +249,7 @@ export class NetworkCapturer {
           p.respHeaders,
           p.mime,
           settings,
+          this.wantsFullApiBody(p, settings),
         );
       } catch {
         // Body was evicted (or the tab detached) before we could read it.
@@ -342,12 +345,38 @@ export class NetworkCapturer {
   // Assembly + redaction
   // --------------------------------------------------------------------------
 
+  /**
+   * Should this request's FULL bodies be preserved for the OpenAPI compiler?
+   * Only when the opt-in setting is on AND the request is API-ish (XHR/fetch or
+   * JSON, not a websocket / static asset / telemetry beacon).
+   */
+  private wantsFullApiBody(
+    p: PartialRequest,
+    settings: CaptureSettings,
+  ): boolean {
+    if (!settings.captureApiSpec) return false;
+    return isApiIsh({
+      url: p.url ?? '',
+      resourceType: p.resourceType,
+      mime: p.mime,
+      websocket: p.websocket,
+    });
+  }
+
+  /** The stored-copy cap: raised generously for API-spec bodies. */
+  private assetCapFor(settings: CaptureSettings, apiSpec: boolean): number {
+    return apiSpec
+      ? Math.max(settings.assetBodyCapBytes, API_SPEC_BODY_CAP_BYTES)
+      : settings.assetBodyCapBytes;
+  }
+
   private async buildResponseBody(
     rawText: string,
     base64: boolean,
     headers: Record<string, string>,
     mime: string | undefined,
     settings: CaptureSettings,
+    apiSpec: boolean,
   ): Promise<NetBody> {
     // Binary / compressed textual bodies (gzip analytics beacons, protobuf, …)
     // would otherwise be inlined as pages of mojibake. Replace them with a short
@@ -376,7 +405,7 @@ export class NetworkCapturer {
       body.originalSize = trunc.originalSize;
       // Preserve the full (redacted) body as an asset when it overflows the
       // inline cap but still fits the asset cap.
-      if (trunc.originalSize <= settings.assetBodyCapBytes) {
+      if (trunc.originalSize <= this.assetCapFor(settings, apiSpec)) {
         try {
           body.assetId = await this.deps.storeBodyAsset(
             text,
@@ -396,10 +425,12 @@ export class NetworkCapturer {
     headers: Record<string, string>,
     mime: string | undefined,
     settings: CaptureSettings,
-  ): NetBody {
+  ): { body: NetBody; overflowText?: string } {
     // Same binary guard as responses (e.g. gzip-compressed request beacons).
     if (isProbablyBinary(rawText, headers)) {
-      return binaryBodyMarker(rawText, mime, getHeader(headers, 'content-encoding'));
+      return {
+        body: binaryBodyMarker(rawText, mime, getHeader(headers, 'content-encoding')),
+      };
     }
 
     let text = rawText;
@@ -412,8 +443,11 @@ export class NetworkCapturer {
     if (trunc.truncated) {
       body.truncated = true;
       body.originalSize = trunc.originalSize;
+      // Hand the full redacted text back so the caller can store it whole
+      // (API-spec capture); request bodies otherwise stay inline-only.
+      return { body, overflowText: text };
     }
-    return body;
+    return { body };
   }
 
   private emitRequest(
@@ -451,13 +485,27 @@ export class NetworkCapturer {
     if (p.resourceType) payload.resourceType = p.resourceType;
     if (p.status !== undefined) payload.status = p.status;
     if (p.statusText) payload.statusText = p.statusText;
+
+    // When set, the full request body must be stored as an asset before emit.
+    let storeRequestBody: { text: string; mime: string } | undefined;
     if (p.requestBodyText !== undefined) {
-      payload.requestBody = this.buildRequestBody(
+      const { body, overflowText } = this.buildRequestBody(
         p.requestBodyText,
         p.reqHeaders,
         reqContentType,
         settings,
       );
+      payload.requestBody = body;
+      if (
+        overflowText !== undefined &&
+        this.wantsFullApiBody(p, settings) &&
+        (body.originalSize ?? 0) <= this.assetCapFor(settings, true)
+      ) {
+        storeRequestBody = {
+          text: overflowText,
+          mime: reqContentType ?? 'application/octet-stream',
+        };
+      }
     }
     if (extra.responseBody) payload.responseBody = extra.responseBody;
     if (p.timing) payload.timing = p.timing;
@@ -473,6 +521,31 @@ export class NetworkCapturer {
       payload.wsFrames = p.wsFrames ?? [];
     }
 
+    // Emission stays synchronous unless a full request body must be persisted
+    // first (API-spec capture) — only that path defers by the store round-trip.
+    if (storeRequestBody) {
+      void this.storeRequestBodyThenEmit(tabId, payload, storeRequestBody);
+      return;
+    }
+    this.finishEmit(tabId, payload);
+  }
+
+  /** Store an overflowing request body as an asset, then emit. Never throws. */
+  private async storeRequestBodyThenEmit(
+    tabId: number,
+    payload: NetRequestPayload,
+    store: { text: string; mime: string },
+  ): Promise<void> {
+    try {
+      const assetId = await this.deps.storeBodyAsset(store.text, store.mime, false);
+      if (payload.requestBody) payload.requestBody.assetId = assetId;
+    } catch {
+      /* asset store failed — keep the truncated inline copy */
+    }
+    this.finishEmit(tabId, payload);
+  }
+
+  private finishEmit(tabId: number, payload: NetRequestPayload): void {
     try {
       this.deps.emit({ type: 'net-request', tabId, payload });
     } catch {

@@ -23,6 +23,7 @@
     "dompurify": "^3.4.11",
     "fabric": "^6.9.1",
     "fflate": "^0.8.2",
+    "genson-js": "^0.0.8",
     "idb": "^8.0.0",
     "lucide-react": "^1.23.0",
     "marked": "^18.0.5",

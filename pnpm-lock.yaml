@@ -20,6 +20,9 @@ importers:
       fflate:
         specifier: ^0.8.2
         version: 0.8.3
+      genson-js:
+        specifier: ^0.0.8
+        version: 0.0.8
       idb:
         specifier: ^8.0.0
         version: 8.0.3
@@ -1460,6 +1463,9 @@ packages:
     resolution: {integrity: sha512-+5J6MS/5XksCuXq++uFRsnUd7Ovu1XenbeuIuNRJxYWjgQbPuFhT14lAvsWfqfAmnwluf1OwMjz39HjfLPci0Q==}
     engines: {node: '>=10'}
     deprecated: This package is no longer supported.
+
+  genson-js@0.0.8:
+    resolution: {integrity: sha512-4NUusDTwF+lzYh72uKV+Uvpky9iPO+YDIMpGImA5pbHfLV9HwgRCA4hYjGu78V4J4Cx2IZRTFfRERn9aUs74mw==}
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -4136,6 +4142,8 @@ snapshots:
       strip-ansi: 6.0.1
       wide-align: 1.1.5
     optional: true
+
+  genson-js@0.0.8: {}
 
   gensync@1.0.0-beta.2: {}
 

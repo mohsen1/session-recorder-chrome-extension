@@ -22,6 +22,7 @@ export default defineConfig({
       'unlimitedStorage',
       'debugger',
       'offscreen',
+      'tabCapture',
       'downloads',
       'webNavigation',
       'alarms',

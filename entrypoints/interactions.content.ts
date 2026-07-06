@@ -27,6 +27,10 @@ const REDACTED = '«redacted»';
 const INPUT_DEBOUNCE_MS = 800;
 /** Scroll-run idle window before a coalesced scroll event is recorded. */
 const SCROLL_IDLE_MS = 300;
+/** Idle window after the last selectionchange before a text-select is recorded. */
+const SELECTION_DEBOUNCE_MS = 500;
+/** Max captured selection text length (chars, after whitespace normalization). */
+const SELECTION_TEXT_CAP = 500;
 
 /** Keyboard keys that are never a chord "letter" on their own. */
 const MODIFIER_KEYS = new Set(['Control', 'Alt', 'Shift', 'Meta', 'OS']);
@@ -237,6 +241,57 @@ export default defineContentScript({
       }, hoverDwellMs);
     };
 
+    // -- text selection (debounced selectionchange) ---------------------------
+
+    let selectionTimer: ReturnType<typeof setTimeout> | null = null;
+    // Last captured selection text; null = nothing captured, which gates the
+    // single `cleared` event (deselecting without a prior capture emits nothing).
+    let lastSelectionText: string | null = null;
+
+    /** The element anchoring the current selection (text node -> parent). */
+    function selectionElement(sel: Selection): Element | null {
+      const node =
+        sel.rangeCount > 0
+          ? sel.getRangeAt(0).commonAncestorContainer
+          : sel.anchorNode;
+      if (!node) return null;
+      return node instanceof Element ? node : node.parentElement;
+    }
+
+    const onSelectionChange = (): void => {
+      if (selectionTimer) clearTimeout(selectionTimer);
+      // Debounce: selectionchange fires continuously during a drag; only the
+      // settled selection is worth an event.
+      selectionTimer = setTimeout(() => {
+        selectionTimer = null;
+        const sel = document.getSelection();
+        const text = (sel?.toString() ?? '').replace(/\s+/g, ' ').trim();
+        if (text.length === 0) {
+          if (lastSelectionText != null) {
+            lastSelectionText = null;
+            post('text-select', { cleared: true });
+          }
+          return;
+        }
+        // Caret moves inside the same selection re-fire selectionchange.
+        if (text === lastSelectionText) return;
+        const el = selectionElement(sel as Selection);
+        if (!el || isAnnotationOverlay(el)) return;
+        // Never capture selections in sensitive fields or opted-out regions.
+        const field = el.closest('input, textarea');
+        if (field && isSensitiveInput(field)) return;
+        if (el.closest('[data-sr-redact]')) return;
+        lastSelectionText = text;
+        const capped = text.slice(0, SELECTION_TEXT_CAP);
+        post('text-select', {
+          text: capped,
+          ...(text.length > SELECTION_TEXT_CAP ? { truncated: true } : {}),
+          descriptor: buildDescriptor(el),
+          cleared: false,
+        });
+      }, SELECTION_DEBOUNCE_MS);
+    };
+
     // -- attach / detach -----------------------------------------------------
 
     function attach(): void {
@@ -246,6 +301,8 @@ export default defineContentScript({
       document.addEventListener('scroll', onScroll, true);
       document.addEventListener('keydown', onKeyDown, true);
       document.addEventListener('mousemove', onMouseMove, true);
+      // selectionchange only fires on the document; no capture flag needed.
+      document.addEventListener('selectionchange', onSelectionChange);
     }
 
     function detach(): void {
@@ -255,6 +312,10 @@ export default defineContentScript({
       document.removeEventListener('scroll', onScroll, true);
       document.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('mousemove', onMouseMove, true);
+      document.removeEventListener('selectionchange', onSelectionChange);
+      if (selectionTimer) clearTimeout(selectionTimer);
+      selectionTimer = null;
+      lastSelectionText = null;
       for (const t of inputTimers.values()) clearTimeout(t);
       inputTimers.clear();
       for (const run of scrollRuns.values()) {
@@ -289,6 +350,10 @@ export default defineContentScript({
         if (annotating && hoverTimer) {
           clearTimeout(hoverTimer);
           hoverTimer = null;
+        }
+        if (annotating && selectionTimer) {
+          clearTimeout(selectionTimer);
+          selectionTimer = null;
         }
       }
     });
