@@ -103,7 +103,6 @@ button {
   justify-content: flex-end;
   gap: 8px;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   background: color-mix(in srgb, var(--bg) 88%, transparent);

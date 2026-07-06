@@ -24,37 +24,64 @@ behavior and with `docs/PRIVACY.md`.
   (or your custom domain if configured, e.g.
   https://azimi.me/session-recorder-chrome-extension/)
 
-## Short description (≤132 chars)
+## Short description (≤132 chars) — paste as-is
 
-> Record a web session — clicks, network, screenshots, voice — and export an
-> LLM-ready bug report. Everything stays on your machine.
+Record a bug in your web app — clicks, network, console, screenshots, voice — and export one clean report your AI agent can read.
 
-## Detailed description
+## Detailed description — paste as-is (plain text; the field does NOT render markdown)
 
-> Session Recorder captures a full session of someone using a web app and exports
-> a single zip whose `report.md` is written for an LLM coding agent, so the agent
-> can reproduce bugs and analyze behavior.
->
-> **What it captures**
-> - Network requests, responses, headers, timing, and websockets (via Chrome's
->   debugger/CDP)
-> - Console logs, exceptions, and failed requests
-> - Clicks, inputs, scrolls, keys, and SPA navigations
-> - Screenshots at a configurable frequency, with near-duplicates deduped
-> - Voice narration, with optional cloud transcription
-> - Annotations drawn on the page, and files you upload or attach
->
-> **Your data stays local.** There is no account and no backend. Sessions live in
-> your browser and export as a zip you save yourself. The only data that ever
-> leaves your machine is audio you choose to transcribe with your own third-party
-> API key.
->
-> **Redaction on by default.** Auth headers, token-like fields, sensitive URL
-> params, and passwords are masked at capture time, before anything is stored.
->
-> **Deterministic trimming.** Export at four verbosity levels (Full → Minimal),
-> each with a live token estimate, without ever trimming your explicit signals:
-> transcript, annotations, markers, notes, errors, and file metadata.
+Record a bug. Hand your agent the whole story.
+
+Reproducing a bug for an AI coding agent means describing a hundred little things: what you clicked, what the app requested, the error in the console, what you expected. Session Recorder captures all of it while you use your web app, then exports one clean report your agent can actually read — so it can reproduce the bug and reason about what went wrong.
+
+Hit record, use your app like normal, then export. That's the whole loop.
+
+
+WHAT IT CAPTURES
+
+• Clicks, typing, scrolls, and keys — every interaction, with the element you touched
+• Network activity — requests, responses, headers, timing, websockets, and failures (via Chrome's DevTools Protocol)
+• Console logs, exceptions, and failed requests
+• Page and SPA route changes as you move through the app
+• Screenshots as you go, at a frequency you choose, with near-duplicate frames deduped
+• Voice narration — talk through what you're doing while you record
+• Annotations — freeze the screen and mark it up with arrows, boxes, highlights, and text
+• Files you upload to the app, plus files you attach yourself
+• Markers and notes you drop at the exact moment something matters
+
+Everything lands on one timeline, in the order it happened, so the report reads as a coherent story instead of a pile of logs.
+
+
+EVERYTHING STAYS ON YOUR MACHINE
+
+There is no account and no backend. Sessions are stored locally in your browser and exported as a zip file you save yourself. Nothing is uploaded.
+
+The only exception is voice transcription, and only if you turn it on: if you add your own API key for a transcription provider (Deepgram, OpenAI, or ElevenLabs), the recorded audio is sent to that provider to produce a text transcript. Without a key, audio never leaves your machine.
+
+
+SECRETS ARE HIDDEN BY DEFAULT
+
+Redaction is on out of the box. Authorization headers, token-like JSON and form fields, sensitive URL parameters, and password inputs are masked at capture time — before anything is written to storage. You can add your own rules, or turn redaction off per session, on the options page.
+
+
+RIGHT-SIZED FOR ANY MODEL
+
+Long sessions get big. At export you pick a detail level and see a live token estimate for each, so the report fits your model's context window:
+
+• Full — everything, nothing omitted
+• Standard — trimmed bodies, static assets and analytics collapsed
+• Compact — bodies reduced to a shape summary, repeated requests collapsed
+• Minimal — a concise narrative skeleton
+
+Your explicit signals — voice transcript, annotations, markers, notes, errors, and file metadata — are never trimmed, at any level. The same recording can be re-exported at a different level later without recording again.
+
+
+HOW TO USE THE REPORT
+
+Unzip the export and hand report.md to your coding agent. It's a chronological narrative with [mm:ss] timestamps that ties interactions, network summaries, errors, narration, and annotations together. At the more compact levels it stands on its own without the asset files.
+
+
+Built for developers. Manifest V3. Free and open source.
 
 ## Single-purpose statement (required field)
 
