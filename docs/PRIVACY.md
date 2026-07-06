@@ -67,4 +67,4 @@ We do not sell, share, or transfer any user data, because we never receive any.
 
 ## Contact
 
-Questions: contact@users.noreply.github.com
+Questions: open an issue at https://github.com/mohsen1/session-recorder-chrome-extension/issues

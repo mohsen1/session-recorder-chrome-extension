@@ -10,6 +10,20 @@ behavior and with `docs/PRIVACY.md`.
 - **Language:** English
 - **Visibility:** Unlisted (recommended for first submission — see notes below)
 
+## Account & contact
+
+- **Publisher / account owner:** Mohsen Azimi (mohsen1) — developer account
+  registered, $5 fee paid.
+- **Support email:** <add your support email>
+  - Note: this address is required and is shown publicly on the listing. To keep
+    spam down, don't also fill the optional "Support URL" with a mailto, and
+    consider a Gmail filter for `[chrome web store]`-style subjects. If spam
+    becomes a problem later, swap in a dedicated alias — it doesn't affect the
+    account owner.
+- **Website:** https://mohsen1.github.io/session-recorder-chrome-extension/
+  (or your custom domain if configured, e.g.
+  https://azimi.me/session-recorder-chrome-extension/)
+
 ## Short description (≤132 chars)
 
 > Record a web session — clicks, network, screenshots, voice — and export an
@@ -86,14 +100,23 @@ Answer the certification form as follows:
   transcription sends audio to a provider chosen and keyed by the user; disclosed
   in the privacy policy.)
 - **Do you use remote code?** No. All code is bundled in the package.
-- **Privacy policy URL:** <host docs/PRIVACY.md and paste the URL here>
+- **Privacy policy URL:**
+  https://mohsen1.github.io/session-recorder-chrome-extension/privacy.html
+  (published from `website/privacy.html` via GitHub Pages; use the custom-domain
+  equivalent if configured)
 
 ## Store assets
 
 - **Icon:** `public/icon/128.png` ✓
-- **Screenshots (need 1280×800 or 640×400):** source frames in
-  `design/screenshots/` — `idle.png`, `recording.png`, `annotate.png`,
-  `export.png`. Verify/resize to an accepted size before upload.
+- **Screenshots (1280×800, ready to upload):** in `design/store/`, upload in
+  order —
+  1. `01-record.png` — side panel, ready to record the active tab
+  2. `02-recording.png` — live timeline: interactions, screenshots, network
+  3. `03-annotate.png` — annotating the page with an arrow + text callout
+  4. `04-export.png` — export levels with token estimates, Download .zip
+
+  These are exact 1280×800 (Chrome rejects other sizes). The same shots at 2×
+  drive the website gallery (`website/shots/`).
 - **Small promo tile (440×280):** not yet created (optional unless featured).
 
 ## Submission notes

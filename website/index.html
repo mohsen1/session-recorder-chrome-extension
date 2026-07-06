@@ -3,203 +3,240 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Session Recorder — Record a web session. Get an LLM-ready bug report.</title>
+    <title>Session Recorder — Record a bug. Hand your agent the whole story.</title>
     <meta
       name="description"
-      content="A Chrome extension that records a rich, multi-modal session of a web app — interactions, full network traffic, screenshots, voice, annotations — and exports a fully local, LLM-ready bug report."
+      content="A Chrome extension that records what you did in your web app — clicks, network, errors, screenshots, voice, and annotations — and exports one clean report your AI coding agent can read."
     />
-    <link rel="icon" href="./logo.png" type="image/png" />
+    <link rel="icon" href="./logo.png" />
     <link rel="apple-touch-icon" href="./logo.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="site-head">
-      <a class="brand" href="#top" aria-label="Session Recorder home">
-        <img class="brand-mark" src="./logo.png" width="28" height="28" alt="" />
-        <span class="brand-name">Session Recorder</span>
+    <header class="nav">
+      <a class="nav__brand" href="#top">
+        <img class="nav__logo" src="./logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
       </a>
-      <nav class="site-nav">
-        <a href="#how">How it works</a>
+      <nav class="nav__links">
         <a href="#features">Features</a>
-        <a
-          href="https://github.com/mohsen1/session-recorder-chrome-extension"
-          rel="noopener"
-          >GitHub</a
-        >
+        <a href="#how">How it works</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
       </nav>
+      <a class="btn btn--primary btn--sm" href="./session-recorder.zip" download>
+        Download
+      </a>
     </header>
 
     <main id="top">
       <!-- Hero -->
       <section class="hero">
-        <img
-          class="hero-logo"
-          src="./logo.png"
-          width="88"
-          height="88"
-          alt="Session Recorder logo"
-        />
-        <h1 class="hero-title">
-          Record a web session.<br />Get an LLM-ready bug report.
-        </h1>
-        <p class="hero-sub">
-          A Chrome extension that captures a full, multi-modal recording of a
-          web app — interactions, network, screenshots, voice, annotations — and
-          exports a fully local <code>report.md</code> optimized for a coding
-          agent to digest.
-        </p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="./session-recorder.zip" download>
-            <span class="dot" aria-hidden="true"></span>
-            Download the extension
-          </a>
-          <a
-            class="btn btn-secondary"
-            href="https://github.com/mohsen1/session-recorder-chrome-extension"
-            rel="noopener"
-            >View on GitHub</a
-          >
+        <div class="hero__copy">
+          <h1>Record a bug.<br />Hand your agent the whole story.</h1>
+          <p class="hero__lede">
+            Reproducing a bug for an AI coding agent means describing a hundred
+            little things: what you clicked, what the app requested, the error in
+            the console, what you expected. Session Recorder captures all of it
+            while you use your app, then exports one clean report your agent can
+            read.
+          </p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="./session-recorder.zip" download>
+              <span class="btn__dot"></span> Download the extension
+            </a>
+            <a
+              class="btn"
+              href="https://github.com/mohsen1/session-recorder-chrome-extension"
+              >View on GitHub</a
+            >
+          </div>
+          <p class="hero__meta">
+            Works on any site · Nothing leaves your machine · Free and open source
+          </p>
         </div>
-        <p class="hero-note">
-          Manifest V3 · WXT + React + TypeScript · Nothing leaves your machine.
-        </p>
       </section>
+
+      <div class="hero__shot">
+        <div class="shot shot--hero">
+          <img
+            src="./shots/02-recording.png"
+            alt="Session Recorder open beside a GitHub page, recording a live timeline of clicks, network requests, and screenshots."
+            loading="eager"
+          />
+        </div>
+      </div>
 
       <!-- How it works -->
-      <section id="how" class="section">
-        <h2 class="section-title">How it works</h2>
-        <ol class="steps">
-          <li class="step">
-            <span class="step-num">01</span>
-            <h3 class="step-title">Hit record</h3>
-            <p class="step-body">
-              Open the side panel and start recording. The extension attaches to
-              the tab and captures every stream through one funnel.
+      <section id="how" class="how">
+        <p class="eyebrow">How it works</p>
+        <div class="how__steps">
+          <div class="step">
+            <span class="step__n">1</span>
+            <h3>Hit record</h3>
+            <p>
+              Open the side panel and record the tab you are on. A calm live
+              timeline shows everything being captured, in order.
             </p>
-          </li>
-          <li class="step">
-            <span class="step-num">02</span>
-            <h3 class="step-title">Exercise the app</h3>
-            <p class="step-body">
-              Reproduce the bug. Narrate out loud, drop markers, annotate the
-              screen. Everything persists to IndexedDB as you go.
+          </div>
+          <div class="step">
+            <span class="step__n">2</span>
+            <h3>Reproduce the bug</h3>
+            <p>
+              Use your app like normal. Talk out loud, drop a marker at the
+              moment it breaks, and draw on the screen to point at it.
             </p>
-          </li>
-          <li class="step">
-            <span class="step-num">03</span>
-            <h3 class="step-title">Export the report</h3>
-            <p class="step-body">
-              Pick a verbosity level with a live token estimate and export a
-              local zip. Hand <code>report.md</code> to your coding agent.
+          </div>
+          <div class="step">
+            <span class="step__n">3</span>
+            <h3>Export and paste</h3>
+            <p>
+              Choose how much detail to include, download a zip, and hand the
+              report to your agent. That is the whole loop.
             </p>
-          </li>
-        </ol>
+          </div>
+        </div>
       </section>
 
-      <!-- Features -->
-      <section id="features" class="section">
-        <h2 class="section-title">What it captures</h2>
-        <div class="grid">
-          <article class="card">
-            <h3 class="card-title">Full network capture</h3>
-            <p class="card-body">
-              Request and response bodies, headers, timing, and websockets via
-              <code>chrome.debugger</code> / CDP — plus console logs,
-              exceptions, and failed requests.
+      <!-- Feature rows -->
+      <section id="features" class="features">
+        <div class="feature">
+          <div class="feature__copy">
+            <p class="eyebrow">Every step, in order</p>
+            <h2>See exactly what happened</h2>
+            <p>
+              Clicks, typing, page changes, network requests and their responses,
+              console errors, and screenshots all land on one timeline in the
+              order they happened. Repeated background requests fold away, so the
+              story stays readable.
             </p>
-          </article>
-          <article class="card">
-            <h3 class="card-title">Screenshots</h3>
-            <p class="card-body">
-              <code>Page.captureScreenshot</code> at a configurable frequency,
-              with near-duplicate frames automatically deduped so the timeline
-              stays lean.
-            </p>
-          </article>
-          <article class="card">
-            <h3 class="card-title">Real-time voice narration</h3>
-            <p class="card-body">
-              Narrate while you record via an offscreen
-              <code>MediaRecorder</code>, segmented for optional cloud
-              transcription — OpenAI-compatible, Deepgram, or ElevenLabs Scribe.
-            </p>
-          </article>
-          <article class="card">
-            <h3 class="card-title">Annotations</h3>
-            <p class="card-body">
-              An in-page shadow-DOM canvas overlay for vector shapes, saved
-              alongside the annotated screenshot. Never trimmed — it is an
-              explicit signal of what mattered.
-            </p>
-          </article>
-          <article class="card">
-            <h3 class="card-title">Intelligent trimming</h3>
-            <p class="card-body">
-              Captured at full fidelity, trimmed deterministically at export
-              into four levels — Full, Standard, Compact, Minimal — each with a
-              live token estimate. No LLM in the loop.
-            </p>
-          </article>
-          <article class="card">
-            <h3 class="card-title">Redaction on by default</h3>
-            <p class="card-body">
-              Auth headers, token-like fields, sensitive URL params, and
-              password inputs are masked at capture time — raw secrets never
-              touch disk.
-            </p>
-          </article>
+          </div>
+          <div class="feature__shot">
+            <div class="shot shot--tilt-r">
+              <img
+                src="./shots/02-recording.png"
+                alt="A live timeline of clicks, screenshot thumbnails, grouped network requests, and errors as a GitHub page is used."
+                loading="eager"
+              />
+            </div>
+          </div>
         </div>
+
+        <div class="feature feature--rev">
+          <div class="feature__copy">
+            <p class="eyebrow">Point at the problem</p>
+            <h2>Draw on the page</h2>
+            <p>
+              Freeze the screen and mark it up with arrows, boxes, highlights, and
+              text. The annotated image goes straight into the report, so your
+              agent sees the exact thing you meant, not a vague description of it.
+            </p>
+          </div>
+          <div class="feature__shot">
+            <div class="shot shot--tilt-l">
+              <img
+                src="./shots/03-annotate.png"
+                alt="The annotation editor with a coral arrow and the text 'this button' pointing at a button on a GitHub settings page."
+                loading="eager"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature__copy">
+            <p class="eyebrow">Right-sized for any model</p>
+            <h2>As much detail as you need</h2>
+            <p>
+              Long sessions get big. Pick a level — Full, Standard, Compact, or
+              Minimal — and see a live token estimate for each, so the report fits
+              your model's context window. The same recording can be re-exported
+              at any level later.
+            </p>
+          </div>
+          <div class="feature__shot">
+            <div class="shot shot--tilt-r">
+              <img
+                src="./shots/04-export.png"
+                alt="The export panel showing four detail levels with token estimates, a saved and transcription-complete status, and a Download button."
+                loading="eager"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Captured / privacy strip -->
+      <section class="captures">
+        <div class="captures__grid">
+          <div class="cap">
+            <h4>Clicks and typing</h4>
+            <p>Every interaction, with the element you touched.</p>
+          </div>
+          <div class="cap">
+            <h4>Network activity</h4>
+            <p>Requests, responses, timing, and failures.</p>
+          </div>
+          <div class="cap">
+            <h4>Console and errors</h4>
+            <p>The errors and exceptions your app threw.</p>
+          </div>
+          <div class="cap">
+            <h4>Screenshots</h4>
+            <p>Captured as you go, tuned to how often you want.</p>
+          </div>
+          <div class="cap">
+            <h4>Voice and annotations</h4>
+            <p>Your spoken notes and your on-screen markup.</p>
+          </div>
+          <div class="cap">
+            <h4>Files you upload</h4>
+            <p>Grabbed automatically, with the context around them.</p>
+          </div>
+        </div>
+        <p class="captures__privacy">
+          Secrets are hidden by default: passwords, auth headers, and tokens are
+          masked before anything is saved. Everything stays on your machine;
+          nothing is uploaded unless you turn on voice transcription and add your
+          own key.
+        </p>
       </section>
 
       <!-- Install -->
-      <section class="section">
-        <div class="install">
-          <h2 class="install-title">Install (load unpacked)</h2>
-          <p class="install-body">
-            Download the zip and unpack it, or build from source. Then load it
-            into Chrome as an unpacked extension.
-          </p>
-          <ol class="install-steps">
+      <section class="install">
+        <div class="install__card">
+          <h2>Install in a minute</h2>
+          <ol class="install__steps">
             <li>
-              Visit <code>chrome://extensions</code> and enable
-              <strong>Developer mode</strong>.
+              <a href="./session-recorder.zip" download>Download the zip</a> and
+              unzip it.
             </li>
             <li>
-              Click <strong>Load unpacked</strong> and select the
-              <code>chrome-mv3</code> folder.
+              Open <code>chrome://extensions</code> and turn on Developer mode.
             </li>
-            <li>
-              Click the toolbar icon to open the side panel and hit
-              <strong>Record</strong>.
-            </li>
+            <li>Click Load unpacked and pick the unzipped folder.</li>
+            <li>Click the toolbar icon to open the side panel, then Record.</li>
           </ol>
-          <p class="install-note">
-            While recording, Chrome shows a "…&nbsp;is being debugged" banner —
-            that is expected; it is how the extension taps the full
-            network&nbsp;and console streams.
+          <p class="install__note">
+            While recording, Chrome shows a small "being debugged" banner. That is
+            expected: it is how the extension watches your app's network and
+            console.
           </p>
         </div>
       </section>
     </main>
 
-    <footer class="site-foot">
-      <div class="foot-row">
-        <a class="brand" href="#top" aria-label="Session Recorder home">
-          <img class="brand-mark" src="./logo.png" width="22" height="22" alt="" />
-          <span class="brand-name">Session Recorder</span>
-        </a>
-        <nav class="foot-nav">
-          <a
-            href="https://github.com/mohsen1/session-recorder-chrome-extension"
-            rel="noopener"
-            >GitHub</a
-          >
-          <a href="./session-recorder.zip" download>Download</a>
-        </nav>
+    <footer class="foot">
+      <div class="foot__brand">
+        <img src="./logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
       </div>
-      <p class="foot-fine">
-        Open source. Nothing leaves your machine except optional voice
-        transcription you configure and opt into.
+      <div class="foot__links">
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+        <a href="./session-recorder.zip" download>Download</a>
+      </div>
+      <p class="foot__note">
+        Free and open source. Nothing leaves your machine except optional voice
+        transcription you set up yourself.
       </p>
     </footer>
   </body>

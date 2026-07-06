@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — Session Recorder</title>
+    <meta
+      name="description"
+      content="Privacy policy for the Session Recorder Chrome extension. Everything you record stays on your machine; the only exception is optional voice transcription you configure and opt into."
+    />
+    <link rel="icon" href="./logo.png" />
+    <link rel="apple-touch-icon" href="./logo.png" />
+    <!-- Self-contained styles so this page renders correctly independent of the
+         landing-page stylesheet. Same design tokens as design/DESIGN.md. -->
+    <style>
+      :root {
+        --ink: #16181d;
+        --ink-2: #3b3f47;
+        --muted: #767b85;
+        --line: #e7e7e3;
+        --bg: #f7f7f5;
+        --surface: #ffffff;
+        --surface-2: #fbfbfa;
+        --accent: #ff5a4d;
+        --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Inter,
+          system-ui, sans-serif;
+        --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+        --maxw: 720px;
+        --radius: 10px;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 0 rgba(0, 0, 0, 0.02);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #ececea;
+          --ink-2: #b9bcc2;
+          --muted: #878b93;
+          --line: #24272e;
+          --bg: #0f1114;
+          --surface: #16181d;
+          --surface-2: #1b1e24;
+          --accent: #ff6355;
+          --shadow: none;
+        }
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+      img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      a {
+        color: inherit;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.88em;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 0.08em 0.36em;
+        color: var(--ink-2);
+      }
+      .nav {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 22px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .brand img {
+        border-radius: 6px;
+      }
+      .brand span {
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: -0.01em;
+      }
+      .nav__links {
+        display: flex;
+        gap: 22px;
+        font-size: 14.5px;
+        color: var(--muted);
+      }
+      .nav__links a {
+        text-decoration: none;
+      }
+      .nav__links a:hover {
+        color: var(--ink);
+      }
+      .legal {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+      }
+      .legal h1 {
+        font-size: clamp(1.9rem, 4.5vw, 2.5rem);
+        letter-spacing: -0.02em;
+        font-weight: 600;
+        margin: 0 0 6px;
+      }
+      .updated {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--muted);
+        margin: 0 0 32px;
+      }
+      .legal h2 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        margin: 40px 0 12px;
+      }
+      .legal p,
+      .legal li {
+        color: var(--ink-2);
+      }
+      .legal ul {
+        padding-left: 20px;
+      }
+      .legal li {
+        margin-bottom: 10px;
+      }
+      .legal b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .legal a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .callout {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-left: 2px solid var(--accent);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        box-shadow: var(--shadow);
+        margin: 24px 0;
+      }
+      .callout p {
+        margin: 0;
+        color: var(--ink);
+      }
+      .foot {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 32px 24px 56px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 22px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .foot a {
+        text-decoration: none;
+      }
+      .foot a:hover {
+        color: var(--ink);
+      }
+      .foot__spacer {
+        flex: 1;
+      }
+      @media (max-width: 480px) {
+        .nav__links {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="./index.html">
+        <img src="./logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <nav class="nav__links">
+        <a href="./index.html#how">How it works</a>
+        <a href="./index.html#features">Features</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension"
+          >GitHub</a
+        >
+      </nav>
+    </header>
+
+    <main class="legal">
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated: July 6, 2026</p>
+
+      <p>
+        Session Recorder is a Chrome extension that records a session of you
+        using a web app — interactions, network traffic, console logs,
+        screenshots, voice narration, annotations, and files — and exports it as
+        a local zip report intended for an LLM coding agent.
+      </p>
+
+      <div class="callout">
+        <p>
+          Everything you record stays on your machine. The only data that ever
+          leaves your device is audio you explicitly choose to transcribe with
+          your own third-party API key.
+        </p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>
+          <b>Recordings stay local.</b> Sessions are stored in your browser
+          (IndexedDB) and exported as a zip file you save yourself. Session
+          Recorder has no backend and no account system. We do not operate any
+          server that receives your recordings.
+        </li>
+        <li>
+          <b>Optional transcription is the one exception.</b> If — and only if —
+          you configure a transcription provider and API key, the audio you
+          record is sent to that third-party provider to produce a text
+          transcript. Without a key, audio is never transmitted; it stays in the
+          local recording.
+        </li>
+      </ul>
+
+      <h2>What the extension accesses</h2>
+      <p>
+        To record a session, the extension captures, on the tabs you are
+        actively recording:
+      </p>
+      <ul>
+        <li>
+          Network requests and responses (via <code>chrome.debugger</code> /
+          CDP), including bodies and headers
+        </li>
+        <li>Console logs, exceptions, and failed requests</li>
+        <li>Clicks, inputs, scrolls, keystrokes, and page navigations</li>
+        <li>Screenshots of the recorded tab</li>
+        <li>Microphone audio, when you start voice narration</li>
+        <li>Files you upload to the app or attach yourself</li>
+      </ul>
+      <p>
+        All of this is written to local browser storage and is only ever
+        assembled into a zip file that you explicitly export and save to your
+        own device.
+      </p>
+
+      <h2>Redaction</h2>
+      <p>
+        Redaction is on by default. Before anything is written to storage, the
+        extension masks authorization headers, token-like JSON and form fields,
+        sensitive URL parameters, and password inputs. You can add rules or
+        disable redaction per session on the options page.
+      </p>
+
+      <h2>Third-party transcription (optional, off by default)</h2>
+      <p>
+        If you enter an API key on the options page, recorded audio is streamed
+        or uploaded to the provider you selected in order to transcribe it:
+      </p>
+      <ul>
+        <li>
+          <b>Deepgram</b> —
+          <a href="https://deepgram.com/privacy">deepgram.com/privacy</a>
+        </li>
+        <li>
+          <b>OpenAI</b> —
+          <a href="https://openai.com/policies/privacy-policy"
+            >openai.com/policies/privacy-policy</a
+          >
+        </li>
+        <li>
+          <b>ElevenLabs</b> —
+          <a href="https://elevenlabs.io/privacy">elevenlabs.io/privacy</a>
+        </li>
+      </ul>
+      <p>
+        Your API key is stored locally in <code>chrome.storage.local</code> and
+        is sent only to that provider. We do not receive, proxy, or store your
+        key or your audio. Your use of a provider is governed by that provider's
+        privacy policy and terms.
+      </p>
+
+      <h2>Data we collect</h2>
+      <p>
+        <b>None.</b> Session Recorder has no analytics, no telemetry, no ads, and
+        no backend. The developer does not receive any of your recordings,
+        transcripts, keys, or usage data.
+      </p>
+
+      <h2>Data sharing and sale</h2>
+      <p>
+        We do not sell, share, or transfer any user data, because we never
+        receive any.
+      </p>
+
+      <h2>Contact</h2>
+      <p>Questions: <a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">open an issue on GitHub</a></p>
+    </main>
+
+    <footer class="foot">
+      <a class="brand" href="./index.html">
+        <img src="./logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <span class="foot__spacer"></span>
+      <a href="./index.html">Home</a>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension"
+        >GitHub</a
+      >
+    </footer>
+  </body>
+</html>

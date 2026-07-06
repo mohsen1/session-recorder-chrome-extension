@@ -1,0 +1,15 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White "die-cut" outline behind the mark, so it reads on any background.
+       Drawn thicker in white first; the coral dot and charcoal step line sit on top. -->
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <!-- white halo for the step line -->
+    <path d="M40 82 H66 V64 H86 V46" stroke="#ffffff" stroke-width="24" fill="none"/>
+    <!-- white halo for the record dot -->
+    <circle cx="40" cy="82" r="24" fill="#ffffff"/>
+
+    <!-- charcoal step line -->
+    <path d="M40 82 H66 V64 H86 V46" stroke="#16181d" stroke-width="11" fill="none"/>
+    <!-- coral record dot -->
+    <circle cx="40" cy="82" r="15" fill="#ff5a4d"/>
+  </g>
+</svg>
