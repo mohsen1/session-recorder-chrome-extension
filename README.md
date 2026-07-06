@@ -1,54 +1,57 @@
 <p align="center">
-  <img src="design/logo-256.png" width="112" height="112" alt="Session Recorder logo" />
+  <img src="design/logo.png" width="96" height="96" alt="Session Recorder logo" />
 </p>
 
-<h1 align="center">Session Recorder Browser Extension</h1>
-
+<h1 align="center">Session Recorder</h1>
 
 <p align="center">
-  Record a web session. Get an LLM-ready bug report.
+  Record a bug. Hand your AI agent the whole story.
 </p>
 
-This Chrome extension (Manifest V3) records a full session of someone using a
-web app: interactions, network traffic, screenshots, real-time voice narration,
-annotations, and files. It exports a zip that stays on your machine. The zip's
-`report.md` is written for an LLM coding agent, so the agent can reproduce bugs
-and analyze behavior.
+Reproducing a bug for an AI coding agent means describing a hundred little
+things: what you clicked, what the app requested, the error in the console, what
+you expected. Session Recorder captures all of it while you use your app, then
+exports one clean report your agent can read.
 
-## What it captures
+Website: [azimi.me/session-recorder-chrome-extension](https://azimi.me/session-recorder-chrome-extension/)
 
-- network: request and response bodies, headers, timing, and websockets, through `chrome.debugger` (CDP)
-- console logs, exceptions, and failed requests
-- clicks, inputs, scrolls, and keys, through a content script
-- navigations and SPA route changes, through `chrome.webNavigation`
-- screenshots at a configurable frequency, with near-duplicates deduped
-- voice narration through an offscreen `MediaRecorder`, with optional cloud transcription
-- annotations drawn on the page, saved as vector shapes plus a screenshot
-- files uploaded to the app, plus files you attach yourself
-- markers and notes from side-panel buttons and keyboard shortcuts
+<p align="center">
+  <img src="docs/screenshots/02-recording.png" width="820" alt="Session Recorder open beside a web page, recording a live timeline of clicks, network requests, and screenshots." />
+</p>
 
-Every event flows through one funnel in the background service worker and
-persists to IndexedDB. A session survives service-worker restarts, and you can
-re-export it at any verbosity level later.
+## What you get
 
-### Redaction (on by default)
+- one timeline of everything that happened, in order: clicks, typing, page
+  changes, network requests and their responses, console errors, and screenshots
+- your own voice, transcribed in real time and slotted in next to what you were
+  doing, so the report reads like you walking the agent through it
+- arrows and boxes you draw right on the page, saved into the report as an image
+- a report sized to fit your model, with a live token estimate for each level
+- secrets hidden by default and nothing uploaded: it all stays on your machine
 
-The extension masks auth headers, token-like JSON and form fields, sensitive URL
-params, and password inputs at capture time. Raw secrets never touch disk. You
-can add rules or turn redaction off per session on the options page.
+### Point at the problem
 
-### Deterministic trimming (no LLM)
+Freeze the screen and mark it up. The annotated image goes straight into the
+report, so your agent sees the exact thing you meant.
 
-Sessions are captured at full fidelity and trimmed at export into 4 levels, each
-with a live token estimate:
+<p align="center">
+  <img src="docs/screenshots/03-annotate.png" width="820" alt="The annotation editor: a toolbar over a frozen screenshot, with a coral arrow and text pointing at a button." />
+</p>
 
-- L0 Full: everything
-- L1 Standard (about 150k tokens): bodies cut to 4 KB, static assets and analytics collapsed
-- L2 Compact (about 50k tokens): bodies reduced to a JSON shape summary, repeated requests collapsed
-- L3 Minimal (about 15k tokens): a narrative skeleton
+### Right-sized for any model
 
-No level ever trims your explicit signals: the voice transcript, annotations,
-markers, notes, errors, and file metadata.
+Long sessions get big. Pick a level and see the estimated token count before you
+export. The same recording can be re-exported at any level later. Your explicit
+signals — voice, annotations, markers, notes, and errors — are never trimmed.
+
+<p align="center">
+  <img src="docs/screenshots/04-export.png" width="820" alt="The export panel with four detail levels, each showing a token estimate, and a Download button." />
+</p>
+
+### Secrets stay secret
+
+Passwords, auth headers, and tokens are masked before anything is saved. You can
+add your own rules or turn masking off per session in the settings.
 
 ## Install (load unpacked)
 
@@ -110,6 +113,15 @@ for a suggested prompt.
 - `downloads`: save the exported zip
 - `alarms`: flush the event buffer while recording
 - `<all_urls>`: record whatever app you point it at
+
+## Under the hood
+
+For contributors: the extension captures network and console through
+`chrome.debugger`, navigation through `chrome.webNavigation`, and interactions
+through content scripts. Voice records in an offscreen document; screenshots come
+from the debugger. Everything flows through one funnel in the background service
+worker into IndexedDB, and trimming at export is deterministic (no LLM). The full
+design is in [`PLAN.md`](./PLAN.md) and [`IMPLEMENTATION.md`](./IMPLEMENTATION.md).
 
 ## Project layout
 
