@@ -60,7 +60,26 @@ export function renderReport(input: RenderInput): string {
   lines.push('');
   lines.push('## Timeline');
   lines.push('');
-  for (const e of events) renderEvent(e, input, lines, anchors);
+  // Stitch runs of consecutive voice segments into one narration line; render
+  // everything else event-by-event.
+  let i = 0;
+  while (i < events.length) {
+    const e = events[i] as SessionEvent;
+    if (e.type === 'voice-segment') {
+      let j = i;
+      const run: Extract<SessionEvent, { type: 'voice-segment' }>[] = [];
+      while (j < events.length && events[j]!.type === 'voice-segment') {
+        run.push(events[j] as Extract<SessionEvent, { type: 'voice-segment' }>);
+        j += 1;
+      }
+      if (run.length >= 2) renderVoiceGroup(run, lines);
+      else renderEvent(e, input, lines, anchors);
+      i = j;
+    } else {
+      renderEvent(e, input, lines, anchors);
+      i += 1;
+    }
+  }
 
   renderAppendices(events, input, lines);
 
@@ -144,6 +163,43 @@ function renderHeader(
       );
     }
   }
+}
+
+/**
+ * Stitch a run of consecutive voice segments into one narration blockquote:
+ * the transcript reads as prose, with the time span + total duration at the end.
+ */
+function renderVoiceGroup(
+  run: Extract<SessionEvent, { type: 'voice-segment' }>[],
+  lines: string[],
+): void {
+  const first = run[0] as Extract<SessionEvent, { type: 'voice-segment' }>;
+  const last = run[run.length - 1] as Extract<
+    SessionEvent,
+    { type: 'voice-segment' }
+  >;
+  const text = run
+    .map((e) => e.payload.transcript)
+    .filter((t): t is string => t != null && t.trim().length > 0)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const start = first.payload.tStart ?? first.t;
+  const end = last.payload.tEnd ?? last.t;
+  const span = `${formatClock(start)}–${formatClock(end)} · ${formatDuration(
+    Math.max(0, end - start),
+  )}`;
+  const body = text.length > 0 ? escapeInline(text) : '(no transcript)';
+  lines.push(`> 🎙️ [${formatClock(start)}] ${body} _(${span})_`);
+}
+
+/** Compact duration like `28s` or `1m 12s`. */
+function formatDuration(ms: number): string {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return rem ? `${m}m ${rem}s` : `${m}m`;
 }
 
 // ----------------------------------------------------------------------------

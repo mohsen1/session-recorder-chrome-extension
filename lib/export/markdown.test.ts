@@ -308,6 +308,33 @@ describe('renderReport', () => {
     const md = renderReport({ ...input, assetPath: () => undefined });
     expect(md).not.toContain('screenshots/001-0004.jpg');
   });
+
+  it('stitches consecutive voice segments into one line with the time span', () => {
+    const input = buildSession();
+    const events: SessionEvent[] = [
+      ev({ t: 5000, type: 'voice-segment', payload: { tStart: 5000, tEnd: 8000, transcript: 'So in this page' } }),
+      ev({ t: 8200, type: 'voice-segment', payload: { tStart: 8200, tEnd: 11000, transcript: 'we want a live feed' } }),
+      ev({ t: 11200, type: 'voice-segment', payload: { tStart: 11200, tEnd: 33000, transcript: 'as they happen.' } }),
+    ];
+    const md = renderReport({ ...input, events, assetPath: () => undefined });
+    // One stitched blockquote, not three.
+    expect(md.match(/🎙️/g)?.length).toBe(1);
+    expect(md).toContain('So in this page we want a live feed as they happen.');
+    // Time span + total duration at the end.
+    expect(md).toContain('(00:05–00:33 · 28s)');
+  });
+
+  it('keeps a lone voice segment as a single anchored line', () => {
+    const input = buildSession();
+    const events: SessionEvent[] = [
+      ev({ t: 1000, tabId: 1, type: 'click', payload: { descriptor: { tag: 'button', text: 'Checkout' }, modifiers: [] } }),
+      ev({ t: 5000, type: 'voice-segment', payload: { tStart: 5000, tEnd: 8000, transcript: 'A single remark.' } }),
+    ];
+    const md = renderReport({ ...input, events, assetPath: () => undefined });
+    expect(md).toContain('A single remark.');
+    // Not stitched: no time-span suffix on a singleton.
+    expect(md).not.toContain('·');
+  });
 });
 
 describe('renderManifest', () => {
