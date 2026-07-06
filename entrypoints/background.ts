@@ -412,6 +412,13 @@ class Orchestrator {
     await this.persistSession();
     this.broadcastState();
 
+    // Always begin with a screenshot of the starting page, regardless of the
+    // screenshot policy. Best-effort: silently skipped if deep capture is
+    // unavailable (no debugger attached).
+    if (!degradedReason) {
+      await this.screenshots.capture(tabId, 'nav', 'Session start');
+    }
+
     if (degradedReason) {
       this.recordEvent({
         type: 'session-note',
