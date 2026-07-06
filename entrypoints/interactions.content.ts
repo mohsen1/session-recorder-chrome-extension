@@ -52,6 +52,9 @@ export default defineContentScript({
     w.__srInteractions = true;
 
     let active = false;
+    // Paused while the annotation editor is open, so drawing does not get
+    // recorded as page interactions.
+    let annotating = false;
 
     // Pending per-element input debounce timers.
     const inputTimers = new Map<Element, ReturnType<typeof setTimeout>>();
@@ -69,6 +72,7 @@ export default defineContentScript({
     }
 
     function post<T extends EventType>(type: T, payload: EventPayloadMap[T]): void {
+      if (annotating) return; // no interaction capture while annotating
       const event: RawEvent<T> = { type, at: Date.now(), payload };
       void safeSend(event);
     }
@@ -273,7 +277,16 @@ export default defineContentScript({
     // -- lifecycle -----------------------------------------------------------
 
     onContentMessage((msg) => {
-      if (msg.kind === 'content/setActive') setActive(msg.active, msg.hoverDwellMs);
+      if (msg.kind === 'content/setActive') {
+        setActive(msg.active, msg.hoverDwellMs);
+      } else if (msg.kind === 'content/annotate') {
+        // Pause capture while the annotation editor is open.
+        annotating = msg.on;
+        if (annotating && hoverTimer) {
+          clearTimeout(hoverTimer);
+          hoverTimer = null;
+        }
+      }
     });
 
     void (async () => {

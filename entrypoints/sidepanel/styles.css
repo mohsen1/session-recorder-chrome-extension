@@ -176,6 +176,33 @@ button {
   padding: 14px;
 }
 
+.view--idle {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Subtle links footer, pinned to the bottom of the idle view. */
+.idle-foot {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.idle-foot a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.idle-foot a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
 /* Recording view fills the panel: fixed header, scrolling timeline, pinned bar. */
 .view--recording {
   flex: 1;
@@ -403,6 +430,20 @@ button {
   letter-spacing: 0.02em;
   color: var(--muted);
   margin-bottom: 8px;
+}
+
+.export__opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 2px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.export__opt input {
+  accent-color: var(--accent);
 }
 
 /* ---- Sessions list ---- */
@@ -995,11 +1036,17 @@ button {
 }
 
 .review__name {
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.review__close {
+  flex: 0 0 auto;
 }
 
 .review__saved {
@@ -1110,12 +1157,18 @@ button {
   border: none;
   margin: 0;
   padding: 0;
+  /* Fieldsets default to min-inline-size:min-content, which lets the nowrap
+     "Omits…" text push the cards wider than the panel (clipping the token count
+     on the right). Force it to shrink to the container. */
+  min-inline-size: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .level {
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   gap: 10px;

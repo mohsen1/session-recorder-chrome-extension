@@ -17,9 +17,12 @@ import {
 } from '@/lib/storage';
 import { buildBundle, estimateForLevels } from '@/lib/export/bundle';
 import { zipFiles } from '@/lib/export/zip';
+import DOMPurify from 'dompurify';
+import { applyLevel } from '@/lib/export/trimmer';
+import { buildReportHtml } from '@/lib/export/report-html';
 import { broadcast, type TokenEstimate } from '@/lib/messaging';
 import type { VerbosityLevel } from '@/lib/session/types';
-import { sessionFolderName } from '../store';
+import { fileToDataUrl, sessionFolderName } from '../store';
 
 interface ExportPanelProps {
   sessionId: string;
@@ -44,6 +47,7 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
   const [building, setBuilding] = useState(false);
   const [phase, setPhase] = useState('');
   const [buildError, setBuildError] = useState<string | undefined>();
+  const [includeHtml, setIncludeHtml] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +96,37 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
 
       setPhase('Building report…');
       const files = await buildBundle({ session, events, assets, level });
+
+      if (includeHtml) {
+        setPhase('Rendering HTML…');
+        const meta = assets.map(({ blob: _b, ...m }) => m);
+        const ctx = {
+          assetsById: new Map(meta.map((m) => [m.id, m])),
+          settings: session.settings,
+        };
+        const trimmed = applyLevel(events, level, ctx);
+        const urls = new Map<string, string>();
+        for (const a of assets) {
+          if (a.kind === 'screenshot' || a.mime.startsWith('image/')) {
+            urls.set(a.id, await fileToDataUrl(a.blob));
+          }
+        }
+        const html = buildReportHtml({
+          session,
+          events: trimmed,
+          assets: meta,
+          level,
+          imageUrl: (id) => urls.get(id),
+          sanitize: (h) =>
+            DOMPurify.sanitize(h, {
+              ADD_ATTR: ['target'],
+              // Allow data: image URIs (our embedded screenshots).
+              ALLOWED_URI_REGEXP:
+                /^(?:data:image\/|https?:|mailto:|tel:|#|\/)/i,
+            }),
+        });
+        files.push({ path: 'report.html', text: html });
+      }
 
       setPhase('Zipping…');
       const folder = sessionFolderName(session);
@@ -168,6 +203,15 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
           })}
         </fieldset>
       )}
+
+      <label className="export__opt">
+        <input
+          type="checkbox"
+          checked={includeHtml}
+          onChange={(e) => setIncludeHtml(e.target.checked)}
+        />
+        <span>Also include a rendered HTML page</span>
+      </label>
 
       <button
         type="button"

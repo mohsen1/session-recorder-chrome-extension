@@ -28,7 +28,9 @@ export function App(): React.JSX.Element {
   const error = useSidepanel((s) => s.error);
   const dismissError = useSidepanel((s) => s.dismissError);
 
-  // A dismissed just-stopped session (past sessions open their report in a tab).
+  // A past session opened from the list (also opens its report in a tab), and a
+  // dismissed just-stopped session.
+  const [reviewId, setReviewId] = useState<string | null>(null);
   const [dismissedStoppedId, setDismissedStoppedId] = useState<string | null>(
     null,
   );
@@ -50,6 +52,14 @@ export function App(): React.JSX.Element {
   let body: React.JSX.Element;
   if (settingsOpen) {
     body = <SettingsView onClose={() => setSettingsOpen(false)} />;
+  } else if (reviewId) {
+    body = (
+      <SessionReview
+        sessionId={reviewId}
+        onClose={() => setReviewId(null)}
+        closeLabel="← Back"
+      />
+    );
   } else if (isLive && session) {
     body = <RecordingView />;
   } else if (isStopped && session) {
@@ -61,7 +71,7 @@ export function App(): React.JSX.Element {
       />
     );
   } else {
-    body = <IdleView />;
+    body = <IdleView onOpenSession={setReviewId} />;
   }
 
   return (
@@ -131,18 +141,52 @@ function SettingsView({
 // ----------------------------------------------------------------------------
 
 /** Open a past session's rendered report in a new tab. */
-function openReport(sessionId: string): void {
+function openReportTab(sessionId: string): void {
   void chrome.tabs.create({
     url: `${chrome.runtime.getURL('report.html')}?session=${sessionId}`,
   });
 }
 
-function IdleView(): React.JSX.Element {
+function IdleView({
+  onOpenSession,
+}: {
+  onOpenSession: (id: string) => void;
+}): React.JSX.Element {
+  // Clicking a past session opens its report in a tab and its export panel here.
+  const open = (id: string) => {
+    openReportTab(id);
+    onOpenSession(id);
+  };
   return (
     <div className="view view--idle">
       <RecordButton />
-      <SessionList onOpen={openReport} />
+      <SessionList onOpen={open} />
+      <IdleFooter />
     </div>
+  );
+}
+
+const REPO_URL = 'https://github.com/mohsen1/session-recorder-chrome-extension';
+
+function IdleFooter(): React.JSX.Element {
+  return (
+    <footer className="idle-foot">
+      <a href={REPO_URL} target="_blank" rel="noreferrer">
+        GitHub
+      </a>
+      <span aria-hidden>·</span>
+      <a
+        href="https://mohsen1.github.io/session-recorder-chrome-extension/"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Website
+      </a>
+      <span aria-hidden>·</span>
+      <a href={`${REPO_URL}/issues/new`} target="_blank" rel="noreferrer">
+        Feedback
+      </a>
+    </footer>
   );
 }
 
@@ -266,6 +310,14 @@ function SessionReview({
             Saved
           </span>
         )}
+        <button
+          type="button"
+          className="icon-btn review__close"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          <X size={16} strokeWidth={1.75} />
+        </button>
       </div>
 
       {loadError && <p className="export__error">{loadError}</p>}

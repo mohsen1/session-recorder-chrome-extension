@@ -246,11 +246,11 @@ function visualFor(e: SessionEvent): Visual {
       return { Icon: Command, label: e.payload.key, tone: 'muted' };
     case 'hover': {
       const d = e.payload.descriptor;
+      const noun = d.role || d.tag || 'element';
+      const lbl = d.text || d.ariaLabel || d.name;
       return {
         Icon: Pointer,
-        label: truncate(
-          `Hovered ${d.text || d.ariaLabel || d.selector || d.tag || 'element'}`,
-        ),
+        label: truncate(`Hovered ${noun}${lbl ? ` "${lbl}"` : ''}`),
         tone: 'muted',
       };
     }

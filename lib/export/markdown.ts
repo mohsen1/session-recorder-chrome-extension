@@ -191,8 +191,11 @@ function renderEvent(
     }
     case 'hover': {
       const d = e.payload.descriptor;
+      const noun = d.role || d.tag || 'element';
+      const lbl = labelOf(d);
+      const dwell = e.payload.dwellMs ? ` for ${(e.payload.dwellMs / 1000).toFixed(1)}s` : '';
       lines.push(
-        `${clock} HOVER ${quoteLabel(labelOf(d))} (${selectorOf(d)}${tab})`,
+        `${clock} HOVER ${noun}${lbl ? ` ${quoteLabel(lbl)}` : ''} (${selectorOf(d)}${tab})${dwell}`,
       );
       break;
     }

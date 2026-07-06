@@ -88,7 +88,6 @@ body {
 }
 
 .btn {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   height: 36px;
@@ -151,29 +150,34 @@ body {
 
 /* ---- Level selector ---- */
 
+/* Level selector — lives in the sticky header. */
+.bar__levels {
+  margin-left: auto;
+}
+
 .r-levels {
   display: inline-flex;
-  gap: 4px;
-  margin: 20px 0 28px;
-  padding: 4px;
+  gap: 2px;
+  padding: 3px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .r-level {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 5px 9px;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   background: transparent;
   color: var(--muted);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .r-level:hover {
@@ -190,7 +194,14 @@ body {
   font-family: var(--mono);
   font-weight: 600;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 11px;
+}
+
+/* On narrow widths, show just the level id to keep the header tidy. */
+@media (max-width: 720px) {
+  .r-level__name {
+    display: none;
+  }
 }
 
 /* ---- Timeline ---- */

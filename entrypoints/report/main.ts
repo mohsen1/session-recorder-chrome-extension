@@ -30,6 +30,7 @@ const sessionId = params.get('session');
 const reportEl = document.getElementById('report') as HTMLElement;
 const titleEl = document.getElementById('bar-title') as HTMLElement;
 const metaEl = document.getElementById('bar-meta') as HTMLElement;
+const levelsEl = document.getElementById('bar-levels') as HTMLElement;
 const downloadBtn = document.getElementById('download') as HTMLButtonElement;
 
 let level: VerbosityLevel = 'L0';
@@ -100,7 +101,24 @@ async function load(): Promise<void> {
   }
   const assetsMeta: AssetMeta[] = assets.map(({ blob: _b, ...m }) => m);
   loaded = { session, events, assetsMeta, imageUrls };
+  renderLevels();
   render();
+}
+
+/** Level selector in the sticky header. */
+function renderLevels(): void {
+  const seg = el('div', 'r-levels');
+  for (const lv of LEVELS) {
+    const b = el(
+      'button',
+      'r-level' + (lv.id === level ? ' r-level--on' : ''),
+      lv.label,
+    );
+    b.title = lv.label;
+    b.addEventListener('click', () => setLevel(lv.id));
+    seg.appendChild(b);
+  }
+  levelsEl.replaceChildren(seg);
 }
 
 function render(): void {
@@ -137,17 +155,6 @@ function render(): void {
   h.appendChild(meta);
   root.appendChild(h);
 
-  // Level selector
-  const seg = el('div', 'r-levels');
-  for (const lv of LEVELS) {
-    const b = el('button', 'r-level' + (lv.id === level ? ' r-level--on' : ''));
-    b.appendChild(el('span', 'r-level__id', lv.id));
-    b.appendChild(el('span', undefined, lv.label));
-    b.addEventListener('click', () => setLevel(lv.id));
-    seg.appendChild(b);
-  }
-  root.appendChild(seg);
-
   // Timeline (group consecutive net-requests into <details>)
   const tl = el('div', 'r-tl');
   let i = 0;
@@ -179,6 +186,7 @@ function render(): void {
 function setLevel(lv: VerbosityLevel): void {
   if (lv === level) return;
   level = lv;
+  renderLevels();
   render();
 }
 
@@ -210,6 +218,18 @@ function eventNode(e: SessionEvent, imageUrls: Map<string, string>): HTMLElement
     case 'key':
       row.append(clockOf(e), tag('key'), el('span', 'r-txt', e.payload.key));
       return row;
+    case 'hover': {
+      const d = e.payload.descriptor;
+      const noun = d.role || d.tag || 'element';
+      const lbl = d.text || d.ariaLabel || d.name;
+      row.className = 'r-row r-muted';
+      row.append(
+        clockOf(e),
+        tag('hover'),
+        el('span', 'r-txt', `Hovered ${noun}${lbl ? ` ${label(lbl)}` : ''}`),
+      );
+      return row;
+    }
     case 'scroll':
       row.className = 'r-row r-muted';
       row.append(clockOf(e), tag('scroll'), el('span', 'r-txt', 'Scrolled'));

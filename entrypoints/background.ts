@@ -127,6 +127,19 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return res.blob();
 }
 
+/** Name a session after the page it started on: the tab title, else its host. */
+function sessionNameFor(tab: chrome.tabs.Tab, now: number): string {
+  const title = (tab.title ?? '').replace(/\s+/g, ' ').trim();
+  if (title) return title.length > 70 ? `${title.slice(0, 69)}…` : title;
+  try {
+    const host = new URL(tab.url ?? '').hostname.replace(/^www\./, '');
+    if (host) return host;
+  } catch {
+    /* fall through */
+  }
+  return `Session ${new Date(now).toLocaleDateString()}`;
+}
+
 // ----------------------------------------------------------------------------
 // Orchestrator
 // ----------------------------------------------------------------------------
@@ -345,7 +358,7 @@ class Orchestrator {
     };
     const session: Session = {
       id: newId('ses'),
-      name: `Session ${new Date(now).toLocaleDateString()}`,
+      name: sessionNameFor(tab, now),
       startedAt: now,
       initialUrl: tab.url ?? '',
       tabs: [primary],
@@ -905,6 +918,12 @@ class Orchestrator {
   ): Promise<{ ok: boolean }> {
     this.annotating = false;
     broadcast({ kind: 'annotation/state', annotating: false });
+
+    // Resume interaction capture in the tab (the editor tore itself down).
+    const st = sender.tab?.id;
+    if (st !== undefined && this.isSessionTab(st)) {
+      void sendToTab(st, { kind: 'content/annotate', on: false });
+    }
 
     const shapeList: AnnotationShape[] = Array.isArray(shapes)
       ? (shapes as AnnotationShape[])
