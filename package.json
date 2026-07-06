@@ -40,15 +40,5 @@
     "vitest": "^2.1.8",
     "wxt": "^0.19.13"
   },
-  "packageManager": "pnpm@11.6.0",
-  "pnpm": {
-    "overrides": {
-      "@vitejs/plugin-react": "4.3.4"
-    },
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "@esbuild/darwin-arm64",
-      "workerd"
-    ]
-  }
+  "packageManager": "pnpm@11.6.0"
 }
