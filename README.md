@@ -16,7 +16,10 @@ exports one clean report your agent can read.
 Website: [azimi.me/session-recorder-chrome-extension](https://azimi.me/session-recorder-chrome-extension/)
 
 <p align="center">
-  <img src="docs/screenshots/02-recording.png" width="820" alt="Session Recorder open beside a web page, recording a live timeline of clicks, network requests, and screenshots." />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/recording-dark.png" />
+    <img src="docs/screenshots/recording-light.png" width="820" alt="Session Recorder open beside a web page, recording a live timeline of clicks, network requests, and screenshots." />
+  </picture>
 </p>
 
 ## What you get
@@ -35,7 +38,10 @@ Freeze the screen and mark it up. The annotated image goes straight into the
 report, so your agent sees the exact thing you meant.
 
 <p align="center">
-  <img src="docs/screenshots/03-annotate.png" width="820" alt="The annotation editor: a toolbar over a frozen screenshot, with a coral arrow and text pointing at a button." />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/annotate-dark.png" />
+    <img src="docs/screenshots/annotate-light.png" width="820" alt="The annotation editor: a toolbar over a frozen screenshot, with a coral arrow and text pointing at a button." />
+  </picture>
 </p>
 
 ### Right-sized for any model
@@ -45,7 +51,10 @@ export. The same recording can be re-exported at any level later. Your explicit
 signals — voice, annotations, markers, notes, and errors — are never trimmed.
 
 <p align="center">
-  <img src="docs/screenshots/04-export.png" width="820" alt="The export panel with four detail levels, each showing a token estimate, and a Download button." />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/report-dark.png" />
+    <img src="docs/screenshots/report-light.png" width="820" alt="The rendered report with the export panel: four detail levels, each showing a token estimate, and a Download button." />
+  </picture>
 </p>
 
 ### Secrets stay secret

@@ -17,7 +17,7 @@ const dataUrl = (rel, mime) =>
   `data:${mime};base64,${readFileSync(path.join(root, rel)).toString('base64')}`;
 
 const logo = dataUrl('website/logo.png', 'image/png');
-const shot = dataUrl('website/shots/02-recording.png', 'image/png');
+const shot = dataUrl('website/shots/recording-dark.png', 'image/png');
 
 const html = `<!doctype html><html><head><meta charset="utf-8" />
 <style>
