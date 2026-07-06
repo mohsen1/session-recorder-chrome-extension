@@ -324,14 +324,19 @@ function SessionReview({
 
       {session && <Summary session={session} />}
 
-      {progress && progress.total > 0 && progress.done >= progress.total && (
-        <div className="transcribe transcribe--done">
-          <Check size={14} strokeWidth={2.5} />
-          <span className="transcribe__label">Transcription complete</span>
-        </div>
-      )}
+      {/* Live status (Saved / Transcription progress) is only meaningful for the
+          just-stopped session, not when reviewing a past run. */}
+      {closeLabel === 'Done' &&
+        progress &&
+        progress.total > 0 &&
+        progress.done >= progress.total && (
+          <div className="transcribe transcribe--done">
+            <Check size={14} strokeWidth={2.5} />
+            <span className="transcribe__label">Transcription complete</span>
+          </div>
+        )}
 
-      {progress && progress.total > 0 && progress.done < progress.total && (
+      {closeLabel === 'Done' && progress && progress.total > 0 && progress.done < progress.total && (
         <div className="transcribe">
           <span className="transcribe__label">Transcribing…</span>
           <div className="transcribe__bar">
