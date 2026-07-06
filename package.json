@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:e2e": "wxt build && playwright test",
     "test:e2e:headed": "wxt build && HEADED=1 playwright test",
+    "og": "node design/generate-og.mjs",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
