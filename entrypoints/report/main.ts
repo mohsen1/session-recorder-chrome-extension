@@ -182,6 +182,16 @@ function render(): void {
         for (const r of run) tl.appendChild(eventNode(r, imageUrls));
       }
       i = j;
+    } else if (e.type === 'voice-segment') {
+      // Stitch a run of consecutive voice segments into one paragraph.
+      let j = i;
+      const run: Extract<SessionEvent, { type: 'voice-segment' }>[] = [];
+      while (j < trimmed.length && trimmed[j]!.type === 'voice-segment') {
+        run.push(trimmed[j]! as Extract<SessionEvent, { type: 'voice-segment' }>);
+        j += 1;
+      }
+      tl.appendChild(run.length >= 2 ? voiceGroup(run) : eventNode(e, imageUrls));
+      i = j;
     } else {
       tl.appendChild(eventNode(e, imageUrls));
       i += 1;
@@ -335,6 +345,41 @@ function netGroup(run: SessionEvent[]): HTMLElement {
   details.appendChild(inner);
   wrap.appendChild(details);
   return wrap;
+}
+
+/** Stitch a run of consecutive voice segments into one narration block. */
+function voiceGroup(
+  run: Extract<SessionEvent, { type: 'voice-segment' }>[],
+): HTMLElement {
+  const first = run[0]!;
+  const last = run[run.length - 1]!;
+  const text = run
+    .map((e) => e.payload.transcript)
+    .filter((t): t is string => !!t && t.trim().length > 0)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const start = first.payload.tStart ?? first.t;
+  const end = last.payload.tEnd ?? last.t;
+  const dur = Math.max(0, end - start);
+
+  const b = el('div', 'r-signal r-voice');
+  b.append(clockOf(first), tag('voice'));
+  const body = el('div', 'r-voice__body');
+  body.appendChild(el('div', 'r-signal__text', text || '(audio)'));
+  const meta = el('div', 'r-voice__meta');
+  meta.textContent = `${formatClock(start)}–${formatClock(end)} · ${formatDuration(dur)}`;
+  body.appendChild(meta);
+  b.appendChild(body);
+  return b;
+}
+
+function formatDuration(ms: number): string {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return rem ? `${m}m ${rem}s` : `${m}m`;
 }
 
 function shotBlock(t: number, url: string | undefined, ctx?: string): HTMLElement {
