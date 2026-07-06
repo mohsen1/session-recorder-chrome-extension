@@ -311,7 +311,7 @@ function SessionReview({
   return (
     <div className="view view--review">
       <div className="review__topbar">
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>
+        <button type="button" className="btn btn--sm" onClick={onClose}>
           {closeLabel}
         </button>
         <span className="review__name">{session?.name ?? '…'}</span>

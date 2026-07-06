@@ -264,8 +264,6 @@ describe('renderReport', () => {
     expect(md).toContain('https://app.example.com');
     expect(md).toContain('**Duration:** 05:00');
     expect(md).toContain('### Tabs');
-    expect(md).toContain('### Capture settings');
-    expect(md).toContain('### Event counts');
   });
 
   it("contains a known click's text", () => {

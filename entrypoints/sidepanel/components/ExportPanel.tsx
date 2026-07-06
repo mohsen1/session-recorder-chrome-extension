@@ -17,7 +17,7 @@ import {
 } from '@/lib/storage';
 import { buildBundle, estimateForLevels } from '@/lib/export/bundle';
 import { zipFiles } from '@/lib/export/zip';
-import type { TokenEstimate } from '@/lib/messaging';
+import { broadcast, type TokenEstimate } from '@/lib/messaging';
 import type { VerbosityLevel } from '@/lib/session/types';
 import { sessionFolderName } from '../store';
 
@@ -142,7 +142,11 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
                   name="verbosity"
                   value={lvl}
                   checked={selected}
-                  onChange={() => setLevel(lvl)}
+                  onChange={() => {
+                    setLevel(lvl);
+                    // Re-render an open report tab for this session at the new level.
+                    broadcast({ kind: 'report/level', sessionId, level: lvl });
+                  }}
                 />
                 <span className="level__body">
                   <span className="level__title">

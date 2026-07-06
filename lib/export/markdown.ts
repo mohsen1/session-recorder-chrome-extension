@@ -144,32 +144,6 @@ function renderHeader(
       );
     }
   }
-  lines.push('');
-
-  // Capture settings.
-  const s = session.settings;
-  lines.push('### Capture settings');
-  lines.push('');
-  lines.push(`- Screenshot policy: ${s.screenshotPolicy}`);
-  lines.push(`- Screenshot quality: ${s.screenshotQuality}`);
-  lines.push(`- Screenshot dedup threshold: ${s.screenshotDedupThreshold}`);
-  lines.push(`- Redaction: ${s.redactionEnabled ? 'on' : 'off'}`);
-  lines.push(`- Inline body cap: ${humanBytes(s.inlineBodyCapBytes)}`);
-  lines.push(`- Asset body cap: ${humanBytes(s.assetBodyCapBytes)}`);
-  lines.push(`- File cap: ${humanBytes(s.fileCapBytes)}`);
-  lines.push('');
-
-  // Per-type event-count table (recomputed from the rendered events).
-  lines.push('### Event counts');
-  lines.push('');
-  const counts = countByType(events);
-  if (counts.length === 0) {
-    lines.push('_No events._');
-  } else {
-    lines.push('| Type | Count |');
-    lines.push('| --- | --- |');
-    for (const [type, n] of counts) lines.push(`| ${type} | ${n} |`);
-  }
 }
 
 // ----------------------------------------------------------------------------
@@ -569,11 +543,6 @@ function sortedEvents(events: SessionEvent[]): SessionEvent[] {
   return [...events].sort((a, b) => a.t - b.t);
 }
 
-function countByType(events: SessionEvent[]): Array<[string, number]> {
-  const map = new Map<string, number>();
-  for (const e of events) map.set(e.type, (map.get(e.type) ?? 0) + 1);
-  return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-}
 
 function collectAppUrls(session: Session): string[] {
   const origins = new Set<string>();

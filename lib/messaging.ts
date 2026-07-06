@@ -149,7 +149,9 @@ export type BroadcastMessage =
   | { kind: 'mic/level'; level: number }
   | { kind: 'annotation/state'; annotating: boolean }
   // Live (interim) transcript for the recording ticker.
-  | { kind: 'transcript/live'; text: string; final: boolean };
+  | { kind: 'transcript/live'; text: string; final: boolean }
+  // Ask an open report tab to re-render at a new verbosity level.
+  | { kind: 'report/level'; sessionId: string; level: VerbosityLevel };
 
 // ----------------------------------------------------------------------------
 // Transport helpers
