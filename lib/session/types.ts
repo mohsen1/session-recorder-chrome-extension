@@ -117,6 +117,12 @@ export interface CaptureSettings {
   /** Master redaction switch; per-session. */
   redactionEnabled: boolean;
   customRedaction: RedactionRules;
+  /**
+   * When true (default), the exporter drops telemetry/analytics requests from
+   * L1+ so reports stay focused. Capture always keeps everything; this only
+   * affects what the export includes. Turn off to keep telemetry in exports.
+   */
+  filterTelemetry: boolean;
   /** JPEG quality 0..100 for screenshots. */
   screenshotQuality: number;
   /** Average-hash hamming distance under which a shot is a near-duplicate. */

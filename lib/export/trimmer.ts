@@ -253,13 +253,24 @@ export function collapseRepeatedRequests(): Transform {
  * Drop net-requests for static assets (image/font/css/media) and analytics
  * hosts, unless the response is an error (status>=400 / failed).
  */
+/**
+ * Drop static-asset requests (images, fonts, css, media) always, and
+ * telemetry/analytics requests only when `settings.filterTelemetry` is on
+ * (the default). Capturing telemetry is fine; whether to keep it in the export
+ * is the user's choice, set in the options. Anomalous (failed / >=400) requests
+ * always survive.
+ */
 export function dropStaticAssets(): Transform {
-  return (events) => {
+  return (events, ctx) => {
+    const dropTelemetry = ctx.settings.filterTelemetry !== false;
     const out: SessionEvent[] = [];
     for (const e of events) {
       if (!isProtected(e) && isNetRequest(e)) {
         const p = e.payload;
-        if (!isAnomalous(p) && isStaticOrAnalytics(p)) continue;
+        if (!isAnomalous(p)) {
+          if (isStaticAsset(p)) continue;
+          if (dropTelemetry && isTelemetry(p)) continue;
+        }
       }
       out.push(cloneEvent(e));
     }
@@ -267,11 +278,12 @@ export function dropStaticAssets(): Transform {
   };
 }
 
-function isStaticOrAnalytics(p: NetRequestPayload): boolean {
+/** Static resources (images, fonts, css, media) that carry no debug signal. */
+function isStaticAsset(p: NetRequestPayload): boolean {
   const rt = (p.resourceType ?? '').toLowerCase();
   if (STATIC_RESOURCE_TYPES.has(rt)) return true;
   const mime = (p.mime ?? p.responseBody?.mime ?? '').toLowerCase();
-  if (
+  return (
     mime.startsWith('image/') ||
     mime.startsWith('font/') ||
     mime.startsWith('audio/') ||
@@ -279,9 +291,11 @@ function isStaticOrAnalytics(p: NetRequestPayload): boolean {
     mime === 'text/css' ||
     mime === 'application/font-woff' ||
     mime === 'application/font-woff2'
-  ) {
-    return true;
-  }
+  );
+}
+
+/** Analytics / telemetry / tracking requests, by host or ingest-path shape. */
+function isTelemetry(p: NetRequestPayload): boolean {
   let host = '';
   let path = p.url;
   try {

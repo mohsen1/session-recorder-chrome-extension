@@ -13,6 +13,7 @@ const SETTINGS: CaptureSettings = {
   fileCapBytes: 1024 * 1024,
   redactionEnabled: true,
   customRedaction: { headerNames: [], bodyKeyPatterns: [], urlParamPatterns: [] },
+  filterTelemetry: true,
   screenshotQuality: 70,
   screenshotDedupThreshold: 4,
 };

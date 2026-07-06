@@ -512,6 +512,21 @@ export function SettingsForm(): React.JSX.Element {
           </select>
         </label>
 
+        <label className="settings__toggle">
+          <input
+            type="checkbox"
+            checked={settings.filterTelemetry}
+            onChange={(e) =>
+              patchSettings({ filterTelemetry: e.target.checked })
+            }
+          />
+          <span>Hide analytics and telemetry requests from exports</span>
+        </label>
+        <p className="settings__hint">
+          Everything is still captured. This only keeps tracker noise out of the
+          report so it stays focused on your app.
+        </p>
+
         <div className="settings__row">
           <ByteInput
             label="Inline body cap"

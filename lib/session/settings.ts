@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: CaptureSettings = {
   fileCapBytes: 25 * 1024 * 1024,
   redactionEnabled: true,
   customRedaction: DEFAULT_REDACTION_RULES,
+  filterTelemetry: true,
   screenshotQuality: 80,
   screenshotDedupThreshold: 5,
 };
