@@ -306,6 +306,8 @@ export interface ErrorPayload {
   stack?: string;
   origin: 'exception' | 'console' | 'network' | 'log';
   linkedRequestId?: string;
+  /** Consecutive-duplicate collapse count (set by the trimmer). */
+  repeat?: number;
 }
 
 export type ScreenshotTrigger =

@@ -175,6 +175,35 @@ describe('NetworkCapturer binary bodies', () => {
     expect(body.text).not.toContain('marker-text-payload');
   });
 
+  it('flags a Latin-1-decoded compressed beacon (C1 control chars) as binary', () => {
+    const emitted: RawEvent[] = [];
+    const { cap } = makeCapturer({ emit: (raw) => emitted.push(raw) });
+    // Simulate a `compression=gzip-js` beacon: high-entropy bytes decoded as
+    // Latin-1 — mostly high chars with a healthy fraction of C1 controls
+    // (U+0080–U+009F). This has NO C0 control chars, so the old heuristic missed it.
+    let beacon = '';
+    for (let i = 0; i < 400; i++) {
+      // cycle through C1 controls + printable high-Latin, as gzip output does.
+      beacon += String.fromCharCode(0x80 + (i % 0x60)); // 0x80..0xDF
+    }
+    const rid = 'r-beacon';
+    cap.handle(1, 'Network.requestWillBeSent', {
+      requestId: rid,
+      request: {
+        method: 'POST',
+        url: 'https://x/ingest/i/v0/e?compression=gzip-js',
+        headers: { 'content-type': 'text/plain' },
+        postData: beacon,
+      },
+      type: 'XHR',
+    });
+    cap.handle(1, 'Network.loadingFailed', { requestId: rid, errorText: 'x' });
+
+    const body = payloadOf(emitted[0]!).requestBody!;
+    expect(body.text).toContain('binary body');
+    expect(body.text).not.toContain(beacon.slice(0, 20));
+  });
+
   it('keeps genuinely textual bodies intact (redaction still applies)', () => {
     const emitted: RawEvent[] = [];
     const { cap } = makeCapturer({ emit: (raw) => emitted.push(raw) });

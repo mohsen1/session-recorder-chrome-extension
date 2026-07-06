@@ -415,6 +415,46 @@ export function dedupConsole(): Transform {
 }
 
 /**
+ * Merge consecutive identical error events (same message + origin), summing
+ * their `repeat` counts. Page loads often fire the same "Failed to load
+ * resource: 404" line many times in a row; one entry with a count reads better.
+ */
+export function dedupErrors(): Transform {
+  return (events) => {
+    const out: SessionEvent[] = [];
+    let pending: Extract<SessionEvent, { type: 'error' }> | null = null;
+    let count = 0;
+    const flush = () => {
+      if (!pending) return;
+      if (count > 1) pending.payload.repeat = count;
+      out.push(pending);
+      pending = null;
+      count = 0;
+    };
+    for (const e of events) {
+      if (e.type === 'error' && !isProtected(e)) {
+        if (
+          pending &&
+          pending.payload.origin === e.payload.origin &&
+          pending.payload.message === e.payload.message
+        ) {
+          count += e.payload.repeat ?? 1;
+          continue;
+        }
+        flush();
+        pending = cloneEvent(e) as Extract<SessionEvent, { type: 'error' }>;
+        count = e.payload.repeat ?? 1;
+      } else {
+        flush();
+        out.push(cloneEvent(e));
+      }
+    }
+    flush();
+    return out;
+  };
+}
+
+/**
  * Clear net-request bodies unless the request errored (status>=400 / failed) or
  * is linked to a captured error event via `linkedRequestId`.
  */
@@ -485,6 +525,7 @@ const L1_TRANSFORMS: Transform[] = [
   truncateBodies(4 * 1024),
   thinScreenshots('key-moments'),
   dedupConsole(),
+  dedupErrors(),
 ];
 
 const L2_TRANSFORMS: Transform[] = [

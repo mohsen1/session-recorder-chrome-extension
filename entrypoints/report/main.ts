@@ -12,7 +12,11 @@
  */
 import { getSession, getEvents, getAssets } from '@/lib/storage';
 import { formatClock } from '@/lib/export/markdown';
-import { applyLevel, dropStaticAssets } from '@/lib/export/trimmer';
+import {
+  applyLevel,
+  collapseRepeatedRequests,
+  dropStaticAssets,
+} from '@/lib/export/trimmer';
 import type { TrimContext } from '@/lib/export/trimmer';
 import { buildBundle } from '@/lib/export/bundle';
 import { zipFiles } from '@/lib/export/zip';
@@ -69,9 +73,14 @@ function trimForLevel(
   lvl: VerbosityLevel,
   ctx: TrimContext,
 ): SessionEvent[] {
-  // L0 in the viewer means "everything meaningful": drop static/telemetry noise
-  // (respecting the telemetry setting) but keep all screenshots and bodies.
-  if (lvl === 'L0') return dropStaticAssets()(events, ctx);
+  // L0 in the viewer means "everything meaningful": keep all screenshots and
+  // bodies, but drop static/telemetry noise and fold exact-duplicate polling
+  // requests (one kept + an "N more collapsed" marker) so a chatty app doesn't
+  // render megabytes of identical responses. The Full-level *download* stays
+  // truly full — this only tames the on-screen view.
+  if (lvl === 'L0') {
+    return collapseRepeatedRequests()(dropStaticAssets()(events, ctx), ctx);
+  }
   return applyLevel(events, lvl, ctx);
 }
 
@@ -242,10 +251,12 @@ function eventNode(e: SessionEvent, imageUrls: Map<string, string>): HTMLElement
       row.append(clockOf(e), tag(p.level === 'error' ? 'error' : 'log'), el('span', 'r-txt', p.text));
       return row;
     }
-    case 'error':
+    case 'error': {
+      const rep = e.payload.repeat && e.payload.repeat > 1 ? ` (×${e.payload.repeat})` : '';
       row.className = 'r-row r-err';
-      row.append(clockOf(e), tag('error'), el('span', 'r-txt', e.payload.message));
+      row.append(clockOf(e), tag('error'), el('span', 'r-txt', e.payload.message + rep));
       return row;
+    }
     case 'screenshot':
       return shotBlock(e.t, imageUrls.get(e.payload.assetId ?? ''), e.payload.contextText);
     case 'annotation':

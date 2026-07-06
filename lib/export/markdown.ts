@@ -277,8 +277,9 @@ function renderEvent(
     }
     case 'error': {
       const p = e.payload;
+      const repeat = p.repeat && p.repeat > 1 ? ` (×${p.repeat})` : '';
       lines.push('');
-      lines.push(`⚠ **ERROR ${clock}** (${p.origin}) ${oneLine(p.message)}`);
+      lines.push(`⚠ **ERROR ${clock}**${repeat} (${p.origin}) ${oneLine(p.message)}`);
       if (p.stack) {
         lines.push('```');
         lines.push(p.stack);

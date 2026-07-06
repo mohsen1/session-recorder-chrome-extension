@@ -537,8 +537,17 @@ const BINARY_CONTENT_TYPES = /octet-stream|protobuf|grpc|event-stream/i;
 /**
  * Heuristic: is this textual body actually binary/compressed and thus useless
  * (and huge) to inline? True when a content-encoding marks it compressed, the
- * content-type is a known binary/stream type, or the text is >~15% non-printable
- * characters (control chars or U+FFFD replacement chars from a bad decode).
+ * content-type is a known binary/stream type, or the text has a high ratio of
+ * characters that never occur in genuine text.
+ *
+ * "Never occurs in text": C0 control chars (minus tab/LF/CR), DEL, the C1
+ * control block (U+0080–U+009F), and U+FFFD. The C1 block is the key signal for
+ * client-compressed beacons (e.g. `compression=gzip-js`) sent as `text/plain`:
+ * the deflate stream, decoded as Latin-1, sprays ~10%+ C1 chars, while real
+ * text — including accented Latin (U+00A0+) and CJK/emoji (>U+00FF) — has
+ * effectively none. Counting only C0 controls (~12% in high-entropy data)
+ * missed these; folding in C1/DEL pushes them well clear of the threshold with
+ * no false positives on legitimate Unicode bodies.
  */
 function isProbablyBinary(
   text: string,
@@ -553,7 +562,15 @@ function isProbablyBinary(
   let nonPrintable = 0;
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i);
-    if (c < 9 || (c > 13 && c < 32) || c === 0xfffd) nonPrintable++;
+    if (
+      c < 9 || // C0 controls (below tab)
+      (c > 13 && c < 32) || // C0 controls (above CR)
+      c === 0x7f || // DEL
+      (c >= 0x80 && c <= 0x9f) || // C1 controls — only from mis-decoded binary
+      c === 0xfffd // UTF-8 replacement char
+    ) {
+      nonPrintable++;
+    }
   }
   return nonPrintable / text.length > 0.15;
 }
