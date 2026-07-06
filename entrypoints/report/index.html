@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Session report</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="bar__brand">
+        <img src="/icon/128.png" width="20" height="20" alt="" />
+        <span id="bar-title">Session report</span>
+      </div>
+      <div class="bar__meta" id="bar-meta"></div>
+      <button type="button" class="btn btn--primary" id="download">
+        Download .zip
+      </button>
+    </header>
+    <main class="doc" id="report">
+      <p class="loading">Loading report…</p>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

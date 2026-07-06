@@ -18,10 +18,12 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "dompurify": "^3.4.11",
     "fabric": "^6.9.1",
     "fflate": "^0.8.2",
     "idb": "^8.0.0",
     "lucide-react": "^1.23.0",
+    "marked": "^18.0.5",
     "nanoid": "^5.0.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@types/chrome": "^0.0.287",
+    "@types/dompurify": "^3.2.0",
     "@types/node": "^22.20.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

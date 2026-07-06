@@ -509,6 +509,13 @@ class Orchestrator {
     this.lastError = undefined;
     this.broadcastState();
 
+    // Open the rendered report in a new tab so the user sees the result.
+    if ((session.counts && Object.keys(session.counts).length > 0) || session.assetBytes > 0) {
+      chrome.tabs.create({
+        url: `${chrome.runtime.getURL('report.html')}?session=${session.id}`,
+      }).catch(() => {});
+    }
+
     // Transcribe any voice segments still missing a transcript, in the background.
     void this.transcribePending(session.id);
 
