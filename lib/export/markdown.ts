@@ -189,6 +189,13 @@ function renderEvent(
       lines.push(`${clock} KEY ${mods}${e.payload.key}${where}`);
       break;
     }
+    case 'hover': {
+      const d = e.payload.descriptor;
+      lines.push(
+        `${clock} HOVER ${quoteLabel(labelOf(d))} (${selectorOf(d)}${tab})`,
+      );
+      break;
+    }
     case 'scroll': {
       const p = e.payload;
       const where = p.container ?? 'window';

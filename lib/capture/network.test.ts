@@ -14,6 +14,7 @@ const SETTINGS: CaptureSettings = {
   redactionEnabled: true,
   customRedaction: { headerNames: [], bodyKeyPatterns: [], urlParamPatterns: [] },
   filterTelemetry: true,
+  hoverDwellMs: 0,
   screenshotQuality: 70,
   screenshotDedupThreshold: 4,
 };

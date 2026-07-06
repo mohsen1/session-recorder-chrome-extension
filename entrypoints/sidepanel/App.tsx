@@ -11,18 +11,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Clock, Database, Layers, Settings, X } from 'lucide-react';
 import { getEvents, getSession } from '@/lib/storage';
 import { formatClock } from '@/lib/export/markdown';
-import type {
-  EventType,
-  ScreenshotPolicy,
-  Session,
-  SessionEvent,
-} from '@/lib/session/types';
-import {
-  formatBytes,
-  loadDefaultSettings,
-  saveScreenshotPolicy,
-  useSidepanel,
-} from './store';
+import type { EventType, Session, SessionEvent } from '@/lib/session/types';
+import { formatBytes, useSidepanel } from './store';
 import { RecordButton } from './components/RecordButton';
 import { RecordingControls } from './components/RecordingControls';
 import { CaptureBar } from './components/CaptureBar';
@@ -38,8 +28,7 @@ export function App(): React.JSX.Element {
   const error = useSidepanel((s) => s.error);
   const dismissError = useSidepanel((s) => s.dismissError);
 
-  // A past session opened from the list, and a dismissed just-stopped session.
-  const [reviewId, setReviewId] = useState<string | null>(null);
+  // A dismissed just-stopped session (past sessions open their report in a tab).
   const [dismissedStoppedId, setDismissedStoppedId] = useState<string | null>(
     null,
   );
@@ -61,10 +50,6 @@ export function App(): React.JSX.Element {
   let body: React.JSX.Element;
   if (settingsOpen) {
     body = <SettingsView onClose={() => setSettingsOpen(false)} />;
-  } else if (reviewId) {
-    body = (
-      <SessionReview sessionId={reviewId} onClose={() => setReviewId(null)} closeLabel="← Back" />
-    );
   } else if (isLive && session) {
     body = <RecordingView />;
   } else if (isStopped && session) {
@@ -76,7 +61,7 @@ export function App(): React.JSX.Element {
       />
     );
   } else {
-    body = <IdleView onOpenSession={setReviewId} />;
+    body = <IdleView />;
   }
 
   return (
@@ -145,59 +130,19 @@ function SettingsView({
 // Idle
 // ----------------------------------------------------------------------------
 
-function IdleView({
-  onOpenSession,
-}: {
-  onOpenSession: (id: string) => void;
-}): React.JSX.Element {
+/** Open a past session's rendered report in a new tab. */
+function openReport(sessionId: string): void {
+  void chrome.tabs.create({
+    url: `${chrome.runtime.getURL('report.html')}?session=${sessionId}`,
+  });
+}
+
+function IdleView(): React.JSX.Element {
   return (
     <div className="view view--idle">
       <RecordButton />
-      <PolicyQuickSelect />
-      <SessionList onOpen={onOpenSession} />
+      <SessionList onOpen={openReport} />
     </div>
-  );
-}
-
-const POLICY_OPTIONS: { value: ScreenshotPolicy; label: string }[] = [
-  { value: 'every-interaction', label: 'Every interaction' },
-  { value: 'key-moments', label: 'Key moments' },
-  { value: 'on-demand', label: 'On demand only' },
-];
-
-function PolicyQuickSelect(): React.JSX.Element {
-  const [policy, setPolicy] = useState<ScreenshotPolicy>('every-interaction');
-
-  useEffect(() => {
-    let cancelled = false;
-    void loadDefaultSettings().then((s) => {
-      if (!cancelled) setPolicy(s.screenshotPolicy);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const onChange = async (value: ScreenshotPolicy) => {
-    setPolicy(value);
-    await saveScreenshotPolicy(value);
-  };
-
-  return (
-    <label className="policy">
-      <span className="policy__label">Screenshots</span>
-      <select
-        className="policy__select"
-        value={policy}
-        onChange={(e) => void onChange(e.target.value as ScreenshotPolicy)}
-      >
-        {POLICY_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }
 

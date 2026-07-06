@@ -42,6 +42,7 @@ export type EventType =
   | 'input'
   | 'scroll'
   | 'key'
+  | 'hover'
   // navigation / tabs
   | 'nav'
   | 'spa-route'
@@ -127,6 +128,12 @@ export interface CaptureSettings {
   screenshotQuality: number;
   /** Average-hash hamming distance under which a shot is a near-duplicate. */
   screenshotDedupThreshold: number;
+  /**
+   * Pointer dwell time (ms) before a hover is recorded, 0 to disable hover
+   * capture entirely. Lower = more sensitive mouse capture. Driven by the
+   * capture-detail knob alongside `screenshotPolicy`.
+   */
+  hoverDwellMs: number;
 }
 
 export interface TabInfo {
@@ -188,6 +195,17 @@ export interface KeyPayload {
   key: string; // 'Enter' | 'Escape' | 'Tab' | 'Ctrl+K' ...
   modifiers: string[];
   descriptor?: ElementDescriptor;
+}
+
+/**
+ * The pointer dwelled over a meaningful element. Emitted only when the mouse
+ * pauses (~500ms) over an interactive or text-bearing element different from the
+ * last one, so it captures hover intent without pixel-by-pixel noise.
+ */
+export interface HoverPayload {
+  descriptor: ElementDescriptor;
+  /** How long the pointer rested here, in ms. */
+  dwellMs: number;
 }
 
 export interface NavPayload {
@@ -396,6 +414,7 @@ export interface EventPayloadMap {
   input: InputPayload;
   scroll: ScrollPayload;
   key: KeyPayload;
+  hover: HoverPayload;
   nav: NavPayload;
   'spa-route': SpaRoutePayload;
   'tab-switch': TabSwitchPayload;

@@ -12,6 +12,7 @@
 import React, { useEffect, useRef } from 'react';
 import {
   MousePointer2,
+  Pointer,
   Globe,
   Keyboard,
   ScrollText,
@@ -243,6 +244,16 @@ function visualFor(e: SessionEvent): Visual {
       return { Icon: ScrollText, label: 'Scrolled', tone: 'muted' };
     case 'key':
       return { Icon: Command, label: e.payload.key, tone: 'muted' };
+    case 'hover': {
+      const d = e.payload.descriptor;
+      return {
+        Icon: Pointer,
+        label: truncate(
+          `Hovered ${d.text || d.ariaLabel || d.selector || d.tag || 'element'}`,
+        ),
+        tone: 'muted',
+      };
+    }
     case 'nav':
       return {
         Icon: Globe,

@@ -18,7 +18,11 @@ import type {
   Session,
   SessionEvent,
 } from '@/lib/session/types';
-import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/lib/session/settings';
+import {
+  CAPTURE_DETAIL_LEVELS,
+  DEFAULT_SETTINGS,
+  STORAGE_KEYS,
+} from '@/lib/session/settings';
 
 /** How many recent events the ticker keeps in memory. */
 const MAX_TICKER = 30;
@@ -294,6 +298,25 @@ export async function saveScreenshotPolicy(
 ): Promise<void> {
   const current = await loadDefaultSettings();
   const next: CaptureSettings = { ...current, screenshotPolicy: policy };
+  await chrome.storage.local.set({ [STORAGE_KEYS.defaultSettings]: next });
+}
+
+/**
+ * Persist a capture-detail preset (screenshot policy + pointer sensitivity) into
+ * the global defaults, from the Record button's detail slider.
+ */
+export async function saveCaptureDetail(index: number): Promise<void> {
+  const preset =
+    CAPTURE_DETAIL_LEVELS[
+      Math.max(0, Math.min(CAPTURE_DETAIL_LEVELS.length - 1, index))
+    ];
+  if (!preset) return;
+  const current = await loadDefaultSettings();
+  const next: CaptureSettings = {
+    ...current,
+    screenshotPolicy: preset.screenshotPolicy,
+    hoverDwellMs: preset.hoverDwellMs,
+  };
   await chrome.storage.local.set({ [STORAGE_KEYS.defaultSettings]: next });
 }
 

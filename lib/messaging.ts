@@ -162,7 +162,7 @@ export type BroadcastMessage =
 // ----------------------------------------------------------------------------
 
 export type ContentMessage =
-  | { kind: 'content/setActive'; active: boolean }
+  | { kind: 'content/setActive'; active: boolean; hoverDwellMs?: number }
   | {
       kind: 'content/annotate';
       on: boolean;

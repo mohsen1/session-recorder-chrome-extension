@@ -395,7 +395,7 @@ class Orchestrator {
     this.startHeartbeat();
 
     await this.ensureContentScripts(tabId);
-    await sendToTab(tabId, { kind: 'content/setActive', active: true });
+    await sendToTab(tabId, { kind: 'content/setActive', active: true, hoverDwellMs: session.settings.hoverDwellMs });
     await this.persistSession();
     this.broadcastState();
 
@@ -447,7 +447,7 @@ class Orchestrator {
       session.tabs.push(info);
 
       await this.ensureContentScripts(tabId);
-      await sendToTab(tabId, { kind: 'content/setActive', active: true });
+      await sendToTab(tabId, { kind: 'content/setActive', active: true, hoverDwellMs: session.settings.hoverDwellMs });
       this.recordEvent({
         type: 'tab-opened',
         tabId,
@@ -1447,7 +1447,7 @@ class Orchestrator {
           t.attachedAt = Date.now();
           delete t.detachedAt;
           await this.ensureContentScripts(t.tabId);
-          await sendToTab(t.tabId, { kind: 'content/setActive', active: true });
+          await sendToTab(t.tabId, { kind: 'content/setActive', active: true, hoverDwellMs: live.settings.hoverDwellMs });
         } catch {
           t.attached = false;
         }

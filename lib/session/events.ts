@@ -28,6 +28,7 @@ export const IMPORTANCE_BASE: Record<EventType, number> = {
   input: 38,
   screenshot: 30, // adjusted by trigger below
   console: 25, // adjusted by level below
+  hover: 12,
   scroll: 10,
 };
 

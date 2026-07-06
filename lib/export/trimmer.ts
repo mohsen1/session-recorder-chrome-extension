@@ -373,6 +373,11 @@ export function coalesceScrolls(): Transform {
   };
 }
 
+/** Drop hover events. They are a Full-fidelity-only signal; L1+ omits them. */
+export function dropHovers(): Transform {
+  return (events) => events.filter((e) => e.type !== 'hover').map(cloneEvent);
+}
+
 /** Merge consecutive identical console events, summing their `repeat` counts. */
 export function dedupConsole(): Transform {
   return (events) => {
@@ -475,6 +480,7 @@ export function interactionsToTextOnly(): Transform {
 
 const L1_TRANSFORMS: Transform[] = [
   dropStaticAssets(),
+  dropHovers(),
   coalesceScrolls(),
   truncateBodies(4 * 1024),
   thinScreenshots('key-moments'),

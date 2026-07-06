@@ -200,6 +200,39 @@ export default defineContentScript({
       });
     };
 
+    // -- hover (dwell over a meaningful element) -----------------------------
+
+    // 0 disables hover capture; set from the activation message.
+    let hoverDwellMs = 0;
+    let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastHoverEl: Element | null = null;
+
+    const INTERACTIVE =
+      'a, button, input, select, textarea, summary, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="option"], [role="checkbox"], [role="switch"], [tabindex], [contenteditable]';
+
+    /** The closest interactive element under the pointer, or null (skip). */
+    function meaningfulTarget(t: EventTarget | null): Element | null {
+      if (!(t instanceof Element) || isAnnotationOverlay(t)) return null;
+      return t.closest(INTERACTIVE);
+    }
+
+    const onMouseMove = (e: MouseEvent): void => {
+      if (hoverDwellMs <= 0) return;
+      if (hoverTimer) clearTimeout(hoverTimer);
+      const target = e.target;
+      hoverTimer = setTimeout(() => {
+        hoverTimer = null;
+        const el = meaningfulTarget(target);
+        // Only emit for a NEW interactive element the pointer rested on.
+        if (!el || el === lastHoverEl) return;
+        lastHoverEl = el;
+        post('hover', {
+          descriptor: buildDescriptor(el),
+          dwellMs: hoverDwellMs,
+        });
+      }, hoverDwellMs);
+    };
+
     // -- attach / detach -----------------------------------------------------
 
     function attach(): void {
@@ -208,6 +241,7 @@ export default defineContentScript({
       document.addEventListener('change', onInput, true);
       document.addEventListener('scroll', onScroll, true);
       document.addEventListener('keydown', onKeyDown, true);
+      document.addEventListener('mousemove', onMouseMove, true);
     }
 
     function detach(): void {
@@ -216,15 +250,20 @@ export default defineContentScript({
       document.removeEventListener('change', onInput, true);
       document.removeEventListener('scroll', onScroll, true);
       document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('mousemove', onMouseMove, true);
       for (const t of inputTimers.values()) clearTimeout(t);
       inputTimers.clear();
       for (const run of scrollRuns.values()) {
         if (run.timer) clearTimeout(run.timer);
       }
       scrollRuns.clear();
+      if (hoverTimer) clearTimeout(hoverTimer);
+      hoverTimer = null;
+      lastHoverEl = null;
     }
 
-    function setActive(next: boolean): void {
+    function setActive(next: boolean, dwell?: number): void {
+      if (typeof dwell === 'number') hoverDwellMs = dwell;
       if (next === active) return;
       active = next;
       if (active) attach();
@@ -234,7 +273,7 @@ export default defineContentScript({
     // -- lifecycle -----------------------------------------------------------
 
     onContentMessage((msg) => {
-      if (msg.kind === 'content/setActive') setActive(msg.active);
+      if (msg.kind === 'content/setActive') setActive(msg.active, msg.hoverDwellMs);
     });
 
     void (async () => {
