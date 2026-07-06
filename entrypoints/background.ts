@@ -926,10 +926,17 @@ class Orchestrator {
     this.annotating = false;
     broadcast({ kind: 'annotation/state', annotating: false });
 
-    // Resume interaction capture in the tab (the editor tore itself down).
+    // Resume interaction capture in the tab (the editor tore itself down). Use
+    // setActive, NOT content/annotate{on:false}: the latter is also handled by
+    // the annotation script and, arriving asynchronously, would race with and
+    // close the *next* annotation's editor.
     const st = sender.tab?.id;
     if (st !== undefined && this.isSessionTab(st)) {
-      void sendToTab(st, { kind: 'content/annotate', on: false });
+      void sendToTab(st, {
+        kind: 'content/setActive',
+        active: true,
+        hoverDwellMs: this.current?.settings.hoverDwellMs,
+      });
     }
 
     const shapeList: AnnotationShape[] = Array.isArray(shapes)

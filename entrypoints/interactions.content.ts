@@ -268,6 +268,10 @@ export default defineContentScript({
 
     function setActive(next: boolean, dwell?: number): void {
       if (typeof dwell === 'number') hoverDwellMs = dwell;
+      // Resuming active capture also lifts any annotation pause. The background
+      // sends setActive(true) after an annotation exits (rather than
+      // content/annotate{on:false}, which would race the next editor).
+      if (next) annotating = false;
       if (next === active) return;
       active = next;
       if (active) attach();
