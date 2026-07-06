@@ -100,43 +100,15 @@ button {
 .app__bar {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: saturate(1.4) blur(8px);
   z-index: 2;
-}
-
-.app__brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.app__logo {
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  display: block;
-  flex: 0 0 auto;
-}
-
-.app__title {
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-
-.app__actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .app__live-dot {

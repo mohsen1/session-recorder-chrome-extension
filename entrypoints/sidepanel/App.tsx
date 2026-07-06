@@ -81,30 +81,18 @@ export function App(): React.JSX.Element {
 
   return (
     <div className="app">
+      {/* Chrome's side panel already shows the extension name and icon, so we
+          don't repeat a brand header. Just a slim bar for the settings gear. */}
       <header className="app__bar">
-        <div className="app__brand">
-          <img
-            className="app__logo"
-            src="/icon/128.png"
-            alt=""
-            aria-hidden="true"
-            width={20}
-            height={20}
-          />
-          <span className="app__title">Session Recorder</span>
-        </div>
-        <div className="app__actions">
-          {isLive && <span className="app__live-dot" aria-hidden="true" />}
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label="Settings"
-            aria-pressed={settingsOpen}
-            onClick={() => setSettingsOpen((open) => !open)}
-          >
-            <Settings size={17} strokeWidth={1.75} />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="Settings"
+          aria-pressed={settingsOpen}
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
+          <Settings size={17} strokeWidth={1.75} />
+        </button>
       </header>
       {error && (
         <div className="app__error" role="alert">
