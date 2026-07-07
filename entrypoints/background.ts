@@ -436,7 +436,52 @@ class Orchestrator {
       });
     }
 
+    // From-start captures (Record dropdown switches). Owned here rather than by
+    // the panel: sequential (video, then mic) so the two never race offscreen
+    // setup, state broadcasts stay authoritative, and it works even if the
+    // panel goes away mid-start. Failures warn, never fail the session.
+    void this.startOptionalCaptures();
+
     return { ok: true, session };
+  }
+
+  /** Turn on video and/or mic per the persisted from-start switches. */
+  private async startOptionalCaptures(): Promise<void> {
+    let prefs: Record<string, unknown> = {};
+    try {
+      prefs = await chrome.storage.local.get([
+        STORAGE_KEYS.videoFromStart,
+        STORAGE_KEYS.micFromStart,
+      ]);
+    } catch {
+      return;
+    }
+    if (prefs[STORAGE_KEYS.videoFromStart] === true && this.current) {
+      try {
+        await this.setVideo(true);
+      } catch (e) {
+        this.recordEvent({
+          type: 'session-note',
+          payload: {
+            kind: 'warning',
+            text: `Video capture could not start: ${errMessage(e)}`,
+          },
+        });
+      }
+    }
+    if (prefs[STORAGE_KEYS.micFromStart] === true && this.current && !this.micOn) {
+      try {
+        await this.setMic(true);
+      } catch (e) {
+        this.recordEvent({
+          type: 'session-note',
+          payload: {
+            kind: 'warning',
+            text: `Microphone could not start: ${errMessage(e)}`,
+          },
+        });
+      }
+    }
   }
 
   /** Follow the user into a tab the app opened. Errors are swallowed w/ a note. */
@@ -1536,13 +1581,24 @@ class Orchestrator {
     });
   }
 
+  /** In-flight creation, so concurrent callers (mic + video starting together)
+   *  don't both call createDocument — the second would throw. */
+  private offscreenCreating: Promise<void> | null = null;
+
   private async ensureOffscreen(): Promise<void> {
+    if (this.offscreenCreating) return this.offscreenCreating;
     if (await this.hasOffscreen()) return;
-    await chrome.offscreen.createDocument({
-      url: chrome.runtime.getURL(OFFSCREEN_PATH),
-      reasons: [chrome.offscreen.Reason.USER_MEDIA],
-      justification: 'Record microphone narration and tab video during a session.',
-    });
+    this.offscreenCreating = chrome.offscreen
+      .createDocument({
+        url: chrome.runtime.getURL(OFFSCREEN_PATH),
+        reasons: [chrome.offscreen.Reason.USER_MEDIA],
+        justification:
+          'Record microphone narration and tab video during a session.',
+      })
+      .finally(() => {
+        this.offscreenCreating = null;
+      });
+    return this.offscreenCreating;
   }
 
   private async closeOffscreen(): Promise<void> {

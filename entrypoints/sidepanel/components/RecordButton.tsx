@@ -63,8 +63,6 @@ function OptionRow({
 
 export function RecordButton(): React.JSX.Element {
   const startRecording = useSidepanel((s) => s.startRecording);
-  const toggleVideo = useSidepanel((s) => s.toggleVideo);
-  const toggleMic = useSidepanel((s) => s.toggleMic);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState<string | undefined>();
   const [detail, setDetail] = useState(2);
@@ -117,6 +115,9 @@ export function RecordButton(): React.JSX.Element {
       }
       // Pass the choices explicitly: the storage writes are async, so the
       // override is what makes a quick change-then-Record race-free.
+      // From-start video/mic are handled by the background (it reads the
+      // persisted switches), so they start reliably even if this panel view
+      // unmounts the moment recording begins.
       const res = await startRecording(tabId, {
         ...(settingsForDetail(detail) ?? {}),
         captureApiSpec: apiSpec,
@@ -125,10 +126,6 @@ export function RecordButton(): React.JSX.Element {
         setLocalError(res.error ?? 'Could not start recording.');
         return;
       }
-      // Kick off video / mic with the session. Failures surface through the
-      // store's error channel without touching the running session.
-      if (videoFromStart) void toggleVideo();
-      if (micFromStart) void toggleMic();
     } finally {
       setBusy(false);
     }
