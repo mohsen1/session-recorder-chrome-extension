@@ -1628,3 +1628,26 @@ button {
     transition: none !important;
   }
 }
+
+/* ---- Root error boundary ---- */
+
+.app__crash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.app__crash-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.app__crash-detail {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  word-break: break-word;
+}

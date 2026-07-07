@@ -25,7 +25,12 @@ export function SessionList({ onOpen }: SessionListProps): React.JSX.Element {
     setLoading(true);
     try {
       const res = await sendMessage({ kind: 'session/list' });
-      setSessions(res.sessions);
+      // Never trust the response shape: a background-side error replies
+      // {ok:false, error} (no sessions field), and a restarting service worker
+      // can resolve undefined. Rendering must survive both.
+      setSessions(Array.isArray(res?.sessions) ? res.sessions : []);
+    } catch {
+      setSessions([]);
     } finally {
       setLoading(false);
     }
