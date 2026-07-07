@@ -24,13 +24,25 @@ Website: [azimi.me/session-recorder-chrome-extension](https://azimi.me/session-r
 
 ## What you get
 
-- one timeline of everything that happened, in order: clicks, typing, page
-  changes, network requests and their responses, console errors, and screenshots
+- one timeline of everything that happened, in order: clicks, typing, text
+  selections, page changes, network requests and their responses, console
+  errors, and screenshots
 - your own voice, transcribed in real time and slotted in next to what you were
   doing, so the report reads like you walking the agent through it
+- video of the tab, optionally with its sound, that pauses and resumes with the
+  session and plays inline in the report
 - arrows and boxes you draw right on the page, saved into the report as an image
+- sessions that follow you: when the app opens a new tab, recording continues
+  there and comes back when the tab closes
+- an OpenAPI spec compiled from the requests your app made, when you turn it on
 - a report sized to fit your model, with a live token estimate for each level
 - secrets hidden by default and nothing uploaded: it all stays on your machine
+
+### Dial in how much you capture
+
+The arrow next to Record opens capture options: a detail slider that sets
+screenshot frequency, pointer tracking, and how much of each request body to
+keep, plus switches for video, tab audio, and the API spec.
 
 ### Point at the problem
 
@@ -48,7 +60,7 @@ report, so your agent sees the exact thing you meant.
 
 Long sessions get big. Pick a level and see the estimated token count before you
 export. The same recording can be re-exported at any level later. Your explicit
-signals — voice, annotations, markers, notes, and errors — are never trimmed.
+signals (voice, annotations, notes, and errors) are never trimmed.
 
 <p align="center">
   <picture>
@@ -118,7 +130,8 @@ for a suggested prompt.
 - `tabs` and `webNavigation`: multi-tab tracking and navigation events
 - `scripting`: content-script activation
 - `storage` and `unlimitedStorage`: sessions live in IndexedDB
-- `offscreen`: `MediaRecorder` for voice
+- `offscreen`: `MediaRecorder` for voice and video
+- `tabCapture`: video recording of the tab
 - `downloads`: save the exported zip
 - `alarms`: flush the event buffer while recording
 - `<all_urls>`: record whatever app you point it at
@@ -127,10 +140,11 @@ for a suggested prompt.
 
 For contributors: the extension captures network and console through
 `chrome.debugger`, navigation through `chrome.webNavigation`, and interactions
-through content scripts. Voice records in an offscreen document; screenshots come
-from the debugger. Everything flows through one funnel in the background service
-worker into IndexedDB, and trimming at export is deterministic (no LLM). The full
-design is in [`PLAN.md`](./PLAN.md) and [`IMPLEMENTATION.md`](./IMPLEMENTATION.md).
+through content scripts. Voice and tab video record in an offscreen document;
+screenshots come from the debugger. Everything flows through one funnel in the
+background service worker into IndexedDB, and trimming at export is
+deterministic (no LLM). The full design is in [`PLAN.md`](./PLAN.md) and
+[`IMPLEMENTATION.md`](./IMPLEMENTATION.md).
 
 ## Project layout
 
@@ -148,6 +162,5 @@ demo/                local test page that exercises every capture path
 
 ## Not in v1
 
-Video recording, backend upload and shareable links, LLM-powered summarization,
-Firefox and Safari ports, and DOM snapshot replay. See [`PLAN.md`](./PLAN.md)
-§11.
+Backend upload and shareable links, LLM-powered summarization, Firefox and
+Safari ports, and DOM snapshot replay. See [`PLAN.md`](./PLAN.md) §11.

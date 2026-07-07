@@ -26,7 +26,7 @@ behavior and with `docs/PRIVACY.md`.
 
 ## Short description (≤132 chars) — paste as-is
 
-Record a bug in your web app — clicks, network, console, screenshots, voice — and export one clean report your AI agent can read.
+Record a bug — clicks, network, console, screenshots, video, voice — and export one clean report your AI agent can read.
 
 ## Detailed description — paste as-is (plain text; the field does NOT render markdown)
 
@@ -44,10 +44,14 @@ WHAT IT CAPTURES
 • Console logs, exceptions, and failed requests
 • Page and SPA route changes as you move through the app
 • Screenshots as you go, at a frequency you choose, with near-duplicate frames deduped
+• Video of the tab, optionally with its sound — pause and resume as you go; clips play inline in the report
+• Text you select on the page, so a highlight becomes part of the story
+• New tabs the app opens — recording follows you there and back
 • Voice narration — talk through what you're doing while you record
 • Annotations — freeze the screen and mark it up with arrows, boxes, highlights, and text
 • Files you upload to the app, plus files you attach yourself
 • Markers and notes you drop at the exact moment something matters
+• Optionally, an OpenAPI spec compiled from the requests your app made
 
 Everything lands on one timeline, in the order it happened, so the report reads as a coherent story instead of a pile of logs.
 
@@ -105,8 +109,10 @@ Built for developers. Manifest V3. Free and open source.
 - **storage / unlimitedStorage** — Persist the in-progress session to IndexedDB so
   it survives service-worker restarts; recordings can exceed default quotas.
 - **sidePanel** — The recording and export UI.
-- **offscreen** — Run `MediaRecorder` for voice narration in an offscreen
-  document.
+- **offscreen** — Run `MediaRecorder` for voice narration and tab video in an
+  offscreen document.
+- **tabCapture** — Record the tab as video (with optional tab audio) when the
+  user turns video capture on.
 - **downloads** — Save the exported zip report to the user's machine.
 - **alarms** — Periodically flush the buffered event queue while recording.
 
