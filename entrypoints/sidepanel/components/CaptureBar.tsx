@@ -115,9 +115,10 @@ export function CaptureBar(): React.JSX.Element {
           className={`capture__mic ${micOn ? 'capture__mic--on' : ''}`}
           onClick={() => void toggleMic()}
           aria-pressed={micOn}
+          title={micOn ? 'Turn the mic off' : 'Turn the mic on'}
         >
           <Mic size={16} strokeWidth={2} />
-          <span className="capture__mic-label">{micOn ? 'Mic on' : 'Mic'}</span>
+          <span className="capture__label">{micOn ? 'Mic on' : 'Mic'}</span>
           {micOn && <Waveform level={level} on={micOn} />}
         </button>
         <button
@@ -125,18 +126,20 @@ export function CaptureBar(): React.JSX.Element {
           className={`capture__action ${videoOn ? 'capture__action--on' : ''}`}
           onClick={() => void toggleVideo()}
           aria-pressed={videoOn}
+          title={videoOn ? 'Stop video recording' : 'Record the tab as video'}
         >
           <Video size={15} />
-          {videoOn ? 'Video on' : 'Video'}
+          <span className="capture__label">{videoOn ? 'Video on' : 'Video'}</span>
         </button>
         <button
           type="button"
           className={`capture__action ${annotating ? 'capture__action--on' : ''}`}
           onClick={() => void toggleAnnotate()}
           aria-pressed={annotating}
+          title="Draw on the page"
         >
           <PenLine size={15} />
-          Annotate
+          <span className="capture__label">Annotate</span>
         </button>
         <button
           type="button"
@@ -145,7 +148,7 @@ export function CaptureBar(): React.JSX.Element {
           title="Take a screenshot (always kept, never deduped)"
         >
           <Camera size={15} />
-          Screenshot
+          <span className="capture__label">Screenshot</span>
         </button>
       </div>
     </div>

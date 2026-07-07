@@ -993,6 +993,7 @@ button {
   padding: 10px 12px 12px;
   border-top: 1px solid var(--line);
   background: var(--surface);
+  container-type: inline-size;
 }
 
 .capture__transcript {
@@ -1056,7 +1057,9 @@ button {
 }
 
 .capture__mic {
-  flex: 1;
+  flex: 1.4 1 auto;
+  min-width: 0;
+  justify-content: center;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1076,15 +1079,20 @@ button {
   color: var(--accent);
 }
 
-.capture__mic-label {
-  flex: 0 0 auto;
+.capture__label {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .capture__action {
+  flex: 1 1 auto;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 13px;
+  padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--surface);
@@ -1104,6 +1112,19 @@ button {
   background: var(--accent-tint);
   border-color: var(--accent-line);
   color: var(--accent);
+}
+
+/* Narrow panel: icons only — the buttons' title attributes take over as
+   tooltips for the hidden labels. */
+@container (max-width: 396px) {
+  .capture__label,
+  .capture__bar .waveform {
+    display: none;
+  }
+  .capture__mic,
+  .capture__action {
+    padding: 8px 0;
+  }
 }
 
 /* live mic waveform */
