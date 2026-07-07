@@ -59,7 +59,7 @@ let levelTimer: ReturnType<typeof setInterval> | null = null;
 
 // --- live streaming transcription (Deepgram) ---
 let streamSocket: WebSocket | null = null;
-let streamNode: ScriptProcessorNode | null = null;
+let streamNode: AudioWorkletNode | ScriptProcessorNode | null = null;
 let streamProvider = '';
 let streaming = false;
 
@@ -223,7 +223,9 @@ function teardown(): void {
  * events with word-level timings. Best-effort: any failure leaves `streaming`
  * false and the caller falls back to batch segments. Returns true if wired up.
  */
-function startStreaming(config: StreamTranscriptionConfig): boolean {
+async function startStreaming(
+  config: StreamTranscriptionConfig,
+): Promise<boolean> {
   if (!stream || !audioCtx) return false;
   try {
     const url = buildDeepgramLiveUrl(config, {
@@ -234,17 +236,38 @@ function startStreaming(config: StreamTranscriptionConfig): boolean {
     sock.binaryType = 'arraybuffer';
     const inRate = audioCtx.sampleRate;
 
-    // ScriptProcessor is deprecated but the simplest reliable PCM tap in an
-    // offscreen document. Output stays silent (no passthrough / feedback).
-    const node = audioCtx.createScriptProcessor(4096, 1, 1);
-    node.onaudioprocess = (e) => {
+    const pushPcm = (input: Float32Array) => {
       if (sock.readyState !== WebSocket.OPEN || state !== 'recording') return;
-      const input = e.inputBuffer.getChannelData(0);
       const pcm = downsampleToPcm16(input, inRate, DEEPGRAM_SAMPLE_RATE);
       if (pcm.byteLength > 0) sock.send(pcm);
     };
-    sourceNode?.connect(node);
-    node.connect(audioCtx.destination);
+
+    // PCM tap: AudioWorklet (batched Float32 posts from public/pcm-tap.worklet.js),
+    // falling back to the deprecated ScriptProcessorNode if the module fails to
+    // load. The context is created fresh per capture, so addModule runs once each.
+    let node: AudioWorkletNode | ScriptProcessorNode;
+    try {
+      await audioCtx.audioWorklet.addModule(
+        chrome.runtime.getURL('pcm-tap.worklet.js'),
+      );
+      const worklet = new AudioWorkletNode(audioCtx, 'pcm-tap', {
+        numberOfInputs: 1,
+        numberOfOutputs: 0,
+      });
+      worklet.port.onmessage = (e: MessageEvent<Float32Array>) => {
+        pushPcm(e.data);
+      };
+      sourceNode?.connect(worklet);
+      node = worklet;
+    } catch {
+      const sp = audioCtx.createScriptProcessor(4096, 1, 1);
+      sp.onaudioprocess = (e) => {
+        pushPcm(e.inputBuffer.getChannelData(0));
+      };
+      sourceNode?.connect(sp);
+      sp.connect(audioCtx.destination);
+      node = sp;
+    }
 
     sock.onmessage = (ev) => {
       if (typeof ev.data !== 'string') return;
@@ -369,7 +392,7 @@ async function handleStart(
   // persisted live; otherwise we keep the rotating-segment batch path.
   streaming = false;
   if (transcription && transcription.provider === 'deepgram' && transcription.apiKey) {
-    streaming = startStreaming(transcription);
+    streaming = await startStreaming(transcription);
   }
 
   startRecorder();
