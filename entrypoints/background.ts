@@ -630,7 +630,11 @@ class Orchestrator {
       const tabId = await this.activeSessionTabId();
       if (tabId < 0) throw new Error('No session tab to capture.');
       const streamId = await this.getTabStreamId(tabId);
-      const res = await this.sendToOffscreen({ kind: 'video/resume', streamId });
+      const res = await this.sendToOffscreen({
+        kind: 'video/resume',
+        streamId,
+        audio: await this.videoAudioEnabled(),
+      });
       if (!res || !res.ok) {
         throw new Error((res && res.error) || 'Video capture did not resume.');
       }
@@ -1388,6 +1392,20 @@ class Orchestrator {
    * readable error on failure (surfaced by the `video/toggle` response) — a tab
    * that cannot be captured must not break the session.
    */
+  /**
+   * The persisted "include tab audio in video" preference. Read fresh at every
+   * stream acquisition (start AND resume) so mid-session changes apply to the
+   * next segment.
+   */
+  private async videoAudioEnabled(): Promise<boolean> {
+    try {
+      const stored = await chrome.storage.local.get(STORAGE_KEYS.videoAudio);
+      return stored[STORAGE_KEYS.videoAudio] === true;
+    } catch {
+      return false;
+    }
+  }
+
   private async setVideo(on: boolean): Promise<void> {
     if (on) {
       const session = this.current;
@@ -1401,6 +1419,7 @@ class Orchestrator {
         sessionId: session.id,
         startedAt: this.sessionStartEpoch,
         streamId,
+        audio: await this.videoAudioEnabled(),
       });
       if (res && res.ok) {
         this.videoOn = true;

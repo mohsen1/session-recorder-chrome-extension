@@ -450,7 +450,7 @@ chrome.runtime.onMessage.addListener((raw, _sender, sendResponse) => {
       return true; // async response
     case 'video/start': {
       const m = raw as Extract<RequestMessage, { kind: 'video/start' }>;
-      void handleVideoStart(m.sessionId, m.startedAt, m.streamId).then((res) =>
+      void handleVideoStart(m.sessionId, m.startedAt, m.streamId, m.audio === true).then((res) =>
         sendResponse(res),
       );
       return true; // async response
@@ -461,7 +461,7 @@ chrome.runtime.onMessage.addListener((raw, _sender, sendResponse) => {
       return false;
     case 'video/resume': {
       const m = raw as Extract<RequestMessage, { kind: 'video/resume' }>;
-      void handleVideoResume(m.streamId).then((res) => sendResponse(res));
+      void handleVideoResume(m.streamId, m.audio === true).then((res) => sendResponse(res));
       return true; // async response
     }
     case 'video/stop':

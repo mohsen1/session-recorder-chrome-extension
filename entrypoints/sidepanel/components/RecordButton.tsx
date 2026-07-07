@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Video, FileJson2 } from 'lucide-react';
+import { ChevronDown, Video, Volume2, FileJson2 } from 'lucide-react';
 import {
   CAPTURE_DETAIL_LEVELS,
   detailIndexFromSettings,
@@ -16,9 +16,11 @@ import {
 } from '@/lib/session/settings';
 import {
   loadDefaultSettings,
+  loadVideoAudio,
   loadVideoFromStart,
   saveCaptureApiSpec,
   saveCaptureDetail,
+  saveVideoAudio,
   saveVideoFromStart,
   useSidepanel,
 } from '../store';
@@ -66,20 +68,24 @@ export function RecordButton(): React.JSX.Element {
   const [localError, setLocalError] = useState<string | undefined>();
   const [detail, setDetail] = useState(2);
   const [videoFromStart, setVideoFromStart] = useState(false);
+  const [videoAudio, setVideoAudio] = useState(false);
   const [apiSpec, setApiSpec] = useState(false);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([loadDefaultSettings(), loadVideoFromStart()]).then(
-      ([s, video]) => {
-        if (cancelled) return;
-        setDetail(detailIndexFromSettings(s));
-        setApiSpec(s.captureApiSpec);
-        setVideoFromStart(video);
-      },
-    );
+    void Promise.all([
+      loadDefaultSettings(),
+      loadVideoFromStart(),
+      loadVideoAudio(),
+    ]).then(([s, video, audio]) => {
+      if (cancelled) return;
+      setDetail(detailIndexFromSettings(s));
+      setApiSpec(s.captureApiSpec);
+      setVideoFromStart(video);
+      setVideoAudio(audio);
+    });
     return () => {
       cancelled = true;
     };
@@ -134,6 +140,11 @@ export function RecordButton(): React.JSX.Element {
   const onVideo = (on: boolean) => {
     setVideoFromStart(on);
     void saveVideoFromStart(on);
+  };
+
+  const onVideoAudio = (on: boolean) => {
+    setVideoAudio(on);
+    void saveVideoAudio(on);
   };
 
   const onApiSpec = (on: boolean) => {
@@ -197,6 +208,13 @@ export function RecordButton(): React.JSX.Element {
               hint="Record the tab from the start"
               on={videoFromStart}
               onChange={onVideo}
+            />
+            <OptionRow
+              icon={<Volume2 size={15} strokeWidth={1.9} />}
+              label="Audio"
+              hint="Include tab sound in the video"
+              on={videoAudio}
+              onChange={onVideoAudio}
             />
             <OptionRow
               icon={<FileJson2 size={15} strokeWidth={1.9} />}

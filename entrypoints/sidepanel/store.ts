@@ -350,6 +350,20 @@ export async function saveVideoFromStart(on: boolean): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.videoFromStart]: on });
 }
 
+/** Whether recorded video should include the tab's audio. */
+export async function loadVideoAudio(): Promise<boolean> {
+  try {
+    const stored = await chrome.storage.local.get(STORAGE_KEYS.videoAudio);
+    return stored[STORAGE_KEYS.videoAudio] === true;
+  } catch {
+    return false;
+  }
+}
+
+export async function saveVideoAudio(on: boolean): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.videoAudio]: on });
+}
+
 /** Human-readable byte size (e.g. `1.4 MB`). */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';

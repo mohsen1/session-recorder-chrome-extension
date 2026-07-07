@@ -75,9 +75,9 @@ export type RequestMessage =
   // Tab-video controls (bg -> offscreen). `video/resume` carries a FRESH
   // streamId: tabCapture stream ids are single-use and the paused stream is
   // dead once its recorder stopped.
-  | { kind: 'video/start'; sessionId: string; startedAt: number; streamId: string }
+  | { kind: 'video/start'; sessionId: string; startedAt: number; streamId: string; audio?: boolean }
   | { kind: 'video/pause' }
-  | { kind: 'video/resume'; streamId: string }
+  | { kind: 'video/resume'; streamId: string; audio?: boolean }
   | { kind: 'video/stop' }
   // --- offscreen -> bg ---
   | { kind: 'audio/segment'; sessionId: string; tStart: number; tEnd: number; dataUrl: string; mime: string }

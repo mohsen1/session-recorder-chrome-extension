@@ -27,6 +27,15 @@ const MIME_CANDIDATES = [
   'video/webm',
 ];
 
+/** Codec preference when the take includes a tab-audio track. */
+const MIME_CANDIDATES_AUDIO = [
+  'video/webm;codecs=vp9,opus',
+  'video/webm;codecs=vp8,opus',
+  'video/webm',
+];
+
+const AUDIO_BITS_PER_SECOND = 128_000;
+
 /** Bounded bitrate (~2.5 Mbps) so long takes stay storage-friendly. */
 const VIDEO_BITS_PER_SECOND = 2_500_000;
 
@@ -66,8 +75,8 @@ function elapsed(): number {
   return Math.max(0, Math.round(baseOffset + (performance.now() - perfStart)));
 }
 
-function pickMime(): string {
-  for (const m of MIME_CANDIDATES) {
+function pickMime(withAudio: boolean): string {
+  for (const m of withAudio ? MIME_CANDIDATES_AUDIO : MIME_CANDIDATES) {
     if (MediaRecorder.isTypeSupported(m)) return m;
   }
   return 'video/webm';
@@ -97,24 +106,62 @@ function endFlush(): void {
 /**
  * `chromeMediaSource: 'tab'` is a Chrome-only mandatory constraint that the
  * standard `MediaStreamConstraints` type does not know about, hence the cast.
+ * With audio, a stream that fails to acquire falls back to video-only so an
+ * audio-less tab never blocks video capture.
  */
-function acquireStream(streamId: string): Promise<MediaStream> {
-  const constraints = {
-    audio: false,
-    video: {
-      mandatory: {
-        chromeMediaSource: 'tab',
-        chromeMediaSourceId: streamId,
-      },
+async function acquireStream(
+  streamId: string,
+  withAudio: boolean,
+): Promise<MediaStream> {
+  const tabSource = {
+    mandatory: {
+      chromeMediaSource: 'tab',
+      chromeMediaSourceId: streamId,
     },
-  } as unknown as MediaStreamConstraints;
-  return navigator.mediaDevices.getUserMedia(constraints);
+  };
+  if (withAudio) {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        audio: tabSource,
+        video: tabSource,
+      } as unknown as MediaStreamConstraints);
+      keepTabAudible(s);
+      return s;
+    } catch {
+      /* best-effort fall-through to video-only; if the rejected attempt
+         already consumed the stream id, the retry fails loudly like any
+         capture failure and the background surfaces it */
+    }
+  }
+  return navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: tabSource,
+  } as unknown as MediaStreamConstraints);
+}
+
+/**
+ * Capturing tab audio mutes the tab for the user; route the captured track
+ * back to the default output so the page keeps playing audibly.
+ */
+let audioCtx: AudioContext | null = null;
+function keepTabAudible(s: MediaStream): void {
+  if (s.getAudioTracks().length === 0) return;
+  try {
+    audioCtx = new AudioContext();
+    audioCtx.createMediaStreamSource(s).connect(audioCtx.destination);
+  } catch {
+    audioCtx = null;
+  }
 }
 
 function releaseStream(): void {
   if (stream) {
     for (const track of stream.getTracks()) track.stop();
     stream = null;
+  }
+  if (audioCtx) {
+    void audioCtx.close().catch(() => {});
+    audioCtx = null;
   }
 }
 
@@ -153,6 +200,9 @@ function startRecorder(): void {
   const rec = new MediaRecorder(stream, {
     mimeType,
     videoBitsPerSecond: VIDEO_BITS_PER_SECOND,
+    ...(stream.getAudioTracks().length > 0
+      ? { audioBitsPerSecond: AUDIO_BITS_PER_SECOND }
+      : {}),
   });
   rec.ondataavailable = (e) => {
     if (e.data && e.data.size > 0) chunks.push(e.data);
@@ -226,19 +276,20 @@ export async function handleVideoStart(
   id: string,
   startedAt: number,
   streamId: string,
+  audio = false,
 ): Promise<{ ok: boolean; error?: string }> {
   // A start while already active replaces the prior recording cleanly.
   if (state !== 'idle') await handleVideoStop();
 
   try {
-    stream = await acquireStream(streamId);
+    stream = await acquireStream(streamId, audio);
   } catch (err) {
     stream = null;
     return { ok: false, error: errText(err) };
   }
 
   sessionId = id;
-  mimeType = pickMime();
+  mimeType = pickMime(stream.getAudioTracks().length > 0);
   perfStart = performance.now();
   baseOffset = Math.max(0, Date.now() - startedAt);
   state = 'recording';
@@ -266,6 +317,7 @@ export function handleVideoPause(): void {
 
 export async function handleVideoResume(
   streamId: string,
+  audio = false,
 ): Promise<{ ok: boolean; error?: string }> {
   // A pause flush may still be storing the previous segment; starting a new
   // recorder before it finishes would interleave two takes' chunks and let
@@ -275,11 +327,14 @@ export async function handleVideoResume(
     return { ok: false, error: 'Video recorder is not paused.' };
   }
   try {
-    stream = await acquireStream(streamId);
+    stream = await acquireStream(streamId, audio);
   } catch (err) {
     stream = null;
     return { ok: false, error: errText(err) };
   }
+  // Each segment picks its mime from its own tracks (audio may have been
+  // toggled between pauses; segments are independent files).
+  mimeType = pickMime(stream.getAudioTracks().length > 0);
   state = 'recording';
   try {
     startRecorder();
