@@ -10,6 +10,10 @@
 import React, { useRef, useState } from 'react';
 import { Mic, PenLine, Camera, Paperclip, Video } from 'lucide-react';
 import { useSidepanel } from '../store';
+import {
+  isTranscriptionConfigured,
+  VoiceSetupModal,
+} from './VoiceSetupModal';
 
 /** A small waveform whose bars scale with the live mic level. */
 function Waveform({ level, on }: { level: number; on: boolean }): React.JSX.Element {
@@ -42,6 +46,17 @@ export function CaptureBar(): React.JSX.Element {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState('');
+  const [voiceSetupOpen, setVoiceSetupOpen] = useState(false);
+
+  // First mic use without a transcription provider: offer setup before
+  // turning the mic on (the user can also proceed with raw audio only).
+  const onMicClick = async () => {
+    if (!micOn && !(await isTranscriptionConfigured())) {
+      setVoiceSetupOpen(true);
+      return;
+    }
+    await toggleMic();
+  };
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -60,6 +75,15 @@ export function CaptureBar(): React.JSX.Element {
 
   return (
     <div className="capture">
+      {voiceSetupOpen && (
+        <VoiceSetupModal
+          onDone={() => {
+            setVoiceSetupOpen(false);
+            void toggleMic();
+          }}
+          onCancel={() => setVoiceSetupOpen(false)}
+        />
+      )}
       {micOn && (
         <div className="capture__transcript" aria-live="polite">
           <Mic size={12} strokeWidth={2} className="capture__transcript-icon" />
@@ -113,7 +137,7 @@ export function CaptureBar(): React.JSX.Element {
         <button
           type="button"
           className={`capture__mic ${micOn ? 'capture__mic--on' : ''}`}
-          onClick={() => void toggleMic()}
+          onClick={() => void onMicClick()}
           aria-pressed={micOn}
           title={micOn ? 'Turn the mic off' : 'Turn the mic on'}
         >

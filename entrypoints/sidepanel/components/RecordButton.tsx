@@ -24,6 +24,10 @@ import {
   saveVideoFromStart,
   useSidepanel,
 } from '../store';
+import {
+  isTranscriptionConfigured,
+  VoiceSetupModal,
+} from './VoiceSetupModal';
 
 /** A compact switch row inside the popover: icon, label + hint, toggle. */
 function OptionRow({
@@ -70,6 +74,7 @@ export function RecordButton(): React.JSX.Element {
   const [micFromStart, setMicFromStart] = useState(false);
   const [apiSpec, setApiSpec] = useState(false);
   const [open, setOpen] = useState(false);
+  const [voiceSetupOpen, setVoiceSetupOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -103,6 +108,18 @@ export function RecordButton(): React.JSX.Element {
   }, [open]);
 
   const record = async () => {
+    if (busy) return;
+    // Mic will start with the session but no transcription provider is set up
+    // yet: offer voice setup BEFORE recording begins. `start()` below re-runs
+    // once the modal resolves.
+    if (micFromStart && !(await isTranscriptionConfigured())) {
+      setVoiceSetupOpen(true);
+      return;
+    }
+    await start();
+  };
+
+  const start = async () => {
     if (busy) return;
     setBusy(true);
     setLocalError(undefined);
@@ -155,6 +172,15 @@ export function RecordButton(): React.JSX.Element {
 
   return (
     <div className="record-hero">
+      {voiceSetupOpen && (
+        <VoiceSetupModal
+          onDone={() => {
+            setVoiceSetupOpen(false);
+            void start();
+          }}
+          onCancel={() => setVoiceSetupOpen(false)}
+        />
+      )}
       <div className="record-split" ref={wrapRef}>
         <button
           type="button"
