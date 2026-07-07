@@ -2,13 +2,13 @@
  * The idle-state Record control: a split button. The main area starts a
  * recording of the active tab; the caret on its right opens the capture-setup
  * popover: a detail slider (screenshot frequency, pointer sensitivity, network
- * body caps) plus two extras — record video from the start, and build an
- * OpenAPI spec from captured requests. All choices persist into the global
- * capture defaults.
+ * body caps) plus extras — start tab video (which includes the tab's sound) and
+ * mic narration with the session, and build an OpenAPI spec from captured
+ * requests. All choices persist into the global capture defaults.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Video, Volume2, FileJson2 } from 'lucide-react';
+import { ChevronDown, Video, Mic, FileJson2 } from 'lucide-react';
 import {
   CAPTURE_DETAIL_LEVELS,
   detailIndexFromSettings,
@@ -16,11 +16,11 @@ import {
 } from '@/lib/session/settings';
 import {
   loadDefaultSettings,
-  loadVideoAudio,
+  loadMicFromStart,
   loadVideoFromStart,
   saveCaptureApiSpec,
   saveCaptureDetail,
-  saveVideoAudio,
+  saveMicFromStart,
   saveVideoFromStart,
   useSidepanel,
 } from '../store';
@@ -64,11 +64,12 @@ function OptionRow({
 export function RecordButton(): React.JSX.Element {
   const startRecording = useSidepanel((s) => s.startRecording);
   const toggleVideo = useSidepanel((s) => s.toggleVideo);
+  const toggleMic = useSidepanel((s) => s.toggleMic);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState<string | undefined>();
   const [detail, setDetail] = useState(2);
   const [videoFromStart, setVideoFromStart] = useState(false);
-  const [videoAudio, setVideoAudio] = useState(false);
+  const [micFromStart, setMicFromStart] = useState(false);
   const [apiSpec, setApiSpec] = useState(false);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -78,13 +79,13 @@ export function RecordButton(): React.JSX.Element {
     void Promise.all([
       loadDefaultSettings(),
       loadVideoFromStart(),
-      loadVideoAudio(),
-    ]).then(([s, video, audio]) => {
+      loadMicFromStart(),
+    ]).then(([s, video, mic]) => {
       if (cancelled) return;
       setDetail(detailIndexFromSettings(s));
       setApiSpec(s.captureApiSpec);
       setVideoFromStart(video);
-      setVideoAudio(audio);
+      setMicFromStart(mic);
     });
     return () => {
       cancelled = true;
@@ -124,9 +125,10 @@ export function RecordButton(): React.JSX.Element {
         setLocalError(res.error ?? 'Could not start recording.');
         return;
       }
-      // Kick off tab-video capture with the session. Failures surface through
-      // the store's error channel without touching the running session.
+      // Kick off video / mic with the session. Failures surface through the
+      // store's error channel without touching the running session.
       if (videoFromStart) void toggleVideo();
+      if (micFromStart) void toggleMic();
     } finally {
       setBusy(false);
     }
@@ -142,9 +144,9 @@ export function RecordButton(): React.JSX.Element {
     void saveVideoFromStart(on);
   };
 
-  const onVideoAudio = (on: boolean) => {
-    setVideoAudio(on);
-    void saveVideoAudio(on);
+  const onMicFromStart = (on: boolean) => {
+    setMicFromStart(on);
+    void saveMicFromStart(on);
   };
 
   const onApiSpec = (on: boolean) => {
@@ -205,16 +207,16 @@ export function RecordButton(): React.JSX.Element {
             <OptionRow
               icon={<Video size={15} strokeWidth={1.9} />}
               label="Video"
-              hint="Record the tab from the start"
+              hint="Record the tab, with its sound, from the start"
               on={videoFromStart}
               onChange={onVideo}
             />
             <OptionRow
-              icon={<Volume2 size={15} strokeWidth={1.9} />}
-              label="Audio"
-              hint="Include tab sound in the video"
-              on={videoAudio}
-              onChange={onVideoAudio}
+              icon={<Mic size={15} strokeWidth={1.9} />}
+              label="Mic"
+              hint="Narrate with your microphone from the start"
+              on={micFromStart}
+              onChange={onMicFromStart}
             />
             <OptionRow
               icon={<FileJson2 size={15} strokeWidth={1.9} />}

@@ -44,7 +44,7 @@ WHAT IT CAPTURES
 • Console logs, exceptions, and failed requests
 • Page and SPA route changes as you move through the app
 • Screenshots as you go, at a frequency you choose, with near-duplicate frames deduped
-• Video of the tab, optionally with its sound — pause and resume as you go; clips play inline in the report
+• Video of the tab, with its sound — pause and resume as you go; clips play inline in the report
 • Text you select on the page, so a highlight becomes part of the story
 • New tabs the app opens — recording follows you there and back
 • Voice narration — talk through what you're doing while you record
@@ -111,7 +111,7 @@ Built for developers. Manifest V3. Free and open source.
 - **sidePanel** — The recording and export UI.
 - **offscreen** — Run `MediaRecorder` for voice narration and tab video in an
   offscreen document.
-- **tabCapture** — Record the tab as video (with optional tab audio) when the
+- **tabCapture** — Record the tab as video (with the tab's audio) when the
   user turns video capture on.
 - **downloads** — Save the exported zip report to the user's machine.
 - **alarms** — Periodically flush the buffered event queue while recording.

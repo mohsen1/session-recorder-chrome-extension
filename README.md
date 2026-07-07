@@ -29,8 +29,8 @@ Website: [azimi.me/session-recorder-chrome-extension](https://azimi.me/session-r
   errors, and screenshots
 - your own voice, transcribed in real time and slotted in next to what you were
   doing, so the report reads like you walking the agent through it
-- video of the tab, optionally with its sound, that pauses and resumes with the
-  session and plays inline in the report
+- video of the tab, with its sound, that pauses and resumes with the session
+  and plays inline in the report
 - arrows and boxes you draw right on the page, saved into the report as an image
 - sessions that follow you: when the app opens a new tab, recording continues
   there and comes back when the tab closes
@@ -42,7 +42,7 @@ Website: [azimi.me/session-recorder-chrome-extension](https://azimi.me/session-r
 
 The arrow next to Record opens capture options: a detail slider that sets
 screenshot frequency, pointer tracking, and how much of each request body to
-keep, plus switches for video, tab audio, and the API spec.
+keep, plus switches to start video, mic narration, and the API spec.
 
 ### Point at the problem
 

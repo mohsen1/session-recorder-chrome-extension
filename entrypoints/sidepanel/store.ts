@@ -350,18 +350,18 @@ export async function saveVideoFromStart(on: boolean): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.videoFromStart]: on });
 }
 
-/** Whether recorded video should include the tab's audio. */
-export async function loadVideoAudio(): Promise<boolean> {
+/** Whether the microphone should turn on automatically with a recording. */
+export async function loadMicFromStart(): Promise<boolean> {
   try {
-    const stored = await chrome.storage.local.get(STORAGE_KEYS.videoAudio);
-    return stored[STORAGE_KEYS.videoAudio] === true;
+    const stored = await chrome.storage.local.get(STORAGE_KEYS.micFromStart);
+    return stored[STORAGE_KEYS.micFromStart] === true;
   } catch {
     return false;
   }
 }
 
-export async function saveVideoAudio(on: boolean): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.videoAudio]: on });
+export async function saveMicFromStart(on: boolean): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.micFromStart]: on });
 }
 
 /** Human-readable byte size (e.g. `1.4 MB`). */

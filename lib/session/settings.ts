@@ -97,6 +97,6 @@ export const STORAGE_KEYS = {
   micGranted: 'micGranted',
   /** Start tab-video capture automatically when a recording starts. */
   videoFromStart: 'videoFromStart',
-  /** Include tab audio in recorded video segments. */
-  videoAudio: 'videoAudio',
+  /** Turn the microphone on automatically when a recording starts. */
+  micFromStart: 'micFromStart',
 } as const;
