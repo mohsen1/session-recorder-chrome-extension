@@ -188,7 +188,6 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
                 />
                 <span className="level__body">
                   <span className="level__title">
-                    <span className="level__id">{lvl}</span>
                     <span className="level__name">{LEVEL_LABELS[lvl]}</span>
                     <span className="level__tokens">
                       {est ? `~${formatTokens(est.tokens)}` : '—'}

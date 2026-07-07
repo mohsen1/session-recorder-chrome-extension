@@ -61,22 +61,35 @@ export function Timeline(): React.JSX.Element {
   const toBottom = () => {
     const el = scrollRef.current;
     if (!el || !stickRef.current) return;
-    // Wait for layout (thumbnails, wrapping) to settle before pinning.
+    // Double-rAF: wait for layout (thumbnails, wrapping) to fully settle, then
+    // pin. A single frame can land before late layout shifts and leave the
+    // newest row just below the fold.
     requestAnimationFrame(() => {
-      if (stickRef.current) el.scrollTop = el.scrollHeight;
+      if (stickRef.current && scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+      requestAnimationFrame(() => {
+        if (stickRef.current && scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
     });
   };
 
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    // "Stuck" if within ~40px of the bottom; lets the user scroll up to read
-    // history without being yanked back down.
-    stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    // "Stuck" if within ~80px of the bottom; lets the user scroll up to read
+    // history without being yanked back down, while tolerating a row of
+    // in-flight growth between pins.
+    stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   };
 
-  // Re-pin on new events.
-  useEffect(toBottom, [events.length]);
+  // Re-pin whenever the NEWEST event changes. The ticker buffer is capped, so
+  // once full its length stays constant while events flow — keying on length
+  // would stop re-pinning exactly when the session gets busy.
+  const lastEventId = events.length > 0 ? events[events.length - 1]?.id : undefined;
+  useEffect(toBottom, [lastEventId]);
 
   // Re-pin when the list grows for any reason (thumbnails loading late, wrapping),
   // so async image loads don't leave us a few rows short of the bottom.

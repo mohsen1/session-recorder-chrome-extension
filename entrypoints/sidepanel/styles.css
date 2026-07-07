@@ -809,8 +809,9 @@ button {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* generous bottom padding so the newest row clears the pinned capture bar */
-  padding: 6px 14px 18px;
+  /* Generous bottom safe-space: when pinned, the newest row floats clearly
+     inside the viewport instead of hugging the capture bar. */
+  padding: 6px 14px 56px;
 }
 
 /* ---- Network group (collapsible) ---- */
@@ -1313,12 +1314,6 @@ button {
   white-space: nowrap;
 }
 
-.level__id {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 11px;
-  color: var(--accent);
-}
 
 .level__name {
   font-weight: 500;
