@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Clock, Database, Layers, Settings, X } from 'lucide-react';
+import { Clock, Database, Layers, Settings, X } from 'lucide-react';
 import { getEvents, getSession } from '@/lib/storage';
 import { formatClock } from '@/lib/export/markdown';
 import type { EventType, Session, SessionEvent } from '@/lib/session/types';
@@ -304,12 +304,6 @@ function SessionReview({
           {closeLabel}
         </button>
         <span className="review__name">{session?.name ?? '…'}</span>
-        {closeLabel === 'Done' && (
-          <span className="review__saved">
-            <Check size={13} strokeWidth={2.5} />
-            Saved
-          </span>
-        )}
         <button
           type="button"
           className="icon-btn review__close"
@@ -324,18 +318,8 @@ function SessionReview({
 
       {session && <Summary session={session} />}
 
-      {/* Live status (Saved / Transcription progress) is only meaningful for the
-          just-stopped session, not when reviewing a past run. */}
-      {closeLabel === 'Done' &&
-        progress &&
-        progress.total > 0 &&
-        progress.done >= progress.total && (
-          <div className="transcribe transcribe--done">
-            <Check size={14} strokeWidth={2.5} />
-            <span className="transcribe__label">Transcription complete</span>
-          </div>
-        )}
-
+      {/* Only in-flight transcription is worth showing (on the just-stopped
+          session); saved/complete states are the default and stay silent. */}
       {closeLabel === 'Done' && progress && progress.total > 0 && progress.done < progress.total && (
         <div className="transcribe">
           <span className="transcribe__label">Transcribing…</span>
