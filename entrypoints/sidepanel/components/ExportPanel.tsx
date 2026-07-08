@@ -20,7 +20,7 @@ import { zipFiles } from '@/lib/export/zip';
 import DOMPurify from 'dompurify';
 import { applyLevel } from '@/lib/export/trimmer';
 import { buildReportHtml } from '@/lib/export/report-html';
-import { broadcast, type TokenEstimate } from '@/lib/messaging';
+import { broadcast, onBroadcast, type TokenEstimate } from '@/lib/messaging';
 import type { VerbosityLevel } from '@/lib/session/types';
 import { fileToDataUrl, sessionFolderName } from '../store';
 
@@ -43,6 +43,18 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
   const [estimates, setEstimates] = useState<TokenEstimate[] | null>(null);
   const [loadError, setLoadError] = useState<string | undefined>();
   const [level, setLevel] = useState<VerbosityLevel>('L1');
+
+  // Follow level changes made in an open report tab, so the two choosers never
+  // disagree (the radio onChange broadcasts the same event the other way).
+  useEffect(
+    () =>
+      onBroadcast((evt) => {
+        if (evt.kind === 'report/level' && evt.sessionId === sessionId) {
+          setLevel(evt.level);
+        }
+      }),
+    [sessionId],
+  );
 
   const [building, setBuilding] = useState(false);
   const [phase, setPhase] = useState('');

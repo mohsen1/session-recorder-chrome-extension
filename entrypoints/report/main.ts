@@ -21,7 +21,7 @@ import type { TrimContext } from '@/lib/export/trimmer';
 import { buildBundle } from '@/lib/export/bundle';
 import { zipFiles } from '@/lib/export/zip';
 import { sessionFolderName } from '@/lib/util/naming';
-import { onBroadcast } from '@/lib/messaging';
+import { broadcast, onBroadcast } from '@/lib/messaging';
 import type {
   AssetMeta,
   NetRequestPayload,
@@ -38,7 +38,10 @@ const metaEl = document.getElementById('bar-meta') as HTMLElement;
 const levelsEl = document.getElementById('bar-levels') as HTMLElement;
 const downloadBtn = document.getElementById('download') as HTMLButtonElement;
 
-let level: VerbosityLevel = 'L0';
+// Start at Standard — the same default as the side panel's export chooser, so
+// the two surfaces agree the moment a session stops. Selections sync both ways
+// via the report/level broadcast.
+let level: VerbosityLevel = 'L1';
 let loaded: {
   session: Awaited<ReturnType<typeof getSession>>;
   events: SessionEvent[];
@@ -132,7 +135,11 @@ function renderLevels(): void {
       lv.label,
     );
     b.title = lv.label;
-    b.addEventListener('click', () => setLevel(lv.id));
+    b.addEventListener('click', () => {
+      setLevel(lv.id);
+      // Mirror the choice into the side panel's export chooser.
+      if (sessionId) broadcast({ kind: 'report/level', sessionId, level: lv.id });
+    });
     seg.appendChild(b);
   }
   levelsEl.replaceChildren(seg);
