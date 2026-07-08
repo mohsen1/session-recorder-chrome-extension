@@ -95,6 +95,13 @@ const STYLES = `
 }
 .bar button:hover { background: rgba(255,255,255,0.09); color: #fff; }
 .bar button.on { background: ${DEFAULT_COLOR}; color: #fff; }
+.grip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 32px; color: #6d727b; cursor: grab;
+  touch-action: none; user-select: none; border-radius: 6px;
+}
+.grip:hover { color: #c8ccd2; background: rgba(255,255,255,0.07); }
+.grip:active { cursor: grabbing; }
 .sep { width: 1px; height: 22px; background: rgba(255,255,255,0.12); margin: 0 4px; }
 .swatches { display: flex; gap: 4px; align-items: center; padding: 0 2px; }
 .sw { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
@@ -210,6 +217,42 @@ class AnnotationEditor {
   private buildToolbar(wrap: HTMLElement): void {
     const bar = document.createElement('div');
     bar.className = 'bar';
+
+    // Drag handle: the toolbar floats over the page and can cover the exact
+    // spot the user wants to annotate — grab the grip to move it anywhere.
+    const grip = document.createElement('div');
+    grip.className = 'grip';
+    grip.title = 'Drag to move the toolbar';
+    grip.innerHTML =
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">' +
+      '<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/>' +
+      '<circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>' +
+      '<circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+    grip.addEventListener('pointerdown', (e: PointerEvent) => {
+      e.preventDefault();
+      const rect = bar.getBoundingClientRect();
+      const dx = e.clientX - rect.left;
+      const dy = e.clientY - rect.top;
+      // Switch from the centered default to explicit coordinates once dragged.
+      bar.style.transform = 'none';
+      const move = (ev: PointerEvent) => {
+        const w = bar.offsetWidth;
+        const h = bar.offsetHeight;
+        const x = Math.min(Math.max(ev.clientX - dx, 4), window.innerWidth - w - 4);
+        const y = Math.min(Math.max(ev.clientY - dy, 4), window.innerHeight - h - 4);
+        bar.style.left = `${x}px`;
+        bar.style.top = `${y}px`;
+      };
+      move(e);
+      grip.setPointerCapture(e.pointerId);
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener(
+        'pointerup',
+        () => grip.removeEventListener('pointermove', move),
+        { once: true },
+      );
+    });
+    bar.appendChild(grip);
 
     for (const t of TOOLBAR_TOOLS) {
       const b = this.iconBtn(t.icon, t.title, () => this.setTool(t.tool));
