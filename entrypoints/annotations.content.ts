@@ -79,11 +79,16 @@ const STYLES = `
 .bar {
   position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 4px;
+  /* Wrap within the viewport on narrow windows so every control (including
+     Done/Cancel) stays reachable instead of clipping off both edges. */
+  flex-wrap: wrap; justify-content: center; row-gap: 4px;
+  box-sizing: border-box; max-width: calc(100vw - 16px);
   padding: 6px; border-radius: 12px;
   background: #16181d; color: #ececea;
   box-shadow: 0 8px 30px rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08);
 }
 .bar button {
+  flex: 0 0 auto;
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border: none; border-radius: 8px;
   background: transparent; color: #c8ccd2; cursor: pointer;
