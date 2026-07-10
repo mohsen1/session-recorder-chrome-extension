@@ -8,6 +8,12 @@
   Record a bug. Hand your AI agent the whole story.
 </p>
 
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">
+    <img src="design/chrome-web-store-badge.png" width="248" height="75" alt="Available in the Chrome Web Store" />
+  </a>
+</p>
+
 Reproducing a bug for an AI coding agent means describing a hundred little
 things: what you clicked, what the app requested, the error in the console, what
 you expected. Session Recorder captures all of it while you use your app, then
@@ -74,7 +80,19 @@ signals (voice, annotations, notes, and errors) are never trimmed.
 Passwords, auth headers, and tokens are masked before anything is saved. You can
 add your own rules or turn masking off per session in the settings.
 
-## Install (load unpacked)
+## Install
+
+### Chrome Web Store
+
+[Add Session Recorder to Chrome](https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh) —
+click the toolbar icon to open the side panel, then click Record.
+
+> While recording, Chrome shows a "... is being debugged" banner. That is how
+> the extension taps the network and console streams. If the debugger cannot
+> attach, the session still records interactions, navigation, voice,
+> annotations, and files, and the report notes the gap.
+
+### From source
 
 ```bash
 pnpm install
@@ -84,11 +102,6 @@ pnpm build            # -> .output/chrome-mv3
 In Chrome, open `chrome://extensions`, enable Developer mode, click Load
 unpacked, and select `.output/chrome-mv3`. Click the toolbar icon to open the
 side panel, then click Record.
-
-> While recording, Chrome shows a "... is being debugged" banner. That is how
-> the extension taps the network and console streams. If the debugger cannot
-> attach, the session still records interactions, navigation, voice,
-> annotations, and files, and the report notes the gap.
 
 ## Develop and test
 

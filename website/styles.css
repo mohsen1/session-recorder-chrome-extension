@@ -137,6 +137,18 @@ code {
   background: var(--accent-ink);
 }
 
+/* ---- Chrome Web Store badge ---- */
+
+.badge-cws {
+  display: inline-flex;
+  border-radius: 8px;
+  transition: transform 0.08s ease;
+}
+
+.badge-cws:hover {
+  transform: translateY(-1px);
+}
+
 /* ---- Nav ---- */
 
 .nav {
@@ -457,22 +469,15 @@ h1 {
 }
 
 .install__card h2 {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   font-size: 24px;
   letter-spacing: -0.02em;
 }
 
-.install__steps {
-  margin: 0;
-  padding-left: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.install__lede {
+  margin: 0 0 20px;
   color: var(--ink-2);
-}
-
-.install__steps a {
-  color: var(--accent);
+  font-size: 15px;
 }
 
 .install__note {
@@ -481,6 +486,16 @@ h1 {
   border-left: 2px solid var(--accent);
   color: var(--muted);
   font-size: 14px;
+}
+
+.install__alt {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.install__alt a {
+  color: var(--accent);
 }
 
 /* ---- Footer ---- */

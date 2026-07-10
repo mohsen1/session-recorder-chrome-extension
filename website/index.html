@@ -48,8 +48,12 @@
         <a href="#how">How it works</a>
         <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
       </nav>
-      <a class="btn btn--primary btn--sm" href="./session-recorder.zip" download>
-        Download
+      <a
+        class="badge-cws"
+        href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh"
+        aria-label="Add Session Recorder to Chrome — available in the Chrome Web Store"
+      >
+        <img src="./chrome-web-store-badge.png" width="126" height="38" alt="Available in the Chrome Web Store" />
       </a>
     </header>
 
@@ -66,8 +70,12 @@
             read.
           </p>
           <div class="hero__actions">
-            <a class="btn btn--primary" href="./session-recorder.zip" download>
-              <span class="btn__dot"></span> Download the extension
+            <a
+              class="badge-cws badge-cws--lg"
+              href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh"
+              aria-label="Add Session Recorder to Chrome — available in the Chrome Web Store"
+            >
+              <img src="./chrome-web-store-badge.png" width="190" height="57" alt="Available in the Chrome Web Store" />
             </a>
             <a
               class="btn"
@@ -255,24 +263,28 @@
       </section>
 
       <!-- Install -->
-      <section class="install">
+      <section id="install" class="install">
         <div class="install__card">
-          <h2>Install in a minute</h2>
-          <ol class="install__steps">
-            <li>
-              <a href="./session-recorder.zip" download>Download the zip</a> and
-              unzip it.
-            </li>
-            <li>
-              Open <code>chrome://extensions</code> and turn on Developer mode.
-            </li>
-            <li>Click Load unpacked and pick the unzipped folder.</li>
-            <li>Click the toolbar icon to open the side panel, then Record.</li>
-          </ol>
+          <h2>Install in a click</h2>
+          <p class="install__lede">
+            Get Session Recorder from the Chrome Web Store — no developer
+            mode, no zip file.
+          </p>
+          <a
+            class="btn btn--primary"
+            href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh"
+          >
+            <span class="btn__dot"></span> Add to Chrome
+          </a>
           <p class="install__note">
-            While recording, Chrome shows a small "being debugged" banner. That is
+            Click the toolbar icon to open the side panel, then click Record.
+            Chrome then shows a small "being debugged" banner — that is
             expected: it is how the extension watches your app's network and
             console.
+          </p>
+          <p class="install__alt">
+            Building from source?
+            <a href="https://github.com/mohsen1/session-recorder-chrome-extension#install">See the README.</a>
           </p>
         </div>
       </section>
@@ -286,7 +298,7 @@
       <div class="foot__links">
         <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
         <a href="./privacy.html">Privacy</a>
-        <a href="./session-recorder.zip" download>Download</a>
+        <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
       </div>
       <p class="foot__note">
         Free and open source. Nothing leaves your machine except optional voice
