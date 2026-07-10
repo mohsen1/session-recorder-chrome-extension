@@ -10,7 +10,7 @@ export default defineConfig({
     name: 'Session Recorder',
     description:
       'Record rich, multi-modal web-app sessions and export an LLM-optimized report.',
-    version: '0.1.0',
+    version: '0.2.0',
     // All permissions the extension needs across every phase. Each is justified
     // in README.md. Host permissions are broad because the recorder must work on
     // any SaaS app the user points it at.
