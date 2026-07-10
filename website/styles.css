@@ -141,7 +141,6 @@ code {
 
 .badge-cws {
   display: inline-flex;
-  border-radius: 8px;
   transition: transform 0.08s ease;
 }
 
@@ -263,7 +262,6 @@ h1 {
   border: 1px solid var(--line);
   background: var(--surface);
   box-shadow: var(--shadow);
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .shot img {
@@ -271,13 +269,21 @@ h1 {
   height: auto;
 }
 
+@keyframes hero-flatten {
+  from {
+    transform: rotateX(6deg);
+  }
+  to {
+    transform: rotateX(0deg);
+  }
+}
+
 .shot--hero {
   transform: rotateX(6deg);
   transform-origin: 50% 0;
-}
-
-.shot--hero:hover {
-  transform: rotateX(0deg);
+  animation: hero-flatten linear both;
+  animation-timeline: scroll(root block);
+  animation-range: 0px 600px;
 }
 
 .shot--tilt-r {
@@ -288,11 +294,6 @@ h1 {
   transform: perspective(1400px) rotateY(7deg) rotate(-1.4deg);
 }
 
-.shot--tilt-r:hover,
-.shot--tilt-l:hover {
-  transform: perspective(1400px) rotateY(0) rotate(0);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .shot,
   .shot--hero,
@@ -300,6 +301,7 @@ h1 {
   .shot--tilt-l {
     transform: none;
     transition: none;
+    animation: none;
   }
 }
 
