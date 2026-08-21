@@ -1,0 +1,9 @@
+Session Recorder — free software under the GNU Affero General Public License v3.0.
+
+The complete corresponding source code for this extension is published at:
+
+    https://github.com/mohsen1/session-recorder-chrome-extension
+
+See LICENSE in this package for the full license text.
+
+Copyright (C) 2026 Mohsen Azimi
