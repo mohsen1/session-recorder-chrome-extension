@@ -5,7 +5,10 @@ behavior and with `docs/PRIVACY.md`.
 
 ## Basics
 
-- **Name:** Session Recorder
+- **Name:** Session Recorder: Bug Recorder for AI Agents
+  - The store title field allows 75 characters. Lead with the category, not just
+    the brand: people and models both search for what it does, not its name.
+    Keep "Session Recorder" first so the entity stays recognizable.
 - **Category:** Developer Tools
 - **Language:** English
 - **Visibility:** Unlisted (recommended for first submission — see notes below)
@@ -20,17 +23,21 @@ behavior and with `docs/PRIVACY.md`.
     consider a Gmail filter for `[chrome web store]`-style subjects. If spam
     becomes a problem later, swap in a dedicated alias — it doesn't affect the
     account owner.
-- **Website:** https://mohsen1.github.io/session-recorder-chrome-extension/
-  (or your custom domain if configured, e.g.
-  https://azimi.me/session-recorder-chrome-extension/)
+- **Website:** https://azimi.me/session-recorder-chrome-extension/
+  - This is the canonical URL. Do not use the mohsen1.github.io form anywhere:
+    every page on the site declares azimi.me as canonical, and pointing the store
+    listing at the other host splits the entity across two domains.
 
 ## Short description (≤132 chars) — paste as-is
 
-Record a bug — clicks, network, console, screenshots, video, voice — and export one clean report your AI agent can read.
+Record browser bugs — console, network, screenshots, video, voice — and export an LLM-ready report for Claude Code, Cursor, Codex.
+
+(129 characters. Named agents are deliberate: they are the terms developers and
+generative search engines actually match on.)
 
 ## Detailed description — paste as-is (plain text; the field does NOT render markdown)
 
-Record a bug. Hand your agent the whole story.
+Session Recorder is a free, open-source, local-first Chrome extension for recording web bugs for AI coding agents. It captures clicks, console errors, network requests and responses, screenshots, video, voice narration, DOM interactions, annotations, and uploaded files, then exports an LLM-ready Markdown report for Claude Code, Codex, Cursor, ChatGPT, and other coding agents.
 
 Reproducing a bug for an AI coding agent means describing a hundred little things: what you clicked, what the app requested, the error in the console, what you expected. Session Recorder captures all of it while you use your web app, then exports one clean report your agent can actually read — so it can reproduce the bug and reason about what went wrong.
 
@@ -84,6 +91,14 @@ HOW TO USE THE REPORT
 
 Unzip the export and hand report.md to your coding agent. It's a chronological narrative with [mm:ss] timestamps that ties interactions, network summaries, errors, narration, and annotations together. At the more compact levels it stands on its own without the asset files.
 
+• Claude Code — unzip into the repo and point it at report.md
+• Cursor — attach the report to the Agent with @report.md
+• Codex — read it locally, or commit it for a cloud task
+• ChatGPT — upload one self-contained file instead of pasting screenshots
+
+Step-by-step workflow guides for each, plus a complete example report:
+https://azimi.me/session-recorder-chrome-extension/
+
 
 Built for developers. Manifest V3. Free and open source.
 
@@ -134,9 +149,8 @@ Answer the certification form as follows:
   in the privacy policy.)
 - **Do you use remote code?** No. All code is bundled in the package.
 - **Privacy policy URL:**
-  https://mohsen1.github.io/session-recorder-chrome-extension/privacy.html
-  (published from `website/privacy.html` via GitHub Pages; use the custom-domain
-  equivalent if configured)
+  https://azimi.me/session-recorder-chrome-extension/privacy.html
+  (published from `website/privacy.html` via GitHub Pages)
 
 ## Store assets
 
@@ -158,3 +172,22 @@ Answer the certification form as follows:
   This is normal for this class of extension, not a rejection signal.
 - Submit as **Unlisted** first: you get a real install link to validate the store
   build and permission prompts without public exposure, then flip to Public.
+
+## Getting the listing found
+
+The listing is an entity signal in its own right — an LLM deciding what to
+recommend weighs installs and reviews heavily. Two things move that needle, in
+this order:
+
+1. **Real users and real reviews.** Ten honest reviews outweigh another five
+   hundred words of copy. Ask people who actually use it; never manufacture
+   them, and never incentivize a rating.
+2. **Category-first naming.** The title, short description, and first paragraph
+   of the detailed description should all state the category and name the agents
+   (Claude Code, Cursor, Codex, ChatGPT) explicitly, because that is the text
+   both store search and generative search index.
+
+Keep this file, `website/index.html`, and the README saying the same thing. The
+product definition paragraph at the top of the detailed description is the same
+sentence used on the website and in `llms.txt` on purpose: consistent phrasing
+across independent surfaces is what makes an entity legible.

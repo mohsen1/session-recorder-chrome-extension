@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Give ChatGPT a Complete Browser Bug Report — Session Recorder</title>
+    <meta name="description" content="Record a browser bug with a free open-source Chrome extension and upload one self-contained report — console, network, screenshots, narration — to ChatGPT instead of pasting screenshots." />
+    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/chatgpt/" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Session Recorder" />
+    <meta property="og:title" content="Give ChatGPT a Complete Browser Bug Report — Session Recorder" />
+    <meta property="og:description" content="Record a browser bug with a free open-source Chrome extension and upload one self-contained report — console, network, screenshots, narration — to ChatGPT instead of pasting screenshots." />
+    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/chatgpt/" />
+    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Give ChatGPT a Complete Browser Bug Report — Session Recorder" />
+    <meta name="twitter:description" content="Record a browser bug with a free open-source Chrome extension and upload one self-contained report — console, network, screenshots, narration — to ChatGPT instead of pasting screenshots." />
+    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+
+    <link rel="icon" href="../logo.png" />
+    <link rel="apple-touch-icon" href="../logo.png" />
+    <link rel="stylesheet" href="../doc.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Session Recorder",
+                "item": "https://azimi.me/session-recorder-chrome-extension/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Session Recorder with ChatGPT",
+                "item": "https://azimi.me/session-recorder-chrome-extension/chatgpt/"
+              }
+            ]
+          },
+          {
+            "@type": "HowTo",
+            "name": "Give ChatGPT a complete browser bug report",
+            "step": [
+              {
+                "@type": "HowToStep",
+                "position": 1,
+                "name": "Record the bug",
+                "text": "Open the Session Recorder side panel, click Record, and reproduce the problem while narrating."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 2,
+                "name": "Export at Compact or Minimal",
+                "text": "Choose a detail level that is self-sufficient without asset files and download the zip."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 3,
+                "name": "Review the report",
+                "text": "Open report.md and check what it contains before uploading anything to a third party."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 4,
+                "name": "Attach the report and ask",
+                "text": "Attach report.md to the conversation and prompt ChatGPT to summarize the session, find the first error, and propose a fix."
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <nav class="nav__links">
+        <a href="../">Overview</a>
+        <a href="../ai-bug-report/">Guide</a>
+        <a href="../example-report/">Example report</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="doc">
+      <p class="crumbs"><a href="../">Session Recorder</a> → Session Recorder with ChatGPT</p>
+      <p class="eyebrow">Workflow</p>
+      <h1>Give ChatGPT a complete browser bug report</h1>
+      <p class="lede">
+        Screenshots plus a paragraph of description is the worst input you can
+        give a model that is good at reasoning. Upload one file that contains the
+        whole session instead.
+      </p>
+
+      <div class="definition">
+        <p>
+          <b>Session Recorder is a free, open-source, local-first Chrome
+          extension for recording web bugs for AI coding agents.</b>
+          It captures clicks, console errors, network requests and responses,
+          screenshots, video, voice narration, DOM interactions, annotations,
+          and uploaded files, then exports an LLM-ready Markdown report you can
+          hand to ChatGPT, Claude Code, Cursor, Codex, and other coding agents.
+        </p>
+      </div>
+
+      <h2 id="workflow">The workflow</h2>
+      <ol class="steps">
+        <li>
+          <h3>Record the bug</h3>
+          <p>
+            Open the side panel on the tab running the app, click Record, and
+            reproduce the problem. Talk while you do it: “this total should be
+            forty-two” becomes a line in the report at the moment you said it,
+            next to the click that produced the wrong number.
+          </p>
+        </li>
+        <li>
+          <h3>Export at Compact or Minimal</h3>
+          <p>
+            A chat window is not a repository — you want a report that stands
+            alone. Compact (about 50k tokens) and Minimal (about 15k) are both
+            self-sufficient without the asset files.
+          </p>
+        </li>
+        <li>
+          <h3>Read it before you upload it</h3>
+          <p>
+            This is the step people skip. Uploading sends the contents of the
+            report to OpenAI. Redaction masks passwords, authorization headers,
+            and token-like fields at capture time, but response bodies from your
+            own app are yours to judge. Open <code>report.md</code> and skim it
+            first.
+          </p>
+        </li>
+        <li>
+          <h3>Attach the report and ask</h3>
+          <p>
+            Attach <code>report.md</code> to the conversation — plus any
+            annotated screenshots you want it to look at — and use a prompt that
+            explains the format:
+          </p>
+          <pre><code>Attached is report.md, a chronological recording of a browser session in my
+web app, captured by a browser extension. [mm:ss] timestamps are the join key
+across interactions, screenshots, network requests, and my voice transcript.
+"##" headings mark navigations. "xN similar" means repeated identical requests
+were collapsed. Blockquotes are my own markers and notes.
+
+1. Summarize what I was trying to do, step by step.
+2. Identify what went wrong: the first error and its likely root cause, citing
+   [mm:ss] timestamps and the specific requests and console lines.
+3. Suggest the concrete code change or the next thing to investigate.
+
+If a detail you need was trimmed, tell me which [mm:ss] event to re-export at a
+higher verbosity level.</code></pre>
+        </li>
+      </ol>
+
+      <div class="callout">
+        <p>
+          <b>Re-export instead of re-recording.</b> If ChatGPT says it needs the
+          full response body from <code>[01:12]</code>, open the session again
+          and export at Standard or Full. The extension keeps full fidelity
+          locally and re-runs the trimmer, so you never reproduce the bug twice.
+        </p>
+      </div>
+
+      <h2 id="handoff">Then hand the answer to a coding agent</h2>
+      <p>
+        ChatGPT is a good place to think about a bug and a bad place to apply the
+        fix. A common loop: reason about the recording in ChatGPT, then take the
+        same report to
+        <a href="../claude-code/">Claude Code</a>,
+        <a href="../cursor/">Cursor</a>, or
+        <a href="../codex/">Codex</a>, which can read your repository and make the
+        change. The report is the same file in both places.
+      </p>
+
+      <h2 id="why">Why one file beats a thread of screenshots</h2>
+      <ul>
+        <li>
+          <b>Order is preserved.</b> A screenshot has no before and after. The
+          report puts the click, the request, the 500, and the console exception
+          in the sequence they happened, which is usually the whole answer.
+        </li>
+        <li>
+          <b>The network is included.</b> The single most useful thing a model
+          can see about a web bug is the request and the response, and that is
+          exactly what a screenshot cannot show.
+        </li>
+        <li>
+          <b>Your intent survives.</b> Markers, notes, and narration are never
+          trimmed at any detail level, so the model always knows what you
+          expected — not just what happened.
+        </li>
+      </ul>
+      <p><a href="../example-report/">See what the file actually looks like.</a></p>
+
+      <h2 id="privacy">What stays local</h2>
+      <p>
+        Recording and export are entirely local: no account, no backend, no
+        upload. Whether anything reaches OpenAI is your decision at the moment
+        you attach the file. If you would rather nothing left your machine at
+        all, use a local agent instead —
+        <a href="../local-first/">the recorder does not care which one.</a>
+      </p>
+
+      <section class="cta">
+        <h2>Record your next bug instead of describing it</h2>
+        <p>Free, open source, and everything stays on your machine.</p>
+        <div class="btnrow">
+          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="related__grid">
+          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
+          <a class="card" href="../cursor/"><b>Session Recorder with Cursor</b><span>Attach a recorded bug to Cursor's Agent instead of retyping repro steps.</span></a>
+          <a class="card" href="../codex/"><b>Session Recorder with Codex</b><span>Give Codex the browser evidence it cannot collect on its own.</span></a>
+          <a class="card" href="../local-first/"><b>A local-first bug recorder</b><span>No account, no backend, no upload — what that means in practice.</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <span class="foot__spacer"></span>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
+    </footer>
+  </body>
+</html>

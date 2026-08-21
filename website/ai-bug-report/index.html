@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need</title>
+    <meta name="description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence." />
+    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/ai-bug-report/" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Session Recorder" />
+    <meta property="og:title" content="Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need" />
+    <meta property="og:description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence." />
+    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/ai-bug-report/" />
+    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need" />
+    <meta name="twitter:description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence." />
+    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+
+    <link rel="icon" href="../logo.png" />
+    <link rel="apple-touch-icon" href="../logo.png" />
+    <link rel="stylesheet" href="../doc.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Session Recorder",
+                "item": "https://azimi.me/session-recorder-chrome-extension/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Bug reports AI coding agents can fix",
+                "item": "https://azimi.me/session-recorder-chrome-extension/ai-bug-report/"
+              }
+            ]
+          },
+          {
+            "@type": "TechArticle",
+            "headline": "Browser bug reports for AI coding agents: what Claude Code, Cursor and Codex actually need",
+            "description": "What context AI coding agents need to fix browser bugs, and how to build a bug report that provides it.",
+            "author": {
+              "@type": "Person",
+              "name": "Mohsen Azimi",
+              "url": "https://azimi.me/"
+            },
+            "about": {
+              "@type": "SoftwareApplication",
+              "name": "Session Recorder",
+              "url": "https://azimi.me/session-recorder-chrome-extension/"
+            },
+            "keywords": "AI bug report, browser bug report, Claude Code, Cursor, Codex, ChatGPT, context window, deterministic trimming, redaction, MCP browser"
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is an AI-ready bug report?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "An AI-ready bug report is a single, self-contained artifact that gives a coding agent the runtime evidence it cannot observe itself: the ordered sequence of user interactions, the network requests and their response bodies, console output and exceptions, page context, screenshots of the failing state, and an explicit statement of what the user expected. It is sized to fit the model's context window and formatted as plain text — usually Markdown — so the agent can read it as a file."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Why are screenshots not enough for an AI coding agent?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "A screenshot shows one frame with no before and no after. It cannot show the request that failed, the status code that came back, the exception the browser threw, or the order in which those happened. For web bugs the ordering is usually the diagnosis, and a screenshot has no ordering at all. Screenshots are useful as corroboration of the visual symptom, not as the primary evidence."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What context do Claude Code, Cursor and Codex actually need to fix a browser bug?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "They already have the source code. What they lack is runtime state: which endpoint was called with which payload, what came back, what the console said, what the user clicked immediately before, and what the user expected to happen. Supply those and the agent's job becomes reading code against evidence rather than guessing at plausible causes."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Should I give an agent a live browser or a recording?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Give it a live browser when the agent needs to explore — trying inputs, verifying a fix, walking a flow it can trigger itself. Give it a recording when the bug is yours to reproduce: it needs your login, your data, a specific sequence, a timing-dependent race, or a judgement call about what 'wrong' looks like. The two compose: record the failure, then let the agent verify the fix live."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How large should a bug report be?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Small enough that the model can attend to all of it, which in practice means well under the nominal context limit. A report of roughly 50k tokens is a good default for a coding agent that is also holding your codebase; drop to about 15k for a chat window or a long session. Prefer trimming bodies and collapsing repeated requests over dropping events, because ordering is the signal you cannot reconstruct later."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is it safe to send a browser recording to an AI service?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Only if you know what is in it. A recording of a real session can contain session tokens, authorization headers, personal data in response bodies, and whatever was on screen. Redact credentials at capture time rather than at export time, read the report before you upload it, and prefer a local-first tool if the data cannot leave your machine at all."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <nav class="nav__links">
+        <a href="../">Overview</a>
+        <a href="../ai-bug-report/">Guide</a>
+        <a href="../example-report/">Example report</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="doc">
+      <p class="crumbs"><a href="../">Session Recorder</a> → Bug reports AI coding agents can fix</p>
+      <p class="eyebrow">Guide</p>
+      <h1>Browser bug reports for AI coding agents: what Claude Code, Cursor and Codex actually need</h1>
+      <p class="lede">
+        Coding agents are good at reading code and blind to runtime. Almost every
+        frustrating agent debugging session comes down to that one asymmetry —
+        and to a bug report that did nothing to fix it.
+      </p>
+
+      <div class="toc">
+        <p>Contents</p>
+        <ol>
+          <li><a href="#asymmetry">The asymmetry at the heart of agent debugging</a></li>
+          <li><a href="#screenshots">Why a screenshot is the weakest evidence you can send</a></li>
+          <li><a href="#signals">The eight signals a browser bug report needs</a></li>
+          <li><a href="#ordering">Temporal ordering is the diagnosis</a></li>
+          <li><a href="#context">The context window problem: more is not better</a></li>
+          <li><a href="#trimming">Deterministic trimming beats AI summarization</a></li>
+          <li><a href="#markdown">Markdown is the interchange format</a></li>
+          <li><a href="#redaction">Redaction: what must never be in the file</a></li>
+          <li><a href="#live">Recorded evidence vs. driving a live browser</a></li>
+          <li><a href="#local">Local capture vs. cloud capture</a></li>
+          <li><a href="#checklist">A checklist you can steal</a></li>
+          <li><a href="#practice">What this looks like in practice</a></li>
+          <li><a href="#faq">Frequently asked questions</a></li>
+        </ol>
+      </div>
+
+      <h2 id="asymmetry">The asymmetry at the heart of agent debugging</h2>
+      <p>
+        An AI coding agent has an unusually complete view of one half of your
+        system and no view at all of the other. It can read every file in the
+        repository, follow imports across packages, and hold more of the codebase
+        in working memory than you can. It cannot see a single thing that
+        happened in the browser.
+      </p>
+      <p>
+        So when you type “the checkout page is broken,” the agent does the only
+        thing available to it: it generates hypotheses from the code. It reads
+        the checkout module, notices four things that could plausibly break, and
+        picks one. Sometimes it picks right. When it picks wrong, it writes a
+        confident patch to code that was never involved, and you spend the next
+        twenty minutes discovering that.
+      </p>
+      <p>
+        This is not a reasoning failure. It is an evidence failure. The agent is
+        doing inference because you gave it nothing to observe. Every technique
+        in this article is a way of converting inference back into observation.
+      </p>
+      <p>
+        The practical target is simple to state: <b>an agent should never have to
+        guess what the network did, what the console said, or what you clicked.</b>
+        Anything else it can work out from the code.
+      </p>
+
+      <h2 id="screenshots">Why a screenshot is the weakest evidence you can send</h2>
+      <p>
+        Screenshots feel like strong evidence because they are strong evidence
+        for a human. A colleague looking at a screenshot brings a model of your
+        app, your recent work, and the class of bugs you have been chasing. They
+        do not need the before and after because they can reconstruct it.
+      </p>
+      <p>An agent cannot. A screenshot of a broken screen contains:</p>
+      <ul>
+        <li>one frame, with no preceding state and no following state;</li>
+        <li>no indication of which action produced it;</li>
+        <li>no network activity whatsoever;</li>
+        <li>no console output;</li>
+        <li>no timing;</li>
+        <li>and no statement of what the correct frame would have looked like.</li>
+      </ul>
+      <p>
+        For a visual bug — misaligned layout, wrong colour, overlapping text — a
+        screenshot is close to sufficient, because the symptom <em>is</em> the
+        pixels. For anything involving data, state, or asynchrony, it is the
+        least informative artifact you could have chosen. The agent's most
+        reasonable response to a screenshot of a failed checkout is a question,
+        and if it does not ask one, it is guessing.
+      </p>
+      <p>
+        This does not mean stop sending screenshots. It means stop sending
+        <em>only</em> screenshots. A screenshot annotated with an arrow —
+        “this number is wrong” — is genuinely valuable, because it resolves the
+        one thing text is bad at: which of the fourteen things on screen you
+        meant. It is corroboration. It is not the case.
+      </p>
+
+      <h2 id="signals">The eight signals a browser bug report needs</h2>
+      <p>
+        Over a lot of agent debugging sessions, the same eight pieces of evidence
+        turn out to do nearly all the work. They are listed roughly in order of
+        how often they contain the answer.
+      </p>
+
+      <h3>1. The network exchange — both halves of it</h3>
+      <p>
+        For web application bugs, the request and its response are the single
+        most valuable artifact, and the response body matters more than the
+        request. A great many “frontend bugs” are the frontend faithfully
+        rendering something the API should not have sent: a null where an object
+        was promised, an empty array, a 200 with an error payload inside it, a
+        field renamed in a deploy nobody told you about.
+      </p>
+      <p>
+        A report that lists <code>POST /api/checkout — 500</code> is far better
+        than nothing and still leaves the agent guessing. A report that includes
+        <code>{"error":"coupon_expired","requestId":"req_8a41c2"}</code> ends the
+        investigation. Capture method, URL, status, timing, request body, and
+        response body — and note when a body was truncated, so the agent knows
+        the difference between “empty” and “omitted.”
+      </p>
+
+      <h3>2. Console output and exceptions, with stacks</h3>
+      <p>
+        The console is where the browser tells you which line gave up. A stack
+        trace maps a runtime symptom directly onto a file and line number in the
+        repository the agent is already reading, which makes it the cheapest
+        possible bridge between the two halves of the system.
+      </p>
+      <p>
+        Two refinements matter. First, deduplicate: a React render loop can emit
+        the same warning eight hundred times, and eight hundred copies is not
+        eight hundred times the information — one copy with a count is.
+        Second, <b>link exceptions to the request that caused them.</b> “TypeError
+        reading 'orderId'” and “POST /api/checkout returned 500” are the same
+        finding stated twice, but only if something in the report says so.
+      </p>
+
+      <h3>3. The sequence of interactions</h3>
+      <p>
+        Which element you clicked, what you typed, what you selected, in what
+        order. This is what turns a report into a reproduction. It also
+        disambiguates the cases that make bug reports useless: you clicked
+        Submit twice; you typed into the field before the form finished
+        hydrating; you hit Enter rather than clicking the button, and only the
+        button handler calls <code>preventDefault</code>.
+      </p>
+      <p>
+        Record the element, not just the coordinates: text or accessible label
+        plus a selector. <code>CLICK "Place order" (button.primary)</code> is
+        something an agent can grep for. <code>click at (412, 908)</code> is not.
+      </p>
+
+      <h3>4. The user's intent</h3>
+      <p>
+        The most underrated signal, and the only one an agent cannot possibly
+        derive: what you expected instead. “The total should be forty-two
+        dollars” converts an ambiguous screen into a testable assertion. It also
+        prevents the failure mode where the agent finds <em>a</em> bug — a real
+        one, in code that had nothing to do with your complaint — and fixes that
+        instead.
+      </p>
+      <p>
+        Say it out loud, write it as a note, or drop a marker at the moment
+        things go wrong. However it gets in, it should be the one thing your
+        pipeline never drops.
+      </p>
+
+      <h3>5. Timing</h3>
+      <p>
+        Not durations for their own sake, but relative ordering with enough
+        resolution to establish causality. “The exception fired 200 ms after the
+        request came back” and “the exception fired 4 seconds before it” describe
+        completely different bugs. Race conditions, double submissions, stale
+        closures, and effects firing on the wrong render are all invisible
+        without a clock.
+      </p>
+
+      <h3>6. Page and route context</h3>
+      <p>
+        The URL at the moment of failure, including SPA route changes that never
+        touch the server. Navigation events are also the natural section breaks
+        of a session: they turn a flat log into chapters, and they tell the agent
+        which component tree was mounted when the error fired.
+      </p>
+
+      <h3>7. The visual state, pointed at</h3>
+      <p>
+        A screenshot at the moment of failure — ideally annotated. Not as the
+        primary evidence, but because some symptoms genuinely are visual, and
+        because an arrow resolves “which thing is wrong” in a way that three
+        paragraphs of prose does not.
+      </p>
+
+      <h3>8. Environment</h3>
+      <p>
+        Browser and version, viewport size, and anything else that varies between
+        your machine and CI. Cheap to include, occasionally the entire answer.
+      </p>
+
+      <h2 id="ordering">Temporal ordering is the diagnosis</h2>
+      <p>
+        If you take one idea from this article, take this one. Most web bugs are
+        not “this function is wrong.” They are “these things happened in this
+        order.” The bug lives in the <em>relationship</em> between events, which
+        means a report that captures every event perfectly but scrambles their
+        order has destroyed the finding.
+      </p>
+      <p>
+        This is exactly what happens when a bug report is assembled by hand from
+        separate sources. You paste a stack trace from the console, then a
+        request from the network tab, then a screenshot from earlier, then a
+        description written afterwards. Each piece is accurate. The causal chain
+        connecting them exists only in your head, and you have not written it
+        down — usually because by the time you are writing the report, you have
+        already forgotten the two seconds that mattered.
+      </p>
+      <p>
+        Everything in the report should therefore share one clock. A single
+        monotonic timeline, with every event stamped relative to the start of the
+        session, is what lets an agent say “the 500 at 00:17 caused the exception
+        at 00:18, which is why the screenshot at 00:24 shows a success state that
+        was never true.” It also gives the agent a join key: <code>[00:17]</code>
+        in the narrative, in the network index, in the screenshot filename, and
+        in the transcript all refer to the same moment.
+      </p>
+      <p>
+        Ask the agent to cite those timestamps in its answer. It makes the
+        reasoning checkable against the report, which is the cheapest hallucination
+        defence available in this workflow.
+      </p>
+
+      <h2 id="context">The context window problem: more is not better</h2>
+      <p>
+        Having established that you should capture everything, here is the
+        complication: you should not send everything.
+      </p>
+      <p>
+        A three-minute session against a modern web app produces an enormous
+        amount of data. Analytics beacons every few seconds. Font and image
+        requests. Polling endpoints. A single JSON response can run to hundreds
+        of kilobytes. Serialize all of it and a short recording becomes hundreds
+        of thousands of tokens, most of it noise.
+      </p>
+      <p>
+        Large context windows do not solve this. They make it possible to
+        <em>send</em> the noise, which is not the same as the model attending to
+        it. Recall degrades in the middle of long inputs, the signal you cared
+        about competes with eight hundred identical polling requests, and — if
+        you are using a coding agent — every token spent on a font request is a
+        token not spent on your codebase.
+      </p>
+      <p>The economics are unforgiving in the other direction too:</p>
+      <ul>
+        <li>too much, and the agent misses the finding in the noise;</li>
+        <li>too little, and it asks a question you then have to answer manually, or worse, guesses;</li>
+        <li>and you do not get to know which happened until after the fact.</li>
+      </ul>
+      <p>
+        The way out is to make size an explicit, adjustable control rather than
+        an accident of how long you recorded — and to know the number before you
+        send it, not after the model complains.
+      </p>
+
+      <h3>What to trim, in order</h3>
+      <ol>
+        <li>
+          <b>Static assets and analytics.</b> Images, fonts, CSS, and telemetry
+          hosts. Collapse them to a single summary line. They are almost never
+          the bug.
+        </li>
+        <li>
+          <b>Repeated identical requests.</b> Forty polls of
+          <code>GET /api/status</code> that all returned 200 are one line plus a
+          count. Critically: <b>a request whose status differs from its neighbours
+          must survive in full.</b> Anomalies are the entire point.
+        </li>
+        <li>
+          <b>Body volume, not body existence.</b> Truncate long bodies with a
+          note of the original size, or reduce JSON to a shape summary —
+          <code>{ users: Array(50) of { id, name, email } }</code> — which is
+          often all the agent needed. The shape answers “is the field there and
+          is it the right type,” which is most schema bugs.
+        </li>
+        <li>
+          <b>Screenshot frequency.</b> Keep the moments that matter: errors,
+          annotations, state transitions. Drop near-duplicate frames.
+        </li>
+        <li>
+          <b>Low-information interactions.</b> Coalesce runs of scrolls. Keep
+          clicks and typing.
+        </li>
+      </ol>
+
+      <h3>What to never trim</h3>
+      <ul>
+        <li>the user's markers, notes, and narration — their intent is irreplaceable;</li>
+        <li>errors and exceptions, at any volume;</li>
+        <li>the request an error links to, including its body;</li>
+        <li>annotations and the screenshots they mark up;</li>
+        <li>the ordering of what remains.</li>
+      </ul>
+      <p>
+        These are protections, not preferences. If a level ever drops one of
+        them, the level is wrong.
+      </p>
+
+      <h2 id="trimming">Deterministic trimming beats AI summarization</h2>
+      <p>
+        The obvious way to shrink a bug report is to ask a model to summarize it.
+        This is a mistake, for four reasons.
+      </p>
+      <p>
+        <b>It is lossy in exactly the wrong place.</b> A summarizer keeps what
+        looks important. Bugs hide in what looks unimportant: the one request out
+        of forty that returned 304, the field that was <code>null</code> instead
+        of <code>0</code>, the two events that arrived in the wrong order.
+      </p>
+      <p>
+        <b>It is not reproducible.</b> Run it twice, get two different reports.
+        Now “the agent said X” is not a claim anyone can check, because the input
+        it saw no longer exists.
+      </p>
+      <p>
+        <b>It launders hallucination into evidence.</b> A summarizer that
+        misreads a status code produces a bug report that <em>states</em> the
+        wrong status code as fact. The downstream agent has no way to tell that
+        line from an observed one. You have converted a model's guess into
+        something that looks like data.
+      </p>
+      <p>
+        <b>It costs a round trip and, usually, an upload.</b> To summarize your
+        session, someone has to send your session somewhere.
+      </p>
+      <p>
+        Deterministic trimming — fixed rules, applied in a fixed order — has
+        none of these problems. The same recording at the same level produces the
+        same report, byte for byte. Every line in it was observed. And because
+        the rules are stated in advance, the agent can be told what they are:
+        “<code>×N similar</code> means repeated identical calls were collapsed”
+        is a fact it can reason about, unlike “this section was summarized.”
+      </p>
+      <p>
+        Keep the full recording locally and treat trimming as a rendering step.
+        Then re-exporting at a different level is free, and “I need the full body
+        from 00:17” costs you a click rather than a second reproduction.
+      </p>
+
+      <h2 id="markdown">Markdown is the interchange format</h2>
+      <p>
+        Not because it is fashionable, but because of what the alternatives cost.
+      </p>
+      <p>
+        <b>Raw JSON</b> of an event stream is precise and expensive: braces,
+        quotes, and repeated key names consume a large fraction of the tokens,
+        and deeply nested structures are harder for a model to narrate over than
+        prose. Keep JSON as a secondary artifact for programmatic use, not as the
+        thing you hand the agent first.
+      </p>
+      <p>
+        <b>HAR files</b> are the standard network export and a poor bug report:
+        enormous, base64-heavy, and network-only. They contain no interactions,
+        no console, no intent. An agent handed a HAR spends most of its attention
+        parsing it.
+      </p>
+      <p>
+        <b>Video</b> is dense for humans and mostly opaque to text models. Useful
+        as an attachment, useless as the primary artifact.
+      </p>
+      <p>
+        Markdown wins because it is nearly free to tokenize, it survives being
+        pasted into anything, headings give the model structure to navigate,
+        fenced code blocks carry bodies verbatim, and image references let an
+        agent that <em>can</em> open files go look at the screenshot. It is also
+        readable by you, which matters more than it sounds: you should be able to
+        check what you are about to hand over.
+      </p>
+      <p>Some format rules that pay for themselves:</p>
+      <ul>
+        <li>put the timestamp first on every line, so the clock is scannable;</li>
+        <li>use headings for navigations, so the session has chapters;</li>
+        <li>make the user's own words visually distinct — blockquotes work well;</li>
+        <li>fence every captured body, and label the language;</li>
+        <li>state trimming decisions inline (<code>truncated from 812 KB</code>), so absence is never ambiguous;</li>
+        <li>end with an index of every network request and a console dump, so the agent can scan for anomalies without re-reading the narrative.</li>
+      </ul>
+      <p><a href="../example-report/">Here is a complete example applying all of that.</a></p>
+
+      <h2 id="redaction">Redaction: what must never be in the file</h2>
+      <p>
+        A faithful recording of a real session is, by construction, a security
+        problem. It contains whatever your app sent and received: session
+        cookies, bearer tokens, API keys in headers, personal data in response
+        bodies, and whatever was on screen. The moment you hand that to a model —
+        or commit it, or attach it to a ticket — it has left your control.
+      </p>
+      <p>
+        The rule that matters is <b>redact at capture time, not at export
+        time.</b> A tool that scrubs on the way out has already persisted the
+        secret to disk. A tool that scrubs on the way in never had it. The
+        difference shows up the first time a laptop is lost or a temp directory
+        is synced somewhere.
+      </p>
+      <p>What to mask by default:</p>
+      <ul>
+        <li><code>Authorization</code>, <code>Cookie</code>, and <code>Set-Cookie</code> headers;</li>
+        <li>token-like JSON and form fields — <code>token</code>, <code>secret</code>, <code>password</code>, <code>apiKey</code>, and their variants;</li>
+        <li>sensitive URL query parameters;</li>
+        <li>password and payment inputs, at the DOM level, before the value is ever recorded.</li>
+      </ul>
+      <p>
+        Then read the report before you send it. Automated redaction handles
+        credentials, which have recognizable shapes. It cannot know that the
+        customer list your admin panel returned is not yours to share. That
+        judgement is yours, and it takes thirty seconds.
+      </p>
+
+      <h2 id="live">Recorded evidence vs. driving a live browser</h2>
+      <p>
+        Agents can increasingly drive a browser themselves, through an MCP
+        server or a browser extension. It is a genuinely good capability and it
+        does not replace recorded evidence — the two answer different questions.
+      </p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Use a live browser when…</th>
+              <th>Use a recording when…</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>The agent needs to explore — try inputs, bisect, poke at state.</td>
+              <td>The repro needs your session, your data, or your permissions.</td>
+            </tr>
+            <tr>
+              <td>The bug is trivially reachable from a public URL.</td>
+              <td>It takes six steps in a specific order to reach.</td>
+            </tr>
+            <tr>
+              <td>You are verifying that a fix worked.</td>
+              <td>It is timing-dependent and does not reproduce on demand.</td>
+            </tr>
+            <tr>
+              <td>The state is cheap to recreate.</td>
+              <td>Reproducing it costs real money, real email, or real data.</td>
+            </tr>
+            <tr>
+              <td>The agent needs to see the result of its own change.</td>
+              <td>“Wrong” requires human judgement about what should have happened.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        There is also a cost asymmetry worth noting. Driving a browser spends
+        agent turns: navigate, screenshot, read, click, screenshot, read. Each
+        step consumes context and time, and the agent has to <em>find</em> the
+        bug before it can start fixing it. A recording front-loads all of that
+        into one file you produced in ninety seconds while doing something you
+        were going to do anyway — reproducing the bug.
+      </p>
+      <p>
+        The natural combination: record the failure, hand over the report, let
+        the agent fix it, then let it verify the fix in a live browser.
+      </p>
+
+      <h2 id="local">Local capture vs. cloud capture</h2>
+      <p>
+        Most bug-capture tools are cloud products, and for their intended job —
+        moving a bug from a non-technical reporter to an engineering team — that
+        is the right architecture. Links, tickets, comments, and integrations all
+        need a server.
+      </p>
+      <p>
+        The agent workflow is different. You are the reporter, you are the
+        engineer, the fix happens on your machine, and the recipient is a process
+        running in your terminal. A cloud round trip in the middle of that loop
+        adds an account, a network dependency, a retention policy, and a
+        compliance question, in exchange for nothing the loop needed.
+      </p>
+      <p>Local capture matters most when:</p>
+      <ul>
+        <li>the app is regulated, internal, or handling real customer data;</li>
+        <li>the feature is unreleased and a recording is a leak;</li>
+        <li>your organization has a policy about third-party processors that a browser extension quietly violates;</li>
+        <li>or you simply do not want a permanent archive of your screen on someone else's infrastructure.</li>
+      </ul>
+      <p>
+        The trade-off is real: no shareable links, no ticket integrations, no
+        cross-device history. If bugs arrive from other people, take the cloud
+        tool. If bugs arrive from you and leave to an agent, the file is enough.
+        <a href="../local-first/">More on that design.</a>
+      </p>
+
+      <h2 id="checklist">A checklist you can steal</h2>
+      <p>Before handing a browser bug to an agent, the report should contain:</p>
+      <ul>
+        <li>☐ the ordered sequence of interactions, with element labels and selectors</li>
+        <li>☐ every non-static network request: method, URL, status, timing</li>
+        <li>☐ response bodies for anything that failed, or a shape summary if it succeeded</li>
+        <li>☐ console output and exceptions, deduplicated, with stacks</li>
+        <li>☐ an explicit link from each error to the request that caused it</li>
+        <li>☐ the URL and route at the moment of failure</li>
+        <li>☐ a screenshot of the failing state, annotated if the symptom is visual</li>
+        <li>☐ one sentence of what you expected instead</li>
+        <li>☐ a single clock joining all of the above</li>
+        <li>☐ credentials masked, and a human skim before it leaves the machine</li>
+        <li>☐ a size you checked, not a size you hoped for</li>
+      </ul>
+      <p>
+        Assembling that by hand takes ten to fifteen minutes per bug and you will
+        get it wrong under deadline pressure, which is precisely when you need it
+        most. That is the argument for recording it instead.
+      </p>
+
+      <h2 id="practice">What this looks like in practice</h2>
+      <p>
+        <b>Session Recorder is a free, open-source, local-first Chrome extension
+        for recording web bugs for AI coding agents</b> — an implementation of
+        everything above. It was built because doing this by hand, repeatedly,
+        is exactly the kind of work that should not be manual.
+      </p>
+      <ul>
+        <li>
+          <b>One clock.</b> Clicks, typing, text selections, navigations, network
+          requests and responses, console output, exceptions, screenshots, tab
+          video, voice narration, annotations, and uploaded files all land on a
+          single <code>[mm:ss]</code> timeline in the order they happened.
+        </li>
+        <li>
+          <b>Real network capture.</b> Request and response bodies through the
+          Chrome DevTools Protocol, with errors linked to the request that caused
+          them.
+        </li>
+        <li>
+          <b>Your intent, recorded.</b> Talk while you record; narration is
+          transcribed and anchored to what you were doing when you said it. Drop
+          markers, write notes, draw an arrow at the broken thing.
+        </li>
+        <li>
+          <b>Token-budgeted export.</b> Four levels — Full, Standard, Compact,
+          Minimal — each with a live token estimate, so you pick a size instead of
+          discovering one. Re-export the same recording at any level, losslessly.
+        </li>
+        <li>
+          <b>Deterministic trimming.</b> Cumulative transform pipelines, no model
+          call. Markers, notes, narration, annotations, and every error are
+          protected at every level, by rule.
+        </li>
+        <li>
+          <b>Redaction at capture time.</b> Passwords, authorization headers, and
+          token-like fields are masked before anything is written to storage.
+        </li>
+        <li>
+          <b>Local-first.</b> No account, no backend, no telemetry. The output is
+          a zip in your Downloads folder.
+        </li>
+      </ul>
+      <p>
+        Workflow guides for
+        <a href="../claude-code/">Claude Code</a>,
+        <a href="../cursor/">Cursor</a>,
+        <a href="../codex/">Codex</a>, and
+        <a href="../chatgpt/">ChatGPT</a>, or read
+        <a href="../example-report/">a complete example report</a> first.
+      </p>
+
+      <h2 id="faq">Frequently asked questions</h2>
+      <h3>What is an AI-ready bug report?</h3>
+      <p>An AI-ready bug report is a single, self-contained artifact that gives a coding agent the runtime evidence it cannot observe itself: the ordered sequence of user interactions, the network requests and their response bodies, console output and exceptions, page context, screenshots of the failing state, and an explicit statement of what the user expected. It is sized to fit the model's context window and formatted as plain text — usually Markdown — so the agent can read it as a file.</p>
+      <h3>Why are screenshots not enough for an AI coding agent?</h3>
+      <p>A screenshot shows one frame with no before and no after. It cannot show the request that failed, the status code that came back, the exception the browser threw, or the order in which those happened. For web bugs the ordering is usually the diagnosis, and a screenshot has no ordering at all. Screenshots are useful as corroboration of the visual symptom, not as the primary evidence.</p>
+      <h3>What context do Claude Code, Cursor and Codex actually need to fix a browser bug?</h3>
+      <p>They already have the source code. What they lack is runtime state: which endpoint was called with which payload, what came back, what the console said, what the user clicked immediately before, and what the user expected to happen. Supply those and the agent's job becomes reading code against evidence rather than guessing at plausible causes.</p>
+      <h3>Should I give an agent a live browser or a recording?</h3>
+      <p>Give it a live browser when the agent needs to explore — trying inputs, verifying a fix, walking a flow it can trigger itself. Give it a recording when the bug is yours to reproduce: it needs your login, your data, a specific sequence, a timing-dependent race, or a judgement call about what 'wrong' looks like. The two compose: record the failure, then let the agent verify the fix live.</p>
+      <h3>How large should a bug report be?</h3>
+      <p>Small enough that the model can attend to all of it, which in practice means well under the nominal context limit. A report of roughly 50k tokens is a good default for a coding agent that is also holding your codebase; drop to about 15k for a chat window or a long session. Prefer trimming bodies and collapsing repeated requests over dropping events, because ordering is the signal you cannot reconstruct later.</p>
+      <h3>Is it safe to send a browser recording to an AI service?</h3>
+      <p>Only if you know what is in it. A recording of a real session can contain session tokens, authorization headers, personal data in response bodies, and whatever was on screen. Redact credentials at capture time rather than at export time, read the report before you upload it, and prefer a local-first tool if the data cannot leave your machine at all.</p>
+
+      <section class="cta">
+        <h2>Record your next bug instead of describing it</h2>
+        <p>Free, open source, and everything stays on your machine.</p>
+        <div class="btnrow">
+          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="related__grid">
+          <a class="card" href="../example-report/"><b>An example report</b><span>A complete, sanitized report.md, exactly as an agent receives it.</span></a>
+          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
+          <a class="card" href="../local-first/"><b>A local-first bug recorder</b><span>No account, no backend, no upload — what that means in practice.</span></a>
+          <a class="card" href="../jam-alternative/"><b>Session Recorder vs Jam</b><span>An honest comparison, including where Jam is the better choice.</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <span class="foot__spacer"></span>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
+    </footer>
+  </body>
+</html>

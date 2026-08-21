@@ -14,12 +14,24 @@
   </a>
 </p>
 
+**Session Recorder is a free, open-source, local-first Chrome extension for
+recording web bugs for AI coding agents.** It captures clicks, console errors,
+network requests and responses, screenshots, video, voice narration, DOM
+interactions, annotations, and uploaded files, then exports an LLM-ready
+Markdown report for Claude Code, Codex, Cursor, ChatGPT, and other coding
+agents.
+
 Reproducing a bug for an AI coding agent means describing a hundred little
 things: what you clicked, what the app requested, the error in the console, what
 you expected. Session Recorder captures all of it while you use your app, then
 exports one clean report your agent can read.
 
 Website: [azimi.me/session-recorder-chrome-extension](https://azimi.me/session-recorder-chrome-extension/)
+· [Example report](https://azimi.me/session-recorder-chrome-extension/example-report/)
+· [Claude Code](https://azimi.me/session-recorder-chrome-extension/claude-code/)
+· [Cursor](https://azimi.me/session-recorder-chrome-extension/cursor/)
+· [Codex](https://azimi.me/session-recorder-chrome-extension/codex/)
+· [ChatGPT](https://azimi.me/session-recorder-chrome-extension/chatgpt/)
 
 <p align="center">
   <picture>
@@ -136,6 +148,16 @@ summaries, errors, narration, and annotations. At L2 and L3 it stands alone
 without the asset files. See [`docs/report-format.md`](./docs/report-format.md)
 for a suggested prompt.
 
+Step-by-step workflows, with a copy-pasteable prompt for each:
+
+- [Claude Code](https://azimi.me/session-recorder-chrome-extension/claude-code/) — unzip into the repo and point it at `report.md`
+- [Cursor](https://azimi.me/session-recorder-chrome-extension/cursor/) — attach with `@report.md`, plus a reusable project rule
+- [Codex](https://azimi.me/session-recorder-chrome-extension/codex/) — local CLI and cloud tasks, plus an `AGENTS.md` snippet
+- [ChatGPT](https://azimi.me/session-recorder-chrome-extension/chatgpt/) — upload one self-contained file
+
+Or read [a complete example report](https://azimi.me/session-recorder-chrome-extension/example-report/)
+and [what AI coding agents actually need from a bug report](https://azimi.me/session-recorder-chrome-extension/ai-bug-report/).
+
 ## Why we need each permission
 
 - `debugger`: network, console, and exception capture through CDP
@@ -177,3 +199,15 @@ demo/                local test page that exercises every capture path
 
 Backend upload and shareable links, LLM-powered summarization, Firefox and
 Safari ports, and DOM snapshot replay. See [`PLAN.md`](./PLAN.md) §11.
+
+## License
+
+Session Recorder is free software under the
+[GNU Affero General Public License v3.0](./LICENSE).
+
+You may use it, modify it, and redistribute it. If you distribute a modified
+version — or run one as a network service — you must release your full source
+under the same license. In practice that means nobody can take this, close the
+source, and sell it as their own product.
+
+Copyright © 2026 Mohsen Azimi.

@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Example LLM-Ready Bug Report (report.md) — Session Recorder</title>
+    <meta name="description" content="A complete, sanitized example of the Markdown bug report Session Recorder exports for AI coding agents: timeline, network, console errors, annotations, narration, and every verbosity level." />
+    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/example-report/" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Session Recorder" />
+    <meta property="og:title" content="Example LLM-Ready Bug Report (report.md) — Session Recorder" />
+    <meta property="og:description" content="A complete, sanitized example of the Markdown bug report Session Recorder exports for AI coding agents: timeline, network, console errors, annotations, narration, and every verbosity level." />
+    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/example-report/" />
+    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Example LLM-Ready Bug Report (report.md) — Session Recorder" />
+    <meta name="twitter:description" content="A complete, sanitized example of the Markdown bug report Session Recorder exports for AI coding agents: timeline, network, console errors, annotations, narration, and every verbosity level." />
+    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+
+    <link rel="icon" href="../logo.png" />
+    <link rel="apple-touch-icon" href="../logo.png" />
+    <link rel="stylesheet" href="../doc.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Session Recorder",
+                "item": "https://azimi.me/session-recorder-chrome-extension/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "An example report",
+                "item": "https://azimi.me/session-recorder-chrome-extension/example-report/"
+              }
+            ]
+          },
+          {
+            "@type": "TechArticle",
+            "headline": "What an LLM-ready bug report actually looks like",
+            "description": "A complete, sanitized example of the report.md that Session Recorder exports for AI coding agents.",
+            "author": {
+              "@type": "Person",
+              "name": "Mohsen Azimi",
+              "url": "https://azimi.me/"
+            },
+            "about": {
+              "@type": "SoftwareApplication",
+              "name": "Session Recorder",
+              "url": "https://azimi.me/session-recorder-chrome-extension/"
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <nav class="nav__links">
+        <a href="../">Overview</a>
+        <a href="../ai-bug-report/">Guide</a>
+        <a href="../example-report/">Example report</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="doc">
+      <p class="crumbs"><a href="../">Session Recorder</a> → An example report</p>
+      <p class="eyebrow">Example</p>
+      <h1>What an LLM-ready bug report actually looks like</h1>
+      <p class="lede">
+        “LLM-ready” is easy to claim and hard to verify. Here is the real
+        artifact: a complete, sanitized <code>report.md</code> from a recorded
+        session, exactly as an AI coding agent receives it.
+      </p>
+
+      <div class="definition">
+        <p>
+          <b>Session Recorder is a free, open-source, local-first Chrome
+          extension for recording web bugs for AI coding agents.</b>
+          Every recording exports as a zip whose entry point is
+          <code>report.md</code>: one chronological narrative joining
+          interactions, network requests and responses, console errors,
+          screenshots, voice narration, and annotations on a single
+          <code>[mm:ss]</code> clock.
+        </p>
+      </div>
+
+      <h2 id="story">The bug, in one line</h2>
+      <p>
+        A user places an order with an expired coupon. The API returns 500, the
+        confirmation screen throws, and the UI shows success anyway. Here is the
+        causal chain the recording preserves:
+      </p>
+      <pre><code>[00:06] CLICK "Checkout"
+    ↓
+[00:17] POST /api/checkout
+    ↓
+[00:17] 500  { error: "coupon_expired" }
+    ↓
+[00:18] TypeError: cannot read 'orderId' of undefined
+    ↓
+[00:24] annotated screenshot: "still says success"
+    ↓
+[00:26] spoken note: "the cart still has both items"
+    ↓
+        report.md → agent</code></pre>
+      <p>
+        No single screenshot contains that chain. No stack trace contains it
+        either. The ordering <em>is</em> the diagnosis.
+      </p>
+
+      <h2 id="zip">What is in the export</h2>
+      <pre><code>checkout-500/
+  report.md          # the agent's entry point; self-sufficient at Compact/Minimal
+  session.json       # the same trimmed event stream, machine-readable
+  MANIFEST.md        # index of every included asset (path, kind, size)
+  transcript.json    # voice segments with timestamps
+  openapi.json       # optional: API spec compiled from observed requests
+  screenshots/
+    004-0024.jpg     # {seq}-{mmss}.jpg — sorts in capture order, joins the clock
+  network/
+    007-api.example.com-checkout.json   # full request/response
+  audio/
+    001.webm
+  files/
+    receipt.pdf      # files you uploaded to the app during the session</code></pre>
+
+      <h2 id="report">report.md — exported at Compact (L2)</h2>
+      <p>
+        Compact targets roughly 50k tokens. JSON bodies are reduced to a shape
+        summary, repeated identical requests collapse to one line, and
+        screenshots are kept for errors and annotations. Everything below is
+        verbatim renderer output; only the domain, email, and IDs are fictional.
+      </p>
+      <pre><code># Session Report: checkout-500
+
+- **App:** https://app.example.com
+- **Date:** 2026-08-14T16:22:08.114Z
+- **Duration:** 01:47
+- **Verbosity level:** 2
+- **Events:** 68
+- **API spec:** `openapi.json` (9 endpoint(s) compiled from captured requests)
+
+### Tabs
+
+| Tab | Role | URL | Title |
+| --- | --- | --- | --- |
+| 412 | primary | https://app.example.com/cart | Cart — Example |
+
+## Timeline
+
+## [00:00] NAV https://app.example.com/cart — Cart — Example
+
+&gt; 🎙️ [00:05] _(while clicking "Checkout")_ Two items in the cart, the total
+&gt; should be forty-two dollars.
+
+[00:06] CLICK "Checkout" (button#checkout, tab 412)
+
+[00:06] 🌐 200 GET /api/cart
+- response shape: `{ items: Array(2) of { sku, qty, price }, subtotal, currency }`
+
+## [00:07] ROUTE (pushState) https://app.example.com/checkout — Checkout — Example
+
+[00:09] INPUT "ada@example.com" into (input#email, tab 412)
+[00:12] INPUT "SPRING24" into (input#coupon, tab 412)
+[00:14] INPUT «redacted» into (input#card-number, tab 412)
+[00:16] SELECT "Total $42.00" (div.summary__total, tab 412)
+[00:17] CLICK "Place order" (button.primary, tab 412)
+
+[00:17] 🌐 500 POST /api/checkout
+- request shape: `{ cartId, email, couponCode, paymentToken }`
+- response shape: `{ error, requestId }`
+
+⚠ **ERROR [00:18]** (page) TypeError: Cannot read properties of undefined
+(reading 'orderId')
+```
+    at renderConfirmation (checkout.tsx:214:19)
+    at onSubmit (checkout.tsx:181:7)
+```
+
+[00:18] console.error @ https://app.example.com/assets/checkout-8f21.js:1
+```
+Checkout failed: 500 {"error":"coupon_expired","requestId":"req_8a41c2"}
+```
+
+[00:18] 📷 confirmation screen after the failed request
+![confirmation screen after the failed request](screenshots/003-0018.jpg)
+
+&gt; ## 📌 MARKER [00:19]: this is the bug
+
+### [00:24] Annotation
+- **arrow** #ff5a4d on div.summary__total ("Total $42.00")
+- **text** #ff5a4d "still says success"
+![](screenshots/004-0024.jpg)
+
+&gt; 🎙️ [00:26] It told me the order went through, but nothing happened — the
+&gt; cart still has both items in it.
+
+[00:31] 🌐 200 GET /api/cart
+&gt; (×4 similar…) statuses: 200, 200, 200, 200
+
+## [01:02] NAV https://app.example.com/orders — Your orders — Example
+
+[01:05] 🌐 200 GET /api/orders
+- response shape: `{ orders: Array(0) }`
+
+&gt; ## 📝 NOTE [01:12]
+&gt; The orders list is empty, so the order really was not created. The UI is
+&gt; lying about it.
+
+[01:19] 🎬 VIDEO segment 00:00–01:19 → `video/001.webm`
+
+## Appendix: Network Index
+
+- [00:06] 200 GET https://app.example.com/api/cart
+- [00:17] 500 POST https://app.example.com/api/checkout
+- [00:31] 200 GET https://app.example.com/api/cart
+- [01:05] 200 GET https://app.example.com/api/orders
+
+## Appendix: Console Dump
+
+```
+[00:18] error: Checkout failed: 500 {"error":"coupon_expired","requestId":"req_8a41c2"}
+[00:18] ERROR (page) TypeError: Cannot read properties of undefined (reading 'orderId')
+```</code></pre>
+
+      <div class="callout">
+        <p>
+          <b>Note what survived the trim.</b> At Compact, ordinary JSON bodies
+          became shape summaries and four repeated cart polls collapsed to one
+          line. The marker, the note, the narration, the annotation, the error,
+          and the request the error links to were all kept in full. That is a
+          rule, not a heuristic: protected events are never trimmed at any level.
+        </p>
+      </div>
+
+      <h2 id="levels">The same moment at every level</h2>
+      <p>
+        Levels are cumulative transform pipelines, not a budget solver, so the
+        output is deterministic and explainable. Here is the failing request
+        rendered four ways.
+      </p>
+
+      <h3>Full (L0) and Standard (L1) — real bodies</h3>
+      <pre><code>[00:17] 🌐 500 POST /api/checkout
+- Request (application/json):
+```json
+{"cartId":"c_7731","email":"ada@example.com","couponCode":"SPRING24",
+ "paymentToken":"«redacted»"}
+```
+- Response (application/json, full body: `network/007-api.example.com-checkout.json`):
+```json
+{"error":"coupon_expired","requestId":"req_8a41c2","expiredAt":"2026-07-31T00:00:00Z"}
+```</code></pre>
+
+      <h3>Compact (L2) — shape summary</h3>
+      <pre><code>[00:17] 🌐 500 POST /api/checkout
+- request shape: `{ cartId, email, couponCode, paymentToken }`
+- response shape: `{ error, requestId }`</code></pre>
+
+      <h3>Minimal (L3) — errors keep their bodies anyway</h3>
+      <p>
+        At Minimal, network bodies are dropped — except for requests linked to an
+        error or with a status of 400 or above. This one is both, so it stays:
+      </p>
+      <pre><code>[00:17] 🌐 500 POST /api/checkout
+- Response (application/json):
+```json
+{"error":"coupon_expired","requestId":"req_8a41c2","expiredAt":"2026-07-31T00:00:00Z"}
+```</code></pre>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>Target</th>
+              <th>Best for</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Full (L0)</td>
+              <td>everything</td>
+              <td>You need every response body, verbatim.</td>
+            </tr>
+            <tr>
+              <td>Standard (L1)</td>
+              <td>~150k tokens</td>
+              <td>Large-context models; bodies truncated to the first 4 KB.</td>
+            </tr>
+            <tr>
+              <td>Compact (L2)</td>
+              <td>~50k tokens</td>
+              <td>The default for coding agents. Self-sufficient without assets.</td>
+            </tr>
+            <tr>
+              <td>Minimal (L3)</td>
+              <td>~15k tokens</td>
+              <td>Long sessions, tight windows, or pasting into a chat box.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="prompt">The prompt that goes with it</h2>
+      <blockquote>
+        <p>
+          You are a debugging assistant. Below is <code>report.md</code>, a
+          chronological recording of a user session in a web app, captured by a
+          browser extension. <code>[mm:ss]</code> timestamps are the join key
+          across events, screenshots, and the voice transcript. Section headings
+          mark navigations and tab switches. A <code>×N similar</code> marker
+          means repeated identical calls were collapsed. The user's own markers
+          and notes appear as blockquotes and are the most important signal.
+        </p>
+        <p>
+          Summarize what the user was trying to do; identify the first error and
+          its likely root cause, citing the timestamps and the specific requests
+          and console lines involved; then suggest the concrete code change. If a
+          detail you need was trimmed, say which <code>[mm:ss]</code> event you
+          want re-exported at a higher verbosity level.
+        </p>
+      </blockquote>
+      <p>
+        Given the report above, an agent has everything it needs to say: the
+        coupon expired, the API returned 500 without an <code>orderId</code>,
+        <code>renderConfirmation</code> dereferences it unconditionally at
+        <code>checkout.tsx:214</code>, and the success screen renders regardless
+        of status. That is three findings from one file, none of which required
+        the agent to guess.
+      </p>
+
+      <h2 id="secrets">What is not in the report</h2>
+      <p>
+        The card number shows as <code>«redacted»</code> because redaction runs
+        at capture time, before anything is written to storage — passwords,
+        authorization headers, token-like JSON and form fields, and sensitive URL
+        parameters are masked on the way in, not scrubbed on the way out. You can
+        add your own rules, or turn redaction off per session.
+        <a href="../local-first/">More about the local-first design.</a>
+      </p>
+
+      <section class="cta">
+        <h2>Record your next bug instead of describing it</h2>
+        <p>Free, open source, and everything stays on your machine.</p>
+        <div class="btnrow">
+          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="related__grid">
+          <a class="card" href="../ai-bug-report/"><b>Bug reports AI coding agents can fix</b><span>What context Claude Code, Cursor and Codex actually need.</span></a>
+          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
+          <a class="card" href="../cursor/"><b>Session Recorder with Cursor</b><span>Attach a recorded bug to Cursor's Agent instead of retyping repro steps.</span></a>
+          <a class="card" href="../codex/"><b>Session Recorder with Codex</b><span>Give Codex the browser evidence it cannot collect on its own.</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <span class="foot__spacer"></span>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
+    </footer>
+  </body>
+</html>

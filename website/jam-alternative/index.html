@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Session Recorder vs Jam: An Honest Comparison</title>
+    <meta name="description" content="A factual comparison of Session Recorder and Jam — local-first zip export for AI coding agents versus a cloud bug-reporting product with shareable links and Jira, Linear and Slack integrations." />
+    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/jam-alternative/" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Session Recorder" />
+    <meta property="og:title" content="Session Recorder vs Jam: An Honest Comparison" />
+    <meta property="og:description" content="A factual comparison of Session Recorder and Jam — local-first zip export for AI coding agents versus a cloud bug-reporting product with shareable links and Jira, Linear and Slack integrations." />
+    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/jam-alternative/" />
+    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Session Recorder vs Jam: An Honest Comparison" />
+    <meta name="twitter:description" content="A factual comparison of Session Recorder and Jam — local-first zip export for AI coding agents versus a cloud bug-reporting product with shareable links and Jira, Linear and Slack integrations." />
+    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+
+    <link rel="icon" href="../logo.png" />
+    <link rel="apple-touch-icon" href="../logo.png" />
+    <link rel="stylesheet" href="../doc.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Session Recorder",
+                "item": "https://azimi.me/session-recorder-chrome-extension/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Session Recorder vs Jam",
+                "item": "https://azimi.me/session-recorder-chrome-extension/jam-alternative/"
+              }
+            ]
+          },
+          {
+            "@type": "TechArticle",
+            "headline": "Session Recorder vs Jam",
+            "description": "A factual feature comparison of Session Recorder and Jam, and guidance on which to choose.",
+            "author": {
+              "@type": "Person",
+              "name": "Mohsen Azimi",
+              "url": "https://azimi.me/"
+            },
+            "about": {
+              "@type": "SoftwareApplication",
+              "name": "Session Recorder",
+              "url": "https://azimi.me/session-recorder-chrome-extension/"
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <nav class="nav__links">
+        <a href="../">Overview</a>
+        <a href="../ai-bug-report/">Guide</a>
+        <a href="../example-report/">Example report</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="doc">
+      <p class="crumbs"><a href="../">Session Recorder</a> → Session Recorder vs Jam</p>
+      <p class="eyebrow">Comparison</p>
+      <h1>Session Recorder vs Jam</h1>
+      <p class="lede">
+        Jam is the established tool in this category and a good one. It is also
+        built for a different job. Here is the difference, without the marketing.
+      </p>
+
+      <div class="definition">
+        <p>
+          <b>Jam is a cloud bug-reporting product for teams: you record, it
+          uploads, you share a link that lands in Jira, Linear, or Slack.</b>
+          <b>Session Recorder is a free, open-source, local-first Chrome
+          extension that produces one file — an LLM-ready Markdown report — and
+          hands it to an AI coding agent.</b>
+          Neither is a worse version of the other.
+        </p>
+      </div>
+
+      <h2 id="table">Feature comparison</h2>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>&nbsp;</th>
+              <th>Session Recorder</th>
+              <th>Jam</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Where recordings live</td><td>Your browser (IndexedDB), exported as a zip</td><td>Jam's cloud</td></tr>
+            <tr><td>Account required</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Open source</td><td>Yes</td><td>No</td></tr>
+            <tr><td>Price</td><td>Free</td><td>Free tier, then per-creator/month; enterprise plan</td></tr>
+            <tr><td>Network request capture</td><td>Yes, with bodies (Chrome DevTools Protocol)</td><td>Yes</td></tr>
+            <tr><td>Console and errors</td><td>Yes, linked to the request that caused them</td><td>Yes</td></tr>
+            <tr><td>Video</td><td>Yes, tab video with audio, no length limit</td><td>Yes, with per-plan recording length limits</td></tr>
+            <tr><td>Screenshots</td><td>Yes, near-duplicate frames deduped</td><td>Yes</td></tr>
+            <tr><td>Voice narration on the timeline</td><td>Yes, transcribed and anchored to what you were doing</td><td>Not documented publicly</td></tr>
+            <tr><td>On-screen annotation</td><td>Yes, saved into the report as an image</td><td>Yes</td></tr>
+            <tr><td>Output for an agent</td><td>Markdown report + assets, in a zip</td><td>Cloud record plus an MCP server agents can call</td></tr>
+            <tr><td>Token-budgeted export</td><td>Yes — four levels with live token estimates</td><td>Not applicable (AI summaries, metered per plan)</td></tr>
+            <tr><td>How the summary is produced</td><td>Deterministic trimming, no model call</td><td>AI-generated title, summary, and repro steps</td></tr>
+            <tr><td>OpenAPI spec from observed traffic</td><td>Yes, optional</td><td>No</td></tr>
+            <tr><td>Shareable links</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Jira / Linear / Slack / webhooks</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Non-technical reporters</td><td>Not the target user</td><td>Yes — recording links for customers and QA</td></tr>
+            <tr><td>Team management and seats</td><td>None</td><td>Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:14px;color:var(--muted)">
+        Jam details compiled from
+        <a href="https://jam.dev/pricing">jam.dev/pricing</a> and jam.dev in
+        August 2026. Plans and features change; verify before relying on this
+        table. Corrections are welcome as a
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">GitHub issue</a>.
+      </p>
+
+      <h2 id="different-jobs">The two tools solve different problems</h2>
+      <h3>Jam's job: get a bug from a person to a team</h3>
+      <p>
+        Someone hits a bug — a customer, a QA tester, a designer, a support agent
+        — and the fix has to reach an engineer who was not there. That path needs
+        a link, a ticket, a thread, a place the recording can live, and people
+        who can comment on it. Jam is built end to end for that path, and a local
+        zip file is a bad substitute for it.
+      </p>
+      <h3>Session Recorder's job: get a bug from you to an agent</h3>
+      <p>
+        You hit the bug yourself, on your own machine, in an app you are
+        currently working on, and the “team member” who will fix it is
+        <a href="../claude-code/">Claude Code</a>,
+        <a href="../cursor/">Cursor</a>, or
+        <a href="../codex/">Codex</a> running in your terminal ten seconds from
+        now. That path does not need a link or a ticket. It needs one file, in
+        the right format, at the right size, in the working directory.
+      </p>
+
+      <h2 id="markdown">Why the output format is the real difference</h2>
+      <p>
+        A cloud record is optimized for a human opening a page. A Markdown report
+        is optimized for a model reading a file. That changes concrete decisions:
+      </p>
+      <ul>
+        <li>
+          <b>Everything is on one clock.</b> Interactions, requests, console
+          output, screenshots, and narration all carry <code>[mm:ss]</code>
+          stamps, so a model can reason about ordering — which is usually the
+          diagnosis.
+        </li>
+        <li>
+          <b>Size is a first-class control.</b> Four levels — Full, Standard,
+          Compact, Minimal — with a live token estimate for each, so the report
+          fits the context window you are actually using. The same recording
+          re-exports at any level, losslessly, without recording again.
+        </li>
+        <li>
+          <b>Trimming is deterministic.</b> Levels are cumulative transform
+          pipelines, not a model deciding what matters. Your markers, notes,
+          narration, annotations, and every error survive at every level, by
+          rule.
+        </li>
+        <li>
+          <b>It is a file, not a service.</b> It goes in the repo, in the
+          prompt, in the ticket, or in <code>.gitignore</code>. Nothing has to be
+          online for the agent to read it.
+        </li>
+      </ul>
+      <p><a href="../example-report/">See exactly what the file looks like.</a></p>
+
+      <h2 id="which">Which one should you use?</h2>
+      <div class="callout">
+        <p>
+          <b>Choose Jam</b> if bugs arrive from other people, you need shareable
+          links, and the recording has to become a ticket in Jira, Linear, or
+          Slack with your team commenting on it.
+        </p>
+        <p>
+          <b>Choose Session Recorder</b> if you reproduce the bug yourself, you
+          want a zero-account local-first artifact you can hand straight to a
+          coding agent, and you would rather nothing left your machine.
+        </p>
+        <p>
+          <b>Using both is reasonable.</b> They do not overlap where it counts:
+          one is a reporting pipeline for teams, the other is an evidence file
+          for an agent.
+        </p>
+      </div>
+
+      <h2 id="alternatives">Other tools in this space</h2>
+      <p>
+        Several tools now capture console and network for AI agents — Disbug,
+        Bugpilot, Markagent, Puggy and others. Most are cloud-backed and most
+        target the same reporting flow Jam does. The questions worth asking about
+        any of them are the same four:
+      </p>
+      <ol>
+        <li>Does the recording leave my machine, and can I stop it from leaving?</li>
+        <li>Does it capture response <em>bodies</em>, or only request lines?</li>
+        <li>Can I control the size of what the agent reads, and see the number before I send it?</li>
+        <li>Is the summarization deterministic, or is a model deciding what to drop?</li>
+      </ol>
+      <p>
+        Those four are why this tool exists in a crowded category.
+        <a href="../ai-bug-report/">The reasoning behind them is here.</a>
+      </p>
+
+      <section class="cta">
+        <h2>Record your next bug instead of describing it</h2>
+        <p>Free, open source, and everything stays on your machine.</p>
+        <div class="btnrow">
+          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="related__grid">
+          <a class="card" href="../local-first/"><b>A local-first bug recorder</b><span>No account, no backend, no upload — what that means in practice.</span></a>
+          <a class="card" href="../ai-bug-report/"><b>Bug reports AI coding agents can fix</b><span>What context Claude Code, Cursor and Codex actually need.</span></a>
+          <a class="card" href="../example-report/"><b>An example report</b><span>A complete, sanitized report.md, exactly as an agent receives it.</span></a>
+          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <span class="foot__spacer"></span>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
+    </footer>
+  </body>
+</html>

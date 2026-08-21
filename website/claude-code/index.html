@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Session Recorder for Claude Code: Record Browser Bugs Claude Code Can Fix</title>
+    <meta name="description" content="Record a browser bug — console, network, screenshots, voice — with a free open-source Chrome extension, then hand Claude Code an LLM-ready report it can read from your repo." />
+    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/claude-code/" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Session Recorder" />
+    <meta property="og:title" content="Session Recorder for Claude Code: Record Browser Bugs Claude Code Can Fix" />
+    <meta property="og:description" content="Record a browser bug — console, network, screenshots, voice — with a free open-source Chrome extension, then hand Claude Code an LLM-ready report it can read from your repo." />
+    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/claude-code/" />
+    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Session Recorder for Claude Code: Record Browser Bugs Claude Code Can Fix" />
+    <meta name="twitter:description" content="Record a browser bug — console, network, screenshots, voice — with a free open-source Chrome extension, then hand Claude Code an LLM-ready report it can read from your repo." />
+    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+
+    <link rel="icon" href="../logo.png" />
+    <link rel="apple-touch-icon" href="../logo.png" />
+    <link rel="stylesheet" href="../doc.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Session Recorder",
+                "item": "https://azimi.me/session-recorder-chrome-extension/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Session Recorder with Claude Code",
+                "item": "https://azimi.me/session-recorder-chrome-extension/claude-code/"
+              }
+            ]
+          },
+          {
+            "@type": "HowTo",
+            "name": "Debug a browser bug with Claude Code and Session Recorder",
+            "step": [
+              {
+                "@type": "HowToStep",
+                "position": 1,
+                "name": "Start Session Recorder",
+                "text": "Open the side panel from the toolbar icon and click Record on the tab running your app."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 2,
+                "name": "Reproduce the bug",
+                "text": "Use the app normally, narrate out loud, drop a marker, and annotate the screen where it breaks."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 3,
+                "name": "Export at Standard or Compact",
+                "text": "Stop recording, pick a detail level with a live token estimate, and download the zip."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 4,
+                "name": "Unzip inside the repository",
+                "text": "Unzip the export into a folder such as .bugs/ so Claude Code can read report.md and the referenced assets."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 5,
+                "name": "Ask Claude Code to work from the recording",
+                "text": "Tell Claude Code to read report.md, explain that [mm:ss] timestamps join events, and ask it to trace the failure to the code and fix it."
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <nav class="nav__links">
+        <a href="../">Overview</a>
+        <a href="../ai-bug-report/">Guide</a>
+        <a href="../example-report/">Example report</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="doc">
+      <p class="crumbs"><a href="../">Session Recorder</a> → Session Recorder with Claude Code</p>
+      <p class="eyebrow">Workflow</p>
+      <h1>Debug browser bugs with Claude Code</h1>
+      <p class="lede">
+        Claude Code reads your repository, not your browser. Session Recorder
+        records the browser and writes the missing half of the story to a file
+        Claude Code can open.
+      </p>
+
+      <div class="definition">
+        <p>
+          <b>Session Recorder is a free, open-source, local-first Chrome
+          extension for recording web bugs for AI coding agents.</b>
+          It captures clicks, console errors, network requests and responses,
+          screenshots, video, voice narration, DOM interactions, annotations,
+          and uploaded files, then exports an LLM-ready Markdown report you can
+          hand to Claude Code, Codex, Cursor, ChatGPT, and other coding agents.
+        </p>
+      </div>
+
+      <h2 id="why">Why Claude Code needs a recording</h2>
+      <p>
+        Claude Code is excellent at reading code and terrible at guessing runtime
+        state, because it has no access to it. When you say “checkout is broken,”
+        it has to infer the request you sent, the status you got back, the
+        console exception that followed, and the order those happened in. Each
+        inference is a chance to fix the wrong thing.
+      </p>
+      <p>
+        A recorded session replaces all of that inference with evidence: the
+        exact <code>POST /api/checkout</code> body, the 500 response, the
+        <code>TypeError</code> two hundred milliseconds later, the screenshot of
+        the broken state, and your own voice saying what you expected instead.
+      </p>
+
+      <h2 id="workflow">The workflow</h2>
+      <ol class="steps">
+        <li>
+          <h3>Start Session Recorder</h3>
+          <p>
+            Click the toolbar icon to open the side panel, then click Record on
+            the tab running your app. Chrome shows a “being debugged” banner —
+            that is the extension tapping the network and console streams.
+          </p>
+        </li>
+        <li>
+          <h3>Reproduce the bug</h3>
+          <p>
+            Use the app normally. Talk while you do it if you want narration in
+            the report, drop a marker at the moment it breaks, and freeze the
+            screen to draw an arrow at the thing that is wrong.
+          </p>
+        </li>
+        <li>
+          <h3>Export at Standard or Compact</h3>
+          <p>
+            Stop recording and pick a detail level. Each level shows a live token
+            estimate. Compact (about 50k tokens) is the usual choice for Claude
+            Code; it stays self-sufficient without the asset files. Download the
+            zip.
+          </p>
+        </li>
+        <li>
+          <h3>Unzip it inside the repository</h3>
+          <p>
+            Claude Code works from your project directory, so put the report
+            where it can read it — and where it can also open the referenced
+            screenshots and network bodies.
+          </p>
+          <pre><code>unzip ~/Downloads/checkout-500.zip -d .bugs/
+# .bugs/checkout-500/report.md
+# .bugs/checkout-500/screenshots/…
+# .bugs/checkout-500/network/…</code></pre>
+          <p>
+            Add <code>.bugs/</code> to <code>.gitignore</code> unless you want
+            recordings in version control. Recordings can contain real data from
+            your app.
+          </p>
+        </li>
+        <li>
+          <h3>Ask Claude Code to work from the recording</h3>
+          <p>Point it at the file and tell it what the timestamps mean:</p>
+          <pre><code>Read .bugs/checkout-500/report.md. It is a chronological recording of a
+browser session against this app, with [mm:ss] timestamps that join
+interactions, network requests, console output, and my spoken narration.
+Blockquotes are my own notes and are the most important signal.
+
+1. Summarize what I was trying to do.
+2. Find the first real failure and trace it to the code in this repo,
+   citing the [mm:ss] timestamps and the requests involved.
+3. Propose the fix, then make it.
+
+Screenshots referenced in the report are in the same folder if you need them.</code></pre>
+        </li>
+      </ol>
+
+      <div class="callout">
+        <p>
+          <b>Tip:</b> if Claude Code says it needs a full response body that was
+          trimmed, re-export the same recording at Standard or Full. Re-export is
+          free and lossless — the extension keeps full fidelity locally and
+          re-runs the trimmer, so you never have to reproduce the bug twice.
+        </p>
+      </div>
+
+      <h2 id="report">What Claude Code actually receives</h2>
+      <p>
+        <code>report.md</code> is one chronological narrative, not a pile of
+        logs. It contains:
+      </p>
+      <ul>
+        <li>every interaction with the element you touched, in order</li>
+        <li>network requests with method, URL, status, timing, and bodies (or a JSON shape summary at Compact)</li>
+        <li>console output and exceptions, linked to the request that caused them</li>
+        <li>screenshot references at key moments, and every annotated screenshot</li>
+        <li>your voice, transcribed and slotted in next to what you were doing</li>
+        <li>markers and notes as blockquotes — never trimmed, at any level</li>
+      </ul>
+      <p>
+        See <a href="../example-report/">a complete example report</a> if you
+        want to read one before installing anything.
+      </p>
+
+      <h2 id="mcp">Recorded evidence vs. driving a live browser</h2>
+      <p>
+        Claude Code can also drive a browser directly through an MCP server or an
+        extension. That is the better tool when the agent needs to
+        <em>explore</em> — try inputs, check whether a fix worked, walk a flow it
+        can trigger itself.
+      </p>
+      <p>
+        Recorded evidence is the better tool when the bug is
+        <em>yours to reproduce</em>: it needs your login, your data, three steps
+        in a specific order, a race that only happens on your machine, or a
+        judgement call about what “wrong” looks like. Recording is also cheaper —
+        the agent reads one file instead of spending turns clicking around.
+      </p>
+      <p>The two compose well: record the failure, let the agent verify the fix live.</p>
+
+      <h2 id="privacy">Nothing leaves your machine</h2>
+      <p>
+        The recording is written to IndexedDB in your own browser and exported as
+        a zip you save yourself. There is no account and no backend. Passwords,
+        authorization headers, and token-like fields are masked at capture time,
+        before anything is written to storage. The only outbound call is optional
+        voice transcription, and only if you add your own API key.
+        <a href="../local-first/">More on the local-first design.</a>
+      </p>
+
+      <section class="cta">
+        <h2>Record your next bug instead of describing it</h2>
+        <p>Free, open source, and everything stays on your machine.</p>
+        <div class="btnrow">
+          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="related__grid">
+          <a class="card" href="../cursor/"><b>Session Recorder with Cursor</b><span>Attach a recorded bug to Cursor's Agent instead of retyping repro steps.</span></a>
+          <a class="card" href="../codex/"><b>Session Recorder with Codex</b><span>Give Codex the browser evidence it cannot collect on its own.</span></a>
+          <a class="card" href="../example-report/"><b>An example report</b><span>A complete, sanitized report.md, exactly as an agent receives it.</span></a>
+          <a class="card" href="../ai-bug-report/"><b>Bug reports AI coding agents can fix</b><span>What context Claude Code, Cursor and Codex actually need.</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <span class="foot__spacer"></span>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
+    </footer>
+  </body>
+</html>

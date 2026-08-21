@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Session Recorder for Codex: Record Browser Bugs for OpenAI Codex</title>
+    <meta name="description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and give Codex an LLM-ready report it can read locally or in a cloud task." />
+    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/codex/" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Session Recorder" />
+    <meta property="og:title" content="Session Recorder for Codex: Record Browser Bugs for OpenAI Codex" />
+    <meta property="og:description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and give Codex an LLM-ready report it can read locally or in a cloud task." />
+    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/codex/" />
+    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Session Recorder for Codex: Record Browser Bugs for OpenAI Codex" />
+    <meta name="twitter:description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and give Codex an LLM-ready report it can read locally or in a cloud task." />
+    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+
+    <link rel="icon" href="../logo.png" />
+    <link rel="apple-touch-icon" href="../logo.png" />
+    <link rel="stylesheet" href="../doc.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Session Recorder",
+                "item": "https://azimi.me/session-recorder-chrome-extension/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Session Recorder with Codex",
+                "item": "https://azimi.me/session-recorder-chrome-extension/codex/"
+              }
+            ]
+          },
+          {
+            "@type": "HowTo",
+            "name": "Debug a browser bug with Codex and Session Recorder",
+            "step": [
+              {
+                "@type": "HowToStep",
+                "position": 1,
+                "name": "Record the reproduction",
+                "text": "Open the Session Recorder side panel, click Record, reproduce the bug, and drop a marker when it breaks."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 2,
+                "name": "Export at Compact",
+                "text": "Choose a detail level with a live token estimate and download the zip."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 3,
+                "name": "Unzip into the working directory",
+                "text": "Unzip into .bugs/ inside the repository Codex was started in, and gitignore it."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 4,
+                "name": "Prompt against the report",
+                "text": "Ask Codex to read report.md, trace the first real failure into the repository, and write the fix with a test."
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <nav class="nav__links">
+        <a href="../">Overview</a>
+        <a href="../ai-bug-report/">Guide</a>
+        <a href="../example-report/">Example report</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="doc">
+      <p class="crumbs"><a href="../">Session Recorder</a> → Session Recorder with Codex</p>
+      <p class="eyebrow">Workflow</p>
+      <h1>Debug browser bugs with Codex</h1>
+      <p class="lede">
+        Codex works from your repository — locally in the CLI and IDE extension,
+        or from a snapshot in the cloud. In neither case can it watch your
+        browser. A recording gives it the evidence it is otherwise missing.
+      </p>
+
+      <div class="definition">
+        <p>
+          <b>Session Recorder is a free, open-source, local-first Chrome
+          extension for recording web bugs for AI coding agents.</b>
+          It captures clicks, console errors, network requests and responses,
+          screenshots, video, voice narration, DOM interactions, annotations,
+          and uploaded files, then exports an LLM-ready Markdown report you can
+          hand to Codex, Claude Code, Cursor, ChatGPT, and other coding agents.
+        </p>
+      </div>
+
+      <h2 id="workflow">The workflow (local Codex)</h2>
+      <ol class="steps">
+        <li>
+          <h3>Record the reproduction</h3>
+          <p>
+            Open the Session Recorder side panel on the tab running your app,
+            click Record, and reproduce the bug. Drop a marker the moment it
+            breaks so the agent knows exactly where to look.
+          </p>
+        </li>
+        <li>
+          <h3>Export at Compact</h3>
+          <p>
+            Pick a detail level and watch the token estimate. Compact keeps the
+            report self-sufficient at roughly 50k tokens; Minimal drops to about
+            15k when the session was long.
+          </p>
+        </li>
+        <li>
+          <h3>Unzip into the working directory</h3>
+          <pre><code>unzip ~/Downloads/upload-hangs.zip -d .bugs/
+codex</code></pre>
+          <p>
+            Codex reads files under the directory it was started in. Add
+            <code>.bugs/</code> to <code>.gitignore</code> — recordings can
+            contain real data from your app.
+          </p>
+        </li>
+        <li>
+          <h3>Prompt against the report</h3>
+          <pre><code>Read .bugs/upload-hangs/report.md — a chronological recording of a browser
+session against this app. [mm:ss] timestamps join interactions, network
+requests, console output, and my spoken narration. Blockquotes are my own
+markers and are the most important signal.
+
+Tell me the first real failure, trace it into this repository citing the
+timestamps and requests involved, and write the fix with a test that would
+have caught it.</code></pre>
+        </li>
+      </ol>
+
+      <h2 id="cloud">Using it with cloud Codex</h2>
+      <p>
+        A cloud task works from a snapshot of your repository, not from your
+        laptop's filesystem — so an unzipped folder in <code>.bugs/</code> is
+        invisible to it. Two options:
+      </p>
+      <ul>
+        <li>
+          <b>Commit the report to a scratch branch.</b> Export at Minimal or
+          Compact, commit just <code>report.md</code>, and point the task at the
+          path. Read the report first: it may contain real request data.
+        </li>
+        <li>
+          <b>Paste the report into the task description.</b> At Minimal and
+          Compact the report is self-sufficient without its assets, which is
+          exactly what makes it pasteable.
+        </li>
+      </ul>
+      <div class="callout">
+        <p>
+          <b>Before either:</b> open <code>report.md</code> and skim it.
+          Redaction masks passwords, authorization headers, and token-like
+          fields at capture time, but only you know whether the response bodies
+          from your own app are safe to push to a remote.
+        </p>
+      </div>
+
+      <h2 id="agents-md">Teach Codex the format once</h2>
+      <p>
+        Put the interpretation in <code>AGENTS.md</code> so you do not repeat it
+        in every prompt:
+      </p>
+      <pre><code>## Browser bug recordings
+
+Files at `.bugs/*/report.md` are Session Recorder exports: chronological
+recordings of a browser session.
+
+- `[mm:ss]` timestamps are the join key across interactions, network requests,
+  console output, screenshots, and the voice transcript.
+- `##` headings mark navigations and tab switches.
+- `xN similar` means repeated identical requests were collapsed; a request with
+  a differing status is always shown in full, because anomalies are signal.
+- Blockquotes are the user's own markers and notes. Trust them first.
+- Errors link to the request that caused them; that request's body is never
+  trimmed.
+
+If a body you need was trimmed, name the `[mm:ss]` event and ask for a
+re-export at a higher level rather than guessing.</code></pre>
+
+      <h2 id="why">Why this beats a pasted stack trace</h2>
+      <p>
+        A stack trace tells Codex where the program gave up. It does not say what
+        you clicked, what the server returned, or which of five similar requests
+        was the one that failed. The report carries the whole sequence — and the
+        one request whose status differed from its neighbours is usually the
+        answer.
+        <a href="../ai-bug-report/">More on what agents actually need.</a>
+      </p>
+
+      <h2 id="report">What is in the export</h2>
+      <p>
+        <code>report.md</code>, plus <code>session.json</code> for programmatic
+        use, a manifest, and the assets: screenshots, full network bodies, audio,
+        and files you uploaded to the app. Optionally an OpenAPI spec compiled
+        from the requests your app actually made, which is useful when Codex
+        needs to know the shape of an endpoint it cannot see.
+        <a href="../example-report/">Read a complete example.</a>
+      </p>
+
+      <section class="cta">
+        <h2>Record your next bug instead of describing it</h2>
+        <p>Free, open source, and everything stays on your machine.</p>
+        <div class="btnrow">
+          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="related__grid">
+          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
+          <a class="card" href="../cursor/"><b>Session Recorder with Cursor</b><span>Attach a recorded bug to Cursor's Agent instead of retyping repro steps.</span></a>
+          <a class="card" href="../chatgpt/"><b>Session Recorder with ChatGPT</b><span>Upload one report instead of pasting screenshots and log fragments.</span></a>
+          <a class="card" href="../ai-bug-report/"><b>Bug reports AI coding agents can fix</b><span>What context Claude Code, Cursor and Codex actually need.</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <span class="foot__spacer"></span>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
+    </footer>
+  </body>
+</html>

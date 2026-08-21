@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Session Recorder for Cursor: Record Browser Bugs for Cursor&#x27;s Agent</title>
+    <meta name="description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&#x27;s Agent instead of retyping repro steps." />
+    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/cursor/" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Session Recorder" />
+    <meta property="og:title" content="Session Recorder for Cursor: Record Browser Bugs for Cursor&#x27;s Agent" />
+    <meta property="og:description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&#x27;s Agent instead of retyping repro steps." />
+    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/cursor/" />
+    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Session Recorder for Cursor: Record Browser Bugs for Cursor&#x27;s Agent" />
+    <meta name="twitter:description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&#x27;s Agent instead of retyping repro steps." />
+    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
+
+    <link rel="icon" href="../logo.png" />
+    <link rel="apple-touch-icon" href="../logo.png" />
+    <link rel="stylesheet" href="../doc.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Session Recorder",
+                "item": "https://azimi.me/session-recorder-chrome-extension/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Session Recorder with Cursor",
+                "item": "https://azimi.me/session-recorder-chrome-extension/cursor/"
+              }
+            ]
+          },
+          {
+            "@type": "HowTo",
+            "name": "Debug a browser bug with Cursor and Session Recorder",
+            "step": [
+              {
+                "@type": "HowToStep",
+                "position": 1,
+                "name": "Record the bug in Chrome",
+                "text": "Open the Session Recorder side panel, click Record, and reproduce the problem while narrating."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 2,
+                "name": "Export at Compact",
+                "text": "Choose the Compact detail level, around 50k tokens, and download the zip."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 3,
+                "name": "Unzip into the project",
+                "text": "Unzip into a folder inside the Cursor workspace, such as .bugs/, and gitignore it."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 4,
+                "name": "Attach it to the Agent",
+                "text": "Reference the report with @.bugs/<session>/report.md and ask Cursor to trace the failure into the codebase."
+              },
+              {
+                "@type": "HowToStep",
+                "position": 5,
+                "name": "Verify the fix",
+                "text": "Record a second short session of the same flow and attach it as an after-the-fix check."
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="26" height="26" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <nav class="nav__links">
+        <a href="../">Overview</a>
+        <a href="../ai-bug-report/">Guide</a>
+        <a href="../example-report/">Example report</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="doc">
+      <p class="crumbs"><a href="../">Session Recorder</a> → Session Recorder with Cursor</p>
+      <p class="eyebrow">Workflow</p>
+      <h1>Debug browser bugs with Cursor</h1>
+      <p class="lede">
+        Cursor's agent can read anything in your workspace. Put the recording in
+        the workspace and the agent stops guessing what happened in the browser.
+      </p>
+
+      <div class="definition">
+        <p>
+          <b>Session Recorder is a free, open-source, local-first Chrome
+          extension for recording web bugs for AI coding agents.</b>
+          It captures clicks, console errors, network requests and responses,
+          screenshots, video, voice narration, DOM interactions, annotations,
+          and uploaded files, then exports an LLM-ready Markdown report you can
+          hand to Cursor, Claude Code, Codex, ChatGPT, and other coding agents.
+        </p>
+      </div>
+
+      <h2 id="why">The gap Cursor cannot close on its own</h2>
+      <p>
+        Cursor indexes your codebase. It does not see the request your app sent,
+        the response it got, or the exception the browser threw. So a prompt like
+        “the dashboard shows stale numbers after saving” makes the agent search
+        for plausible causes rather than the actual one — and plausible causes
+        are how you end up with a confident patch to the wrong file.
+      </p>
+
+      <h2 id="workflow">The workflow</h2>
+      <ol class="steps">
+        <li>
+          <h3>Record the bug in Chrome</h3>
+          <p>
+            Open the Session Recorder side panel, click Record, and reproduce the
+            problem. Narrate while you work — spoken notes are transcribed and
+            land on the timeline at the moment you said them.
+          </p>
+        </li>
+        <li>
+          <h3>Export at Compact</h3>
+          <p>
+            Compact targets roughly 50k tokens: JSON bodies become shape
+            summaries, repeated calls collapse, and screenshots are kept for
+            errors and annotations. It is the level that fits comfortably
+            alongside the rest of Cursor's context.
+          </p>
+        </li>
+        <li>
+          <h3>Unzip into the project</h3>
+          <pre><code>unzip ~/Downloads/stale-dashboard.zip -d .bugs/</code></pre>
+          <p>
+            Anything inside the workspace folder is reachable by the agent. Add
+            <code>.bugs/</code> to <code>.gitignore</code> — recordings can
+            contain real data from your app.
+          </p>
+        </li>
+        <li>
+          <h3>Attach it to the Agent</h3>
+          <p>
+            In the Cursor chat, reference the file directly with
+            <code>@.bugs/stale-dashboard/report.md</code>, or drag the folder into
+            the composer. Then:
+          </p>
+          <pre><code>@.bugs/stale-dashboard/report.md
+
+This is a recording of a browser session against this app. [mm:ss] timestamps
+join interactions, network requests, console output and my narration;
+blockquotes are my own notes.
+
+Find the first real failure, trace it into this codebase citing timestamps and
+the specific requests, and propose the smallest fix. Ask before editing.</code></pre>
+        </li>
+        <li>
+          <h3>Let it verify</h3>
+          <p>
+            After the fix, record a second short session of the same flow and
+            attach it. A “before” and “after” recording is the cheapest
+            regression check there is.
+          </p>
+        </li>
+      </ol>
+
+      <div class="callout">
+        <p>
+          <b>Watch the context budget.</b> Cursor is already holding your
+          codebase. If the agent starts losing the thread, re-export the same
+          recording at Minimal — a narrative skeleton of navigations, clicks,
+          narration, markers, and errors, at roughly 15k tokens. Your explicit
+          signals survive every level.
+        </p>
+      </div>
+
+      <h2 id="rules">Add a rule so you only explain it once</h2>
+      <p>
+        If you record often, put the interpretation in a project rule instead of
+        every prompt. Create <code>.cursor/rules/session-recordings.mdc</code>:
+      </p>
+      <pre><code>---
+description: How to read Session Recorder bug reports
+globs: .bugs/**/report.md
+---
+
+Files under .bugs/*/report.md are browser session recordings.
+- [mm:ss] timestamps are the join key across interactions, network, console,
+  screenshots, and the voice transcript.
+- "##" headings mark navigations and tab switches.
+- "xN similar" means repeated identical requests were collapsed.
+- Blockquotes are the user's own markers and notes: highest-priority signal.
+- Errors are prefixed with a warning sign and link to the request that caused them.
+When a needed body was trimmed, say which [mm:ss] event to re-export instead of
+guessing at its contents.</code></pre>
+
+      <h2 id="report">What is in the export</h2>
+      <p>
+        The zip contains <code>report.md</code> (the agent's entry point),
+        <code>session.json</code> (the same events, machine-readable),
+        <code>MANIFEST.md</code>, and the assets: screenshots, full network
+        bodies, audio, and any files you uploaded to the app.
+        <a href="../example-report/">Read a complete example.</a>
+      </p>
+
+      <h2 id="privacy">Local by default</h2>
+      <p>
+        Nothing is uploaded. The session lives in your browser's IndexedDB and
+        leaves only as a zip you save. Secrets are masked at capture time, not
+        after the fact.
+        <a href="../local-first/">How the local-first design works.</a>
+      </p>
+
+      <section class="cta">
+        <h2>Record your next bug instead of describing it</h2>
+        <p>Free, open source, and everything stays on your machine.</p>
+        <div class="btnrow">
+          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="related__grid">
+          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
+          <a class="card" href="../codex/"><b>Session Recorder with Codex</b><span>Give Codex the browser evidence it cannot collect on its own.</span></a>
+          <a class="card" href="../example-report/"><b>An example report</b><span>A complete, sanitized report.md, exactly as an agent receives it.</span></a>
+          <a class="card" href="../ai-bug-report/"><b>Bug reports AI coding agents can fix</b><span>What context Claude Code, Cursor and Codex actually need.</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <a class="brand" href="../">
+        <img src="../logo.png" width="20" height="20" alt="" />
+        <span>Session Recorder</span>
+      </a>
+      <span class="foot__spacer"></span>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
+    </footer>
+  </body>
+</html>

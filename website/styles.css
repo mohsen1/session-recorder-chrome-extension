@@ -227,6 +227,18 @@ h1 {
   margin: 8px 0 20px;
 }
 
+.hero__def {
+  font-size: clamp(15px, 1.9vw, 17px);
+  color: var(--ink-2);
+  margin: 0 auto 20px;
+  max-width: 660px;
+}
+
+.hero__def b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .hero__lede {
   font-size: clamp(16px, 2.2vw, 20px);
   color: var(--ink-2);
@@ -245,6 +257,22 @@ h1 {
   margin-top: 18px;
   color: var(--muted);
   font-size: 14px;
+}
+
+.hero__with {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.hero__with a {
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.hero__with a:hover {
+  color: var(--accent);
 }
 
 .hero__shot {
@@ -541,4 +569,55 @@ h1 {
   margin: 8px 0 0;
   color: var(--muted);
   font-size: 13px;
+}
+
+/* ---- Guides ---- */
+
+.guides {
+  border-bottom: 1px solid var(--line);
+}
+
+.guides__title {
+  margin: 0 0 28px;
+  font-size: clamp(22px, 3.4vw, 30px);
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.guides__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.gcard {
+  display: block;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.08s ease, border-color 0.15s ease;
+}
+
+.gcard:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--ink) 24%, var(--line));
+}
+
+.gcard b {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.gcard span {
+  display: block;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
 }

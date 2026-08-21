@@ -3,39 +3,92 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Session Recorder — Record a bug. Hand your agent the whole story.</title>
+    <title>Session Recorder: Chrome Bug Recorder for AI Coding Agents</title>
     <meta
       name="description"
-      content="A Chrome extension that records what you did in your web app — clicks, network, errors, screenshots, video, voice, and annotations — and exports one clean report your AI coding agent can read."
+      content="Free open-source Chrome extension that records browser bugs with console logs, network requests, screenshots, video and voice, then exports an LLM-ready report for Claude Code, Cursor, Codex and ChatGPT."
     />
-    <link rel="canonical" href="https://mohsen1.github.io/session-recorder-chrome-extension/" />
+    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Session Recorder" />
-    <meta property="og:title" content="Session Recorder — Record a bug. Hand your agent the whole story." />
+    <meta property="og:title" content="Session Recorder: Chrome Bug Recorder for AI Coding Agents" />
     <meta
       property="og:description"
-      content="Records what you did in your web app — clicks, network, errors, screenshots, video, and voice — and exports one clean report your AI coding agent can read."
+      content="Free, open-source, local-first Chrome extension that records browser bugs — console, network, screenshots, video, voice — and exports an LLM-ready report for Claude Code, Cursor, Codex and ChatGPT."
     />
-    <meta property="og:url" content="https://mohsen1.github.io/session-recorder-chrome-extension/" />
-    <meta property="og:image" content="https://mohsen1.github.io/session-recorder-chrome-extension/og-image.png" />
+    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/" />
+    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Session Recorder — one clean bug report your AI coding agent can read." />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Session Recorder — Record a bug. Hand your agent the whole story." />
+    <meta name="twitter:title" content="Session Recorder: Chrome Bug Recorder for AI Coding Agents" />
     <meta
       name="twitter:description"
-      content="Records what you did in your web app — clicks, network, errors, screenshots, video, and voice — and exports one clean report your AI coding agent can read."
+      content="Records browser bugs — console, network, screenshots, video, voice — and exports an LLM-ready report for Claude Code, Cursor, Codex and ChatGPT."
     />
-    <meta name="twitter:image" content="https://mohsen1.github.io/session-recorder-chrome-extension/og-image.png" />
+    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
 
     <link rel="icon" href="./logo.png" />
     <link rel="apple-touch-icon" href="./logo.png" />
     <link rel="stylesheet" href="./styles.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Session Recorder",
+        "alternateName": "Session Recorder Chrome Extension",
+        "description": "A free, open-source, local-first Chrome extension that records browser bugs — clicks, console errors, network requests and responses, screenshots, tab video, voice narration, annotations, and uploaded files — and exports an LLM-ready Markdown report for AI coding agents such as Claude Code, Cursor, Codex, and ChatGPT.",
+        "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "Browser Extension",
+        "operatingSystem": "Chrome, Chromium",
+        "browserRequirements": "Google Chrome or a Chromium-based browser, Manifest V3",
+        "softwareVersion": "0.2.0",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "url": "https://azimi.me/session-recorder-chrome-extension/",
+        "installUrl": "https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh",
+        "downloadUrl": "https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh",
+        "codeRepository": "https://github.com/mohsen1/session-recorder-chrome-extension",
+        "license": "https://www.gnu.org/licenses/agpl-3.0",
+        "privacyPolicy": "https://azimi.me/session-recorder-chrome-extension/privacy.html",
+        "author": {
+          "@type": "Person",
+          "name": "Mohsen Azimi",
+          "url": "https://azimi.me/"
+        },
+        "publisher": {
+          "@type": "Person",
+          "name": "Mohsen Azimi",
+          "url": "https://azimi.me/"
+        },
+        "featureList": [
+          "Browser interaction recording (clicks, typing, scrolls, text selection)",
+          "Console log and exception capture",
+          "Network request and response capture via the Chrome DevTools Protocol",
+          "Screenshots with near-duplicate frame deduplication",
+          "Tab video recording with audio",
+          "Voice narration with real-time transcription",
+          "Screenshot annotations (arrows, boxes, highlights, text)",
+          "Multi-tab session tracking",
+          "Uploaded file capture",
+          "Sensitive-data redaction at capture time",
+          "OpenAPI specification generated from observed network traffic",
+          "Token-budgeted, LLM-ready Markdown reports (Full, Standard, Compact, Minimal)",
+          "Local-first storage with no account and no backend"
+        ],
+        "keywords": "bug recorder, AI coding agents, Claude Code, Cursor, Codex, ChatGPT, LLM-ready bug report, browser session recorder, local-first, open source, console logs, network capture",
+        "screenshot": "https://azimi.me/session-recorder-chrome-extension/og-image.png"
+      }
+    </script>
   </head>
   <body>
     <header class="nav">
@@ -46,6 +99,7 @@
       <nav class="nav__links">
         <a href="#features">Features</a>
         <a href="#how">How it works</a>
+        <a href="#guides">Guides</a>
         <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
       </nav>
       <a
@@ -61,6 +115,16 @@
       <section class="hero">
         <div class="hero__copy">
           <h1>Record a bug.<br />Hand your agent the whole story.</h1>
+          <p class="hero__def">
+            <b
+              >Session Recorder is a free, open-source, local-first Chrome
+              extension for recording web bugs for AI coding agents.</b
+            >
+            It captures clicks, console errors, network requests and responses,
+            screenshots, video, voice narration, DOM interactions, annotations,
+            and uploaded files, then exports an LLM-ready Markdown report for
+            Claude Code, Codex, Cursor, ChatGPT, and other coding agents.
+          </p>
           <p class="hero__lede">
             Reproducing a bug for an AI coding agent means describing a hundred
             little things: what you clicked, what the app requested, the error in
@@ -83,6 +147,13 @@
           </div>
           <p class="hero__meta">
             Works on any site · Nothing leaves your machine · Free and open source
+          </p>
+          <p class="hero__with">
+            Workflow guides for
+            <a href="./claude-code/">Claude Code</a>,
+            <a href="./cursor/">Cursor</a>,
+            <a href="./codex/">Codex</a>, and
+            <a href="./chatgpt/">ChatGPT</a> — or any agent that reads Markdown.
           </p>
         </div>
       </section>
@@ -260,6 +331,46 @@
         </p>
       </section>
 
+      <!-- Guides -->
+      <section id="guides" class="guides">
+        <p class="eyebrow">Guides</p>
+        <h2 class="guides__title">Read before you record</h2>
+        <div class="guides__grid">
+          <a class="gcard" href="./claude-code/">
+            <b>Session Recorder with Claude Code</b>
+            <span>Drop the report in the repo and let Claude Code work from the real evidence.</span>
+          </a>
+          <a class="gcard" href="./cursor/">
+            <b>Session Recorder with Cursor</b>
+            <span>Attach a recorded bug to Cursor's Agent instead of retyping repro steps.</span>
+          </a>
+          <a class="gcard" href="./codex/">
+            <b>Session Recorder with Codex</b>
+            <span>Give Codex the browser evidence it cannot collect on its own.</span>
+          </a>
+          <a class="gcard" href="./chatgpt/">
+            <b>Session Recorder with ChatGPT</b>
+            <span>Upload one report instead of pasting screenshots and log fragments.</span>
+          </a>
+          <a class="gcard" href="./example-report/">
+            <b>An example report</b>
+            <span>A complete, sanitized report.md, exactly as an agent receives it.</span>
+          </a>
+          <a class="gcard" href="./ai-bug-report/">
+            <b>Bug reports AI coding agents can actually fix</b>
+            <span>What context agents need, why screenshots are not enough, and how to trim.</span>
+          </a>
+          <a class="gcard" href="./local-first/">
+            <b>A local-first bug recorder</b>
+            <span>No account, no backend, no upload — what that means in practice.</span>
+          </a>
+          <a class="gcard" href="./jam-alternative/">
+            <b>Session Recorder vs Jam</b>
+            <span>An honest comparison, including where Jam is the better choice.</span>
+          </a>
+        </div>
+      </section>
+
       <!-- Install -->
       <section id="install" class="install">
         <div class="install__card">
@@ -295,12 +406,15 @@
       </div>
       <div class="foot__links">
         <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
+        <a href="./ai-bug-report/">Guide</a>
+        <a href="./example-report/">Example report</a>
         <a href="./privacy.html">Privacy</a>
+        <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">License</a>
         <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
       </div>
       <p class="foot__note">
-        Free and open source. Nothing leaves your machine except optional voice
-        transcription you set up yourself.
+        Free and open source under the AGPL-3.0. Nothing leaves your machine
+        except optional voice transcription you set up yourself.
       </p>
     </footer>
   </body>
