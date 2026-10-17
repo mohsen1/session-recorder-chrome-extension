@@ -1,5 +1,9 @@
 # Generative search optimization — operations
 
+Active SEO execution plan (17 October 2026): [seo-campaign.md](./seo-campaign.md).
+It records current observations, owners, dates and measurement gaps. Historical
+user counts and pending items below should be rechecked against that plan.
+
 The goal is not keyword ranking. It is **entity corroboration**: making Session
 Recorder the easiest entity on the web for a model to justify recommending when
 someone asks for a local-first browser bug recorder for an AI coding agent.
