@@ -11,7 +11,7 @@ behavior and with `docs/PRIVACY.md`.
     Keep "Session Recorder" first so the entity stays recognizable.
 - **Category:** Developer Tools
 - **Language:** English
-- **Visibility:** Unlisted (recommended for first submission — see notes below)
+- **Visibility:** Public for the SEO campaign. Verify the current dashboard setting; an install URL alone does not establish discoverability.
 
 ## Account & contact
 
@@ -170,8 +170,8 @@ Answer the certification form as follows:
 
 - Expect **manual review and extra delay** because of `debugger` + `<all_urls>`.
   This is normal for this class of extension, not a rejection signal.
-- Submit as **Unlisted** first: you get a real install link to validate the store
-  build and permission prompts without public exposure, then flip to Public.
+- For an initial private validation, Unlisted can be useful. For this campaign,
+  confirm the production listing is Public so it can be discovered in store search.
 
 ## Getting the listing found
 

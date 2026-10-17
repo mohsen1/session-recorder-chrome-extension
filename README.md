@@ -155,6 +155,8 @@ Step-by-step workflows, with a copy-pasteable prompt for each:
 - [Codex](https://azimi.me/session-recorder-chrome-extension/codex/) — local CLI and cloud tasks, plus an `AGENTS.md` snippet
 - [ChatGPT](https://azimi.me/session-recorder-chrome-extension/chatgpt/) — upload one self-contained file
 
+Or copy the [Markdown browser bug report template](https://azimi.me/session-recorder-chrome-extension/bug-report-template/).
+
 Or read [a complete example report](https://azimi.me/session-recorder-chrome-extension/example-report/)
 and [what AI coding agents actually need from a bug report](https://azimi.me/session-recorder-chrome-extension/ai-bug-report/).
 

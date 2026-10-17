@@ -35,3 +35,5 @@ by Mohsen Azimi.
 - [Bug reports AI coding agents can fix](https://azimi.me/session-recorder-chrome-extension/ai-bug-report/): the eight signals a browser bug report needs, temporal ordering, token budgets, deterministic trimming vs AI summarization, redaction, and live-browser vs recorded evidence.
 - [Local-first design](https://azimi.me/session-recorder-chrome-extension/local-first/): what no-account/no-backend means in practice, and the trade-offs it costs.
 - [Session Recorder vs Jam](https://azimi.me/session-recorder-chrome-extension/jam-alternative/): factual comparison, including where Jam is the better choice.
+
+- [Browser bug report template](https://azimi.me/session-recorder-chrome-extension/bug-report-template/): copyable Markdown template, filled example, and a prompt for handing evidence to a coding agent.
