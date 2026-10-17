@@ -7,10 +7,11 @@ export default defineConfig({
   srcDir: '.',
   imports: false, // no auto-imports; we use explicit imports everywhere
   manifest: {
-    name: 'Session Recorder',
+    name: 'Session Recorder: Bug Recorder for AI Agents',
+    short_name: 'Session Recorder',
     description:
-      'Record rich, multi-modal web-app sessions and export an LLM-optimized report.',
-    version: '0.2.1',
+      'Record browser bugs — console, network, screenshots, video, voice — and export an LLM-ready report for Claude Code, Cursor, Codex.',
+    version: '0.2.2',
     // All permissions the extension needs across every phase. Each is justified
     // in README.md. Host permissions are broad because the recorder must work on
     // any SaaS app the user points it at.

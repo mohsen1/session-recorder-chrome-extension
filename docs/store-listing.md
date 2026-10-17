@@ -3,10 +3,16 @@
 Copy/paste source for the Developer Dashboard. Keep this in sync with the actual
 behavior and with `docs/PRIVACY.md`.
 
+The extension title and short description also live in `wxt.config.ts` under
+`manifest.name` and `manifest.description`. They require uploading a new package;
+updating this document alone does not change the store. Version 0.2.2 prepares
+the campaign metadata. Keep the website softwareVersion at the published store
+version until this package has passed review and is live.
+
 ## Basics
 
 - **Name:** Session Recorder: Bug Recorder for AI Agents
-  - The store title field allows 75 characters. Lead with the category, not just
+  - The manifest name allows 75 characters and supplies the store title. Lead with the category, not just
     the brand: people and models both search for what it does, not its name.
     Keep "Session Recorder" first so the entity stays recognizable.
 - **Category:** Developer Tools
@@ -32,7 +38,7 @@ behavior and with `docs/PRIVACY.md`.
 
 Record browser bugs — console, network, screenshots, video, voice — and export an LLM-ready report for Claude Code, Cursor, Codex.
 
-(129 characters. Named agents are deliberate: they are the terms developers and
+(130 characters. Named agents are deliberate: they are the terms developers and
 generative search engines actually match on.)
 
 ## Detailed description — paste as-is (plain text; the field does NOT render markdown)
