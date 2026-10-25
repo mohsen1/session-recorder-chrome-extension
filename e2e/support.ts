@@ -33,7 +33,9 @@ export const test = base.extend<Fixtures>({
       args: [
         `--disable-extensions-except=${EXT_PATH}`,
         `--load-extension=${EXT_PATH}`,
-        ...(process.env.FAKE_MEDIA ? ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] : []),
+        // Automated recordings use synthetic devices; never prompt for a real mic.
+        '--use-fake-device-for-media-stream',
+        '--use-fake-ui-for-media-stream',
         '--no-first-run',
         '--no-default-browser-check',
       ],
