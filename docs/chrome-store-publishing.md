@@ -25,21 +25,28 @@ The repository variables are:
 | --- | --- |
 | `CWS_WORKLOAD_IDENTITY_PROVIDER` | `projects/376004211572/locations/global/workloadIdentityPools/recorder-publishing/providers/github-release` |
 | `CWS_SERVICE_ACCOUNT` | `recorder-store-publisher@proofline-ci.iam.gserviceaccount.com` |
-| `CWS_PUBLISHER_ID` | The publisher ID from the Chrome Web Store Developer Dashboard |
+| `CWS_PUBLISHER_ID` | `38546fb7-da1d-4b1e-a7a3-7613bc8b82a2` |
 
-The first two variables and their Google identity configuration are configured.
+All three variables and their Google identity configuration are configured.
 The provider trusts only the immutable repository and owner IDs for
 `prooflinedev/session-recorder-chrome-extension`, `release` events, `v` tag refs,
 and this repository's `.github/workflows/release.yml` workflow at that tag.
 The `chrome-web-store` GitHub environment can add approval restrictions if the
 publisher requires them.
 
-The Chrome Web Store API is enabled in `proofline-ci`. Before publishing, link the
-service account in the publisher dashboard's Account section, and set
-`CWS_PUBLISHER_ID`. The dashboard supports one linked service account per
-publisher. Linking it grants access to that publisher's items; use the intended
-Proofline publisher and preserve the existing extension item ID. A GitHub
+The Chrome Web Store API is enabled in `proofline-ci`. On October 25, 2026, the
+service account was linked to the existing publisher owned by `me@azimi.me`;
+the link was verified after reloading the dashboard. Google grants this account
+API access to all that publisher's items, including Nyx. The release script
+explicitly targets only Session Recorder's existing item ID.
+
+The dashboard supports one linked service account per publisher. If ownership
+moves to a dedicated Proofline publisher, link the service account there and
+update `CWS_PUBLISHER_ID` while preserving the extension item ID. A GitHub
 repository transfer does not transfer Chrome Web Store ownership.
+
+No live release has been submitted through this workflow yet. The first
+versioned release will exercise GitHub OIDC and the Store API together.
 
 Missing variables fail the publishing job before authentication. An unlinked
 service account fails with an API permission error; it does not silently skip
