@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publish Bug Reports Behind Login on Your Own Cloudflare Account — Session Recorder</title>
+<meta name="description" content="Share a recorded bug as a web report hosted in your own Cloudflare Pages project. Readers sign in through Cloudflare Access, and a Pages Function checks every request.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/features/protected-publishing/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Publish Bug Reports Behind Login on Your Own Cloudflare Account — Session Recorder">
+<meta property="og:description" content="Share a recorded bug as a web report hosted in your own Cloudflare Pages project. Readers sign in through Cloudflare Access, and a Pages Function checks every request.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/features/protected-publishing/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Publish Bug Reports Behind Login on Your Own Cloudflare Account — Session Recorder">
+<meta name="twitter:description" content="Share a recorded bug as a web report hosted in your own Cloudflare Pages project. Readers sign in through Cloudflare Access, and a Pages Function checks every request.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../../logo.png">
+<link rel="apple-touch-icon" href="../../logo.png">
+<link rel="stylesheet" href="../../site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Features",
+          "item": "https://azimi.me/session-recorder-chrome-extension/features/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Protected report publishing",
+          "item": "https://azimi.me/session-recorder-chrome-extension/features/protected-publishing/"
+        }
+      ]
+    },
+    {
+      "@type": "TechArticle",
+      "headline": "Protected report publishing",
+      "description": "Share a recorded bug as a web report hosted in your own Cloudflare Pages project. Readers sign in through Cloudflare Access, and a Pages Function checks every request.",
+      "dateModified": "2026-10-25",
+      "author": {
+        "@type": "Person",
+        "name": "Mohsen Azimi",
+        "url": "https://azimi.me/"
+      },
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "Session Recorder",
+        "applicationCategory": "DeveloperApplication"
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../../features/" aria-current="page">Features</a><a href="../../compare/">Compare</a><a href="../../guides/">Guides</a><a href="../../help/">Help</a><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../../">Home</a></li><li><a href="../../features/">Features</a></li><li aria-current="page">Protected report publishing</li></ol></nav><!-- /gen:crumbs -->
+<h1>Protected report publishing</h1>
+<p><span class="tag tag--byo">Uses your own account</span></p>
+<p class="lede">Share a full report with people who were not there, without handing the recording to a third-party workspace. Reports are published to your Cloudflare account and require sign-in.</p>
+<dl class="facts"><dt>Needs</dt><dd>A Cloudflare account with a Pages project, an Access application and an API token</dd><dt>Produces</dt><dd>An immutable, login-protected deployment URL per report</dd><dt>Help</dt><dd><a href="../../help/cloudflare/">Set up protected publishing</a></dd></dl>
+<h2 id="use">When to use it</h2>
+<p>Use it when the developer needs the screenshots, video and full timeline, not just the issue text. Publishing is also the step that makes <a href="../../features/github-issues/">one-click GitHub issues</a> possible, since each issue links to its report.</p>
+
+<h2 id="protection">How reports are protected</h2>
+<ul>
+<li>Each report is a separate preview deployment with its own URL. Publishing never replaces an earlier report or your project’s production site.</li>
+<li>Cloudflare Access handles sign-in using the policy you define, such as specific emails with one-time PINs or your identity provider.</li>
+<li>Every deployment also includes a Pages Function that verifies the Access token’s signature, issuer, audience and expiry before serving any page, image, recording or download, and fails closed. A missing or bypassed Access rule does not expose the report.</li>
+<li>Hosted pages are sanitized, run no scripts, are not cached, and serve captured files as downloads.</li>
+</ul>
+
+<h2 id="setup">Setup in brief</h2>
+<p>Create a Direct Upload Pages project, protect its preview deployments with an Access application and an Allow policy, then enter the account ID, a scoped API token, the project name, the Access application ID and team domain in <b>Settings → Publishing</b>. <b>Verify Access &amp; save</b> checks the configuration. The <a href="../../help/cloudflare/">setup guide</a> has every step.</p>
+
+<h2 id="limits">Limits and costs</h2>
+<ul>
+<li>Each file must be at most 25 MiB, and a report at most 20,000 files.</li>
+<li>Reports use Pages Functions requests. Your Cloudflare plan’s limits and billing apply.</li>
+<li><b>Unpublish report</b> deletes the deployment. It cannot recall copies readers already downloaded, and deleting the local recording does not unpublish it.</li>
+<li>The extension does not set up identity providers or grant readers access for you.</li>
+</ul>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../../help/cloudflare/"><b>Set up protected publishing</b><span>Step-by-step setup and troubleshooting.</span></a></li><li><a href="../../features/github-issues/"><b>One-click GitHub issues</b><span>File into one of several repositories, each with its own token, with progress and cancel.</span></a></li><li><a href="../../features/privacy-redaction/"><b>Local storage and redaction</b><span>Sessions live in your browser. Secrets are masked at capture time, with honest limits.</span></a></li><li><a href="../../features/export/"><b>Exports and AI handoff</b><span>A ZIP with Markdown, JSON and assets at four detail levels, ready for people or coding agents.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../../features/">All features</a></li><li><a href="../../features/annotations/">Annotations</a></li><li><a href="../../features/github-issues/">GitHub issues</a></li><li><a href="../../features/ai-summaries/">AI summaries</a></li><li><a href="../../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../../compare/">All comparisons</a></li><li><a href="../../jam-alternative/">vs Jam</a></li><li><a href="../../compare/marker-io/">vs Marker.io</a></li><li><a href="../../compare/bugherd/">vs BugHerd</a></li><li><a href="../../compare/userback/">vs Userback</a></li><li><a href="../../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../../guides/">All guides</a></li><li><a href="../../claude-code/">Claude Code</a></li><li><a href="../../cursor/">Cursor</a></li><li><a href="../../codex/">Codex</a></li><li><a href="../../chatgpt/">ChatGPT</a></li><li><a href="../../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../../help/">Help</a></li><li><a href="../../privacy.html">Privacy policy</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
+</html>

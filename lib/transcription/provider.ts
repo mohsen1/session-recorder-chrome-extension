@@ -12,11 +12,17 @@ export interface TranscriptionResult {
 }
 
 export interface TranscriptionConfig {
+  /** Managed capture never carries a personal provider key. */
+  managed?: boolean;
+  requestId?: string;
+  organizationId?: string;
   provider: 'openai' | 'deepgram' | 'elevenlabs';
   baseUrl?: string;
   model?: string;
   apiKey: string;
   language?: string;
+  /** Ephemeral page vocabulary; never part of saved credentials. */
+  keyterms?: string[];
 }
 
 export interface TranscriptionProvider {

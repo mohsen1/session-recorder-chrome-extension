@@ -1,30 +1,32 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Session Recorder for Cursor: Record Browser Bugs for Cursor&#x27;s Agent</title>
-    <meta name="description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&#x27;s Agent instead of retyping repro steps." />
-    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/cursor/" />
-
-    <meta property="og:type" content="article" />
-    <meta property="og:site_name" content="Session Recorder" />
-    <meta property="og:title" content="Session Recorder for Cursor: Record Browser Bugs for Cursor&#x27;s Agent" />
-    <meta property="og:description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&#x27;s Agent instead of retyping repro steps." />
-    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/cursor/" />
-    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Session Recorder for Cursor: Record Browser Bugs for Cursor&#x27;s Agent" />
-    <meta name="twitter:description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&#x27;s Agent instead of retyping repro steps." />
-    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
-
-    <link rel="icon" href="../logo.png" />
-    <link rel="apple-touch-icon" href="../logo.png" />
-    <link rel="stylesheet" href="../doc.css" />
-    <script type="application/ld+json">
-      {
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session Recorder for Cursor: Record Browser Bugs for Cursor&amp;#x27;s Agent</title>
+<meta name="description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&amp;#x27;s Agent instead of retyping repro steps.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/cursor/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Session Recorder for Cursor: Record Browser Bugs for Cursor&amp;#x27;s Agent">
+<meta property="og:description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&amp;#x27;s Agent instead of retyping repro steps.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/cursor/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Session Recorder for Cursor: Record Browser Bugs for Cursor&amp;#x27;s Agent">
+<meta name="twitter:description" content="Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&amp;#x27;s Agent instead of retyping repro steps.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../logo.png">
+<link rel="apple-touch-icon" href="../logo.png">
+<link rel="stylesheet" href="../site.css">
+<script type="application/ld+json">
+{
         "@context": "https://schema.org",
         "@graph": [
           {
@@ -82,26 +84,20 @@
           }
         ]
       }
-    </script>
-  </head>
-  <body>
-    <header class="nav">
-      <a class="brand" href="../">
-        <img src="../logo.png" width="26" height="26" alt="" />
-        <span>Session Recorder</span>
-      </a>
-      <nav class="nav__links">
-        <a href="../">Overview</a>
-        <a href="../ai-bug-report/">Guide</a>
-        <a href="../example-report/">Example report</a>
-        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
-      </nav>
-    </header>
-
-    <main class="doc">
-      <p class="crumbs"><a href="../">Session Recorder</a> → Session Recorder with Cursor</p>
-      <p class="eyebrow">Workflow</p>
-      <h1>Debug browser bugs with Cursor</h1>
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../"><img src="../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../features/">Features</a><a href="../compare/">Compare</a><a href="../guides/" aria-current="page">Guides</a><a href="../help/">Help</a><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../">Home</a></li><li><a href="../guides/">Guides</a></li><li aria-current="page">Debug browser bugs with Cursor</li></ol></nav><!-- /gen:crumbs -->
+<h1>Debug browser bugs with Cursor</h1>
       <p class="lede">
         Cursor's agent can read anything in your workspace. Put the recording in
         the workspace and the agent stops guessing what happened in the browser.
@@ -222,42 +218,34 @@ guessing at its contents.</code></pre>
 
       <h2 id="privacy">Local by default</h2>
       <p>
-        Nothing is uploaded. The session lives in your browser's IndexedDB and
-        leaves only as a zip you save. Secrets are masked at capture time, not
-        after the fact.
+        Recording and export are local. The session lives in your browser's IndexedDB and
+        leaves as a zip you save, unless you use publishing, AI summaries or transcription
+        you have configured with your own accounts. Secrets are masked at capture time,
+        not after the fact, though redaction is pattern-based.
         <a href="../local-first/">How the local-first design works.</a>
       </p>
-
-      <section class="cta">
-        <h2>Record your next bug instead of describing it</h2>
-        <p>Free, open source, and everything stays on your machine.</p>
-        <div class="btnrow">
-          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
-          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
-        </div>
-      </section>
-
-      <section class="related">
-        <h2>Keep reading</h2>
-        <div class="related__grid">
-          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
-          <a class="card" href="../codex/"><b>Session Recorder with Codex</b><span>Give Codex the browser evidence it cannot collect on its own.</span></a>
-          <a class="card" href="../example-report/"><b>An example report</b><span>A complete, sanitized report.md, exactly as an agent receives it.</span></a>
-          <a class="card" href="../ai-bug-report/"><b>Bug reports AI coding agents can fix</b><span>What context Claude Code, Cursor and Codex actually need.</span></a>
-        </div>
-      </section>
-    </main>
-
-    <footer class="foot">
-      <a class="brand" href="../">
-        <img src="../logo.png" width="20" height="20" alt="" />
-        <span>Session Recorder</span>
-      </a>
-      <span class="foot__spacer"></span>
-      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
-      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
-      <a href="../privacy.html">Privacy</a>
-      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
-    </footer>
-  </body>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../features/export/"><b>Exports and AI handoff</b><span>A ZIP with Markdown, JSON and assets at four detail levels, ready for people or coding agents.</span></a></li><li><a href="../example-report/"><b>Example report</b><span>A complete, sanitized report.md as an agent receives it.</span></a></li><li><a href="../claude-code/"><b>With Claude Code</b><span>Unzip the report in the repo and point Claude Code at it.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../"><img src="../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../features/">All features</a></li><li><a href="../features/annotations/">Annotations</a></li><li><a href="../features/github-issues/">GitHub issues</a></li><li><a href="../features/ai-summaries/">AI summaries</a></li><li><a href="../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../compare/">All comparisons</a></li><li><a href="../jam-alternative/">vs Jam</a></li><li><a href="../compare/marker-io/">vs Marker.io</a></li><li><a href="../compare/bugherd/">vs BugHerd</a></li><li><a href="../compare/userback/">vs Userback</a></li><li><a href="../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../guides/">All guides</a></li><li><a href="../claude-code/">Claude Code</a></li><li><a href="../cursor/">Cursor</a></li><li><a href="../codex/">Codex</a></li><li><a href="../chatgpt/">ChatGPT</a></li><li><a href="../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../help/">Help</a></li><li><a href="../privacy.html">Privacy policy</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
 </html>

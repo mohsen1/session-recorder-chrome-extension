@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Narration and Transcription for Bug Reports — Session Recorder</title>
+<meta name="description" content="Narrate a bug while you record it. Audio stays local; add your own Deepgram, OpenAI or ElevenLabs key to get a timestamped transcript on the timeline.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/features/voice-notes/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Voice Narration and Transcription for Bug Reports — Session Recorder">
+<meta property="og:description" content="Narrate a bug while you record it. Audio stays local; add your own Deepgram, OpenAI or ElevenLabs key to get a timestamped transcript on the timeline.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/features/voice-notes/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Voice Narration and Transcription for Bug Reports — Session Recorder">
+<meta name="twitter:description" content="Narrate a bug while you record it. Audio stays local; add your own Deepgram, OpenAI or ElevenLabs key to get a timestamped transcript on the timeline.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../../logo.png">
+<link rel="apple-touch-icon" href="../../logo.png">
+<link rel="stylesheet" href="../../site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Features",
+          "item": "https://azimi.me/session-recorder-chrome-extension/features/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Voice notes and transcription",
+          "item": "https://azimi.me/session-recorder-chrome-extension/features/voice-notes/"
+        }
+      ]
+    },
+    {
+      "@type": "TechArticle",
+      "headline": "Voice notes and transcription",
+      "description": "Narrate a bug while you record it. Audio stays local; add your own Deepgram, OpenAI or ElevenLabs key to get a timestamped transcript on the timeline.",
+      "dateModified": "2026-10-25",
+      "author": {
+        "@type": "Person",
+        "name": "Mohsen Azimi",
+        "url": "https://azimi.me/"
+      },
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "Session Recorder",
+        "applicationCategory": "DeveloperApplication"
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../../features/" aria-current="page">Features</a><a href="../../compare/">Compare</a><a href="../../guides/">Guides</a><a href="../../help/">Help</a><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../../">Home</a></li><li><a href="../../features/">Features</a></li><li aria-current="page">Voice notes and transcription</li></ol></nav><!-- /gen:crumbs -->
+<h1>Voice notes and transcription</h1>
+<p><span class="tag tag--local">Works without accounts</span> <span class="tag tag--byo">Uses your own account</span></p>
+<p class="lede">Talking through a reproduction is faster than typing it up afterwards. Session Recorder records your microphone with the session and, if you add a provider key, places the transcript on the same timeline as everything else.</p>
+<dl class="facts"><dt>Without accounts</dt><dd>Microphone audio is recorded and kept as an audio file</dd><dt>With your key</dt><dd>Deepgram or ElevenLabs (live streaming), or OpenAI (segments)</dd><dt>Produces</dt><dd>Audio, <code>transcript.json</code> and narration lines on the timeline</dd></dl>
+<h2 id="use">When to use it</h2>
+<p>Narrate what you expected to happen while it fails: “I removed the coupon, the total should go back to 90.” Spoken intent is the part a log cannot capture, and a developer or agent reading the report gets it at the exact moment it was said.</p>
+
+<h2 id="how">How it works</h2>
+<ol class="steps">
+<li><h3>Turn on the microphone</h3><p>Use the mic control in the side panel during a recording, or set it to start with every recording. Chrome asks for microphone permission the first time.</p></li>
+<li><h3>Talk while you reproduce</h3><p>Audio is saved in the browser with the session.</p></li>
+<li><h3>Get a transcript (optional)</h3><p>In <b>Settings → Transcription</b>, choose a provider and enter your API key. Deepgram and ElevenLabs stream live text; OpenAI transcribes the recorded audio in segments. Each utterance is placed on the timeline at the moment you began speaking.</p></li>
+</ol>
+
+<h2 id="providers">Providers and costs</h2>
+<p>The default models are Deepgram Nova-3, ElevenLabs Scribe v2 Realtime and OpenAI gpt-4o-transcribe, and you can change the model. Audio goes directly from the extension to the provider you chose, under your account, and that provider’s pricing and data policies apply. Without a key, nothing is sent and the report keeps the raw audio instead of text.</p>
+
+<h2 id="dictation">Speaking annotation comments</h2>
+<p><a href="../../features/annotations/">Live annotation</a> comments use the same recording microphone and transcription provider. With the mic already on, speech fills the open comment automatically; the comment’s mic button starts or stops the recording microphone. Deepgram and ElevenLabs show interim text as you speak, and OpenAI adds text per segment. The narration audio remains in the recording. Typing never starts the microphone.</p>
+
+<h2 id="vocabulary">Page vocabulary for better recognition</h2>
+<p>Product names and internal jargon are where speech recognition fails most. When you select an annotation and an AI model is configured, the extension sends a bounded excerpt of the page’s visible headings, navigation and interface labels to that model, which picks out unusual terms. A short dictionary of those terms goes to Deepgram or ElevenLabs to bias recognition.</p>
+<ul>
+<li>Input values, editable fields and hidden content are excluded from the excerpt.</li>
+<li>The excerpt and dictionary are kept in memory only. They are not saved with the session or published.</li>
+<li>No API keys are exposed to the page you are recording.</li>
+<li>If extraction fails, ordinary transcription continues without the dictionary.</li>
+<li>The model call is billed by your AI provider, and ElevenLabs charges extra for keyterm prompting.</li>
+</ul>
+<p>Automated tests cover this flow with mocked provider streams; recognition quality depends on the provider and has not been benchmarked here.</p>
+
+<h2 id="limits">Limits</h2>
+<ul>
+<li>Transcripts are only as good as the provider and the microphone. Proper nouns and product names may need correcting in the report.</li>
+<li>Narration feeds AI issue summaries as context after annotations and notes. Background chatter will be read too, so pause the mic when you are not narrating.</li>
+</ul>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../../features/annotations/"><b>Annotations</b><span>Click an element or drag a rectangle, then say what is wrong. Plus screenshot markup.</span></a></li><li><a href="../../features/ai-summaries/"><b>AI issue summaries</b><span>Annotation-first issue drafts and automatic session names, using OpenAI, Anthropic, Google or a compatible endpoint.</span></a></li><li><a href="../../features/privacy-redaction/"><b>Local storage and redaction</b><span>Sessions live in your browser. Secrets are masked at capture time, with honest limits.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../../features/">All features</a></li><li><a href="../../features/annotations/">Annotations</a></li><li><a href="../../features/github-issues/">GitHub issues</a></li><li><a href="../../features/ai-summaries/">AI summaries</a></li><li><a href="../../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../../compare/">All comparisons</a></li><li><a href="../../jam-alternative/">vs Jam</a></li><li><a href="../../compare/marker-io/">vs Marker.io</a></li><li><a href="../../compare/bugherd/">vs BugHerd</a></li><li><a href="../../compare/userback/">vs Userback</a></li><li><a href="../../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../../guides/">All guides</a></li><li><a href="../../claude-code/">Claude Code</a></li><li><a href="../../cursor/">Cursor</a></li><li><a href="../../codex/">Codex</a></li><li><a href="../../chatgpt/">ChatGPT</a></li><li><a href="../../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../../help/">Help</a></li><li><a href="../../privacy.html">Privacy policy</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
+</html>

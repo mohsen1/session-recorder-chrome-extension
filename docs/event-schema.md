@@ -1,12 +1,11 @@
-# Event schema (frozen contract)
+# Event schema
 
-This document freezes the schema for the recorder's event stream. It is the
-authoritative reference for the renderer (`lib/export/markdown`) and the trimmer
-(`lib/export/trimmer`). Both read events by `type` and rely on the payload fields
-described here being present and shaped as stated.
+This document describes the recorder's stored event stream. The renderer and
+trimmer read events by `type`; source declarations remain authoritative when
+adding a field or event.
 
 The runtime source of truth is [`lib/session/types.ts`](../lib/session/types.ts).
-Later phases may add new `EventType`s by extending `EventType` and
+Changes may add new `EventType`s by extending `EventType` and
 `EventPayloadMap`, but they must never change the shape of an existing payload. To
 change a field's meaning, add a new field instead.
 
@@ -92,6 +91,10 @@ shortcut chord.
 | `key`       | `string`                      | Normalized key, for example `'Enter'`, `'Escape'`, or `'Ctrl+K'`. |
 | `modifiers` | `string[]`                    | Held modifiers. |
 | `descriptor`| `ElementDescriptor` (optional)| The focused element, when known. |
+
+### `hover`
+
+`HoverPayload` stores `descriptor: ElementDescriptor` and `dwellMs: number`. It records a sustained pointer hover. L1 and higher drop unprotected hover events.
 
 ### `text-select`
 `TextSelectPayload` records a settled text selection (or its deselection). The
@@ -228,7 +231,8 @@ renderer isolates these with a `⚠` prefix.
 | `message`        | `string`                                         | Error message. |
 | `stack`          | `string` (optional)                              | Stack trace. |
 | `origin`         | `'exception' \| 'console' \| 'network' \| 'log'` | Where it came from: an uncaught exception, `console.error`, a network failure, or an error-level `Log.entryAdded`. |
-| `linkedRequestId`| `string` (optional)                              | The `net-request` this error is tied to. Its body is never dropped. |
+| `linkedRequestId`| `string` (optional)                              | The `net-request` this error is tied to. Its captured body is preserved by trimming. |
+| `repeat` | `number` (optional) | Number of consecutive duplicate errors collapsed by the trimmer. |
 
 ---
 
@@ -256,7 +260,7 @@ renderer isolates these with a `⚠` prefix.
 | `viewport`| `{ w: number; h: number }` | Viewport size at entry, the annotation coordinate space. |
 
 ### `annotation`
-`AnnotationPayload` records a set of shapes drawn over a screenshot. It is
+`AnnotationPayload` records screenshot markup or a live page comment anchored to an element or rectangle. It is
 protected. The renderer describes each shape and its target element in text, so
 the report reads without opening the image.
 
@@ -272,7 +276,7 @@ the report reads without opening the image.
 - `points` is the path for `pen` and `highlighter`
 - `rect` is the bounds for `rect`, `ellipse`, and `redact`
 - `from` and `to` are the endpoints for `arrow`
-- `text` is the label for `text`
+- `text` contains a text label or the comment on an annotated element/rectangle
 - `targetDescriptor` is the element under the shape's anchor, for a text-only description to the LLM
 
 ---
@@ -285,13 +289,24 @@ protected.
 
 | Field               | Type                                | Meaning |
 | ------------------- | ----------------------------------- | ------- |
-| `assetId`           | `string`                            | Id of the stored audio (`.webm`) asset. |
+| `assetId`           | `string` (optional)                 | Id of the stored audio asset; absent for transcript-only streamed events. |
 | `tStart`            | `number`                            | Segment start, milliseconds from session start. |
 | `tEnd`              | `number`                            | Segment end, milliseconds from session start. |
 | `transcript`        | `string \| null`                    | Transcribed text. It is `null` when not yet transcribed or when transcription failed. |
 | `words`             | `{ word: string; t: number }[]` (optional) | Per-word timings (milliseconds from session start), when the provider supplies them. |
 | `transcriptionError`| `string` (optional)                 | Error message when transcription failed. |
 | `provider`          | `string` (optional)                 | Transcription provider used. |
+| `streamed`          | `boolean` (optional)                | Transcript arrived through live streaming. |
+| `anchorContext`     | `string` (optional)                 | Nearby interaction context for narration. |
+| `transcriptionGeneration` | `number` (optional)           | Local retry generation. |
+| `transcriptionTerminalFailure` | `boolean` (optional)      | Prevents automatic retry of a terminal failure. |
+| `transcriptionRequest` | `{ id, organizationId, provider, language?, keyterms }` (optional) | Local managed request identity and dictionary; removed from exported and published events. |
+
+## Video events
+
+### `video-segment`
+
+`VideoSegmentPayload` contains optional `assetId`, `tStart` and `tEnd` in milliseconds from session start, and optional `note`. Full and Standard exports include the clip. Compact and Minimal retain its time range and an omission note while dropping unprotected video bytes.
 
 ---
 

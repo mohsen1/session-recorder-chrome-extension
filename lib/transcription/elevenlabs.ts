@@ -1,3 +1,4 @@
+import { normalizeKeyterms } from './keyterms';
 /**
  * ElevenLabs speech-to-text provider.
  *
@@ -13,7 +14,7 @@ import type {
 } from './provider';
 
 const DEFAULT_BASE_URL = 'https://api.elevenlabs.io/v1/speech-to-text';
-const DEFAULT_MODEL = 'scribe_v1';
+const DEFAULT_MODEL = 'scribe_v2';
 
 interface ElevenLabsWord {
   word?: unknown;
@@ -36,6 +37,8 @@ export class ElevenLabsProvider implements TranscriptionProvider {
     const form = new FormData();
     form.append('model_id', config.model || DEFAULT_MODEL);
     form.append('file', audio, 'audio.webm');
+    if ((config.model || DEFAULT_MODEL).startsWith('scribe_v2'))
+      for (const term of normalizeKeyterms(config.keyterms)) form.append('keyterms', term);
     if (config.language) form.append('language_code', config.language);
 
     const res = await fetch(url, {

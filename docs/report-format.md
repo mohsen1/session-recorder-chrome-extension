@@ -10,10 +10,11 @@ We prefix every path with a single root directory named after the session, so th
 
 ```
 <session-name>/
-  report.md            # the LLM entry point; self-sufficient at L2/L3
+  report.md            # the LLM entry point; text summary at every level
   session.json         # trimmed event stream + session meta, asset refs → zip paths
   MANIFEST.md          # index of every included asset (path, kind, size)
-  transcript.json      # voice segments (timestamps + transcript), when audio was recorded
+  transcript.json      # voice segments; an empty array when there are none
+  openapi.json         # inferred API description, when capture is enabled and endpoints exist
   screenshots/
     001-0004.jpg       # {seq}-{mmss}.jpg: seq order, timestamp in the name
     002-0011.jpg
@@ -24,6 +25,9 @@ We prefix every path with a single root directory named after the session, so th
   files/
     import.csv         # {original-name}: files the user uploaded/attached
     …
+  video/
+    001-0000.webm      # clips at Full and Standard levels
+    …
   audio/
     001.webm           # {seq}.webm: recorded voice segments
     …
@@ -31,7 +35,7 @@ We prefix every path with a single root directory named after the session, so th
 
 Note the following:
 
-- `report.md` is the primary artifact. It is a single chronological narrative with `[mm:ss]` timestamps, section breaks at navigations and tab switches, fenced network bodies and console or error output, screenshot references, and blockquotes for your markers and notes. At L2 and L3 it is self-sufficient: an agent can answer "what happened and what went wrong?" without opening any asset.
+- `report.md` is the primary artifact. It is a single chronological narrative with `[mm:ss]` timestamps, section breaks at navigations and tab switches, fenced network bodies and console or error output, screenshot references, and blockquotes for your markers and notes. At Compact and Minimal it retains the main text evidence. Visual details may still require the referenced screenshots or other assets.
 - `session.json` is the machine-readable mirror. It holds the trimmed event stream (the same events, in the same order as the report) plus session metadata, with all asset references rewritten to their zip-relative paths. Use it when you want to program against the events rather than read prose.
 - `MANIFEST.md` lists every asset actually included in the zip. Some assets are dropped at higher verbosity levels (see below), so the report never points at a file that is not there.
 - Asset naming embeds the sequence and timestamp (`{seq}-{mmss}`) so files sort in capture order and cross-reference the `[mm:ss]` marks in `report.md`.
@@ -45,8 +49,8 @@ Levels are cumulative transform pipelines, not budget solvers. Each higher level
 | ----- | ------ | ---------------- |
 | L0 (full) | everything | No trimming. Full request and response bodies up to the capture cap, every screenshot, every event. The complete fidelity that lives in IndexedDB. |
 | L1 (standard) | about 150k tokens | Static-asset requests (images, fonts, css, and analytics hosts) collapsed to one summary line; response bodies truncated to the first 4 KB (original size noted); consecutive scrolls coalesced; consecutive duplicate console lines deduped with counts; screenshots thinned to key moments; near-duplicate screenshots already folded. |
-| L2 (compact) | about 50k tokens | Everything in L1, plus JSON bodies reduced to a shape summary (keys, types, and array lengths, for example `{ users: Array(50) of { id, name, email } }`); repeated calls to the same endpoint collapsed to the first occurrence plus a `×N similar` marker (requests with a differing status stay full, because anomalies are signal); screenshots kept only for annotations and errors. |
-| L3 (minimal) | about 15k tokens | Everything in L2, plus network bodies dropped except those linked to an error or `status >= 400`; interactions stripped to element text and selector only; screenshots reduced to a filename manifest. The result is a narrative skeleton: navigations, clicks, transcript, markers and notes, annotations, and errors with request and response one-liners. |
+| L2 (compact) | about 50k tokens | Everything in L1, plus JSON bodies reduced to a shape summary (keys, types, and array lengths, for example `{ users: Array(50) of { id, name, email } }`); repeated calls to the same endpoint collapsed to the first occurrence plus a `×N similar` marker (requests with a differing status stay full, because anomalies are signal); screenshots kept only for annotations and errors; video bytes omitted while clip times remain. |
+| L3 (minimal) | about 15k tokens | Everything in L2, plus network bodies dropped except those linked to an error or `status >= 400`; interactions reduced to element tag and text; text-selection events omitted; screenshots reduced to a filename manifest. The result is a narrative skeleton: navigations, clicks, transcript, markers and notes, annotations, and errors with request and response one-liners. |
 
 Pick the lowest level that fits the target model's context window while still containing the bodies and screenshots the question needs. For most debugging, L2 works best: it stays readable and self-sufficient while fitting comfortably in a large context. Drop to L3 only when the session is very long or the model's window is tight. Go to L1 or L0 when you specifically need full response bodies.
 
@@ -67,7 +71,7 @@ We likewise preserve any event explicitly flagged `protected: true`. So no matte
 
 Follow these steps in order:
 
-1. Unzip the archive. Everything the agent needs to read is `report.md`.
+1. Unzip the archive and start with `report.md`. Keep the assets available for visual or file-specific questions.
 2. Paste `report.md` into the agent. If the agent can browse files, attach the whole unzipped folder instead, so it can also open the referenced screenshots and `network/*.json` bodies.
 3. If the report is long, export at L2 first. Re-export at a lower or higher level only if the agent asks for more or less detail. Re-export is free and lossless from source, because we retain full fidelity in IndexedDB.
 
@@ -101,3 +105,7 @@ Follow these steps in order:
 - trust the blockquotes. Markers and notes are you narrating your own intent. We never trim them, and they are the best anchor for what you expected.
 - follow `linkedRequestId`. Errors point at the network request that caused them. At every level we preserve that request's body, so the agent can inspect the exact failing payload.
 - escalate verbosity surgically. If the agent needs one full body, re-export at L1 or L0 rather than dumping the whole session at full fidelity.
+
+## Local and hosted reports
+
+ZIP export and hosted report publication share the evidence bundle but have separate storage lifecycles. Internal managed-transcription request IDs and dictionaries are stripped from exported events. The local HTML viewer and hosted page render evidence from this bundle; neither includes API credentials. Deleting the local session does not delete a published report. See [sharing setup](sharing.md).

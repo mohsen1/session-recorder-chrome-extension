@@ -1,6 +1,6 @@
 {
   "name": "session-recorder-extension",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -21,6 +21,9 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@noble/hashes": "^1.8.0",
     "dompurify": "^3.4.11",
     "fabric": "^6.9.1",
     "fflate": "^0.8.2",

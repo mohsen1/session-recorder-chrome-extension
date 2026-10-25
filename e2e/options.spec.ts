@@ -10,7 +10,7 @@ test('persists transcription settings to chrome.storage.local', async ({
   extensionId,
 }) => {
   const page = await context.newPage();
-  await page.goto(extUrl(extensionId, 'options.html'));
+  await page.goto(extUrl(extensionId, 'options.html#transcription'));
 
   const section = page
     .locator('section.settings__section')

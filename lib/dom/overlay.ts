@@ -8,7 +8,9 @@
  */
 export const ANNOTATION_HOST_ID = '__session_recorder_annotation_host__';
 
+export const POINT_ANNOTATION_HOST_ID = '__session_recorder_point_annotation_host__';
+
 /** True when an event target is (or lives inside) the annotation overlay host. */
 export function isAnnotationOverlay(target: unknown): boolean {
-  return target instanceof Element && target.id === ANNOTATION_HOST_ID;
+  return target instanceof Element && [ANNOTATION_HOST_ID, POINT_ANNOTATION_HOST_ID].includes(target.id);
 }

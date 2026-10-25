@@ -7,12 +7,11 @@ export default defineConfig({
   srcDir: '.',
   imports: false, // no auto-imports; we use explicit imports everywhere
   manifest: {
-    name: 'Session Recorder',
+    name: 'Session Recorder by Proofline',
     description:
       'Record rich, multi-modal web-app sessions and export an LLM-optimized report.',
-    version: '0.2.1',
     // All permissions the extension needs across every phase. Each is justified
-    // in README.md. Host permissions are broad because the recorder must work on
+    // in DEVELOPMENT.md. Host permissions are broad because the recorder must work on
     // any SaaS app the user points it at.
     permissions: [
       'sidePanel',
@@ -32,7 +31,7 @@ export default defineConfig({
       default_path: 'sidepanel/index.html',
     },
     action: {
-      default_title: 'Session Recorder',
+      default_title: 'Session Recorder by Proofline',
       default_icon: {
         '16': 'icon/16.png',
         '32': 'icon/32.png',

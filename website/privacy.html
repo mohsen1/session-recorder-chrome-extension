@@ -1,229 +1,68 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Privacy Policy — Session Recorder</title>
-    <meta
-      name="description"
-      content="Privacy policy for the Session Recorder Chrome extension. Everything you record stays on your machine; the only exception is optional voice transcription you configure and opt into."
-    />
-    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/privacy.html" />
-    <meta property="og:type" content="article" />
-    <meta property="og:site_name" content="Session Recorder" />
-    <meta property="og:title" content="Privacy Policy — Session Recorder" />
-    <meta
-      property="og:description"
-      content="Everything you record stays on your machine; the only exception is optional voice transcription you configure and opt into."
-    />
-    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/privacy.html" />
-    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
-    <link rel="icon" href="./logo.png" />
-    <link rel="apple-touch-icon" href="./logo.png" />
-    <!-- Self-contained styles so this page renders correctly independent of the
-         landing-page stylesheet. Same design tokens as design/DESIGN.md. -->
-    <style>
-      :root {
-        --ink: #16181d;
-        --ink-2: #3b3f47;
-        --muted: #767b85;
-        --line: #e7e7e3;
-        --bg: #f7f7f5;
-        --surface: #ffffff;
-        --surface-2: #fbfbfa;
-        --accent: #ff5a4d;
-        --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Inter,
-          system-ui, sans-serif;
-        --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
-        --maxw: 720px;
-        --radius: 10px;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 0 rgba(0, 0, 0, 0.02);
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --ink: #ececea;
-          --ink-2: #b9bcc2;
-          --muted: #878b93;
-          --line: #24272e;
-          --bg: #0f1114;
-          --surface: #16181d;
-          --surface-2: #1b1e24;
-          --accent: #ff6355;
-          --shadow: none;
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Session Recorder</title>
+<meta name="description" content="Privacy policy for the Session Recorder Chrome extension. Recordings stay local by default. Optional transcription, AI summaries, and report publishing send data to services you configure.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/privacy.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Privacy Policy — Session Recorder">
+<meta property="og:description" content="Privacy policy for the Session Recorder Chrome extension. Recordings stay local by default. Optional transcription, AI summaries, and report publishing send data to services you configure.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/privacy.html">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Privacy Policy — Session Recorder">
+<meta name="twitter:description" content="Privacy policy for the Session Recorder Chrome extension. Recordings stay local by default. Optional transcription, AI summaries, and report publishing send data to services you configure.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="./logo.png">
+<link rel="apple-touch-icon" href="./logo.png">
+<link rel="stylesheet" href="./site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Privacy Policy",
+          "item": "https://azimi.me/session-recorder-chrome-extension/privacy.html"
         }
-      }
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--ink);
-        font-family: var(--sans);
-        font-size: 16px;
-        line-height: 1.65;
-        -webkit-font-smoothing: antialiased;
-      }
-      img {
-        display: block;
-        max-width: 100%;
-        height: auto;
-      }
-      a {
-        color: inherit;
-      }
-      code {
-        font-family: var(--mono);
-        font-size: 0.88em;
-        background: var(--surface-2);
-        border: 1px solid var(--line);
-        border-radius: 5px;
-        padding: 0.08em 0.36em;
-        color: var(--ink-2);
-      }
-      .nav {
-        max-width: var(--maxw);
-        margin: 0 auto;
-        padding: 22px 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-        color: inherit;
-      }
-      .brand img {
-        border-radius: 6px;
-      }
-      .brand span {
-        font-weight: 600;
-        font-size: 15px;
-        letter-spacing: -0.01em;
-      }
-      .nav__links {
-        display: flex;
-        gap: 22px;
-        font-size: 14.5px;
-        color: var(--muted);
-      }
-      .nav__links a {
-        text-decoration: none;
-      }
-      .nav__links a:hover {
-        color: var(--ink);
-      }
-      .legal {
-        max-width: var(--maxw);
-        margin: 0 auto;
-        padding: 40px 24px 80px;
-      }
-      .legal h1 {
-        font-size: clamp(1.9rem, 4.5vw, 2.5rem);
-        letter-spacing: -0.02em;
-        font-weight: 600;
-        margin: 0 0 6px;
-      }
-      .updated {
-        font-family: var(--mono);
-        font-size: 12.5px;
-        color: var(--muted);
-        margin: 0 0 32px;
-      }
-      .legal h2 {
-        font-size: 1.15rem;
-        font-weight: 600;
-        letter-spacing: -0.01em;
-        margin: 40px 0 12px;
-      }
-      .legal p,
-      .legal li {
-        color: var(--ink-2);
-      }
-      .legal ul {
-        padding-left: 20px;
-      }
-      .legal li {
-        margin-bottom: 10px;
-      }
-      .legal b {
-        color: var(--ink);
-        font-weight: 600;
-      }
-      .legal a {
-        color: var(--accent);
-        text-decoration: underline;
-        text-underline-offset: 2px;
-      }
-      .callout {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-left: 2px solid var(--accent);
-        border-radius: var(--radius);
-        padding: 18px 20px;
-        box-shadow: var(--shadow);
-        margin: 24px 0;
-      }
-      .callout p {
-        margin: 0;
-        color: var(--ink);
-      }
-      .foot {
-        max-width: var(--maxw);
-        margin: 0 auto;
-        padding: 32px 24px 56px;
-        border-top: 1px solid var(--line);
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 12px 22px;
-        font-size: 14px;
-        color: var(--muted);
-      }
-      .foot a {
-        text-decoration: none;
-      }
-      .foot a:hover {
-        color: var(--ink);
-      }
-      .foot__spacer {
-        flex: 1;
-      }
-      @media (max-width: 480px) {
-        .nav__links {
-          display: none;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <header class="nav">
-      <a class="brand" href="./index.html">
-        <img src="./logo.png" width="26" height="26" alt="" />
-        <span>Session Recorder</span>
-      </a>
-      <nav class="nav__links">
-        <a href="./index.html#how">How it works</a>
-        <a href="./index.html#features">Features</a>
-        <a href="https://github.com/mohsen1/session-recorder-chrome-extension"
-          >GitHub</a
-        >
-      </nav>
-    </header>
-
-    <main class="legal">
-      <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: July 6, 2026</p>
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="./"><img src="./logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="./features/">Features</a><a href="./compare/">Compare</a><a href="./guides/">Guides</a><a href="./help/">Help</a><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="./">Home</a></li><li aria-current="page">Privacy Policy</li></ol></nav><!-- /gen:crumbs -->
+<h1>Privacy Policy</h1>
+      <p class="updated">Last updated: October 25, 2026</p>
 
       <p>
         Session Recorder is a Chrome extension that records a session of you
@@ -234,26 +73,24 @@
 
       <div class="callout">
         <p>
-          Everything you record stays on your machine. The only data that ever
-          leaves your device is audio you explicitly choose to transcribe with
-          your own third-party API key.
+          Recordings stay local by default. Optional transcription, AI summaries,
+          and report publishing send data directly to services you configure.
         </p>
       </div>
 
       <h2>Summary</h2>
       <ul>
         <li>
-          <b>Recordings stay local.</b> Sessions are stored in your browser
+          <b>Recordings stay local by default.</b> Sessions are stored in your browser
           (IndexedDB) and exported as a zip file you save yourself. Session
-          Recorder has no backend and no account system. We do not operate any
+          Recorder has no developer-operated backend or account system. We do not operate any
           server that receives your recordings.
         </li>
         <li>
-          <b>Optional transcription is the one exception.</b> If — and only if —
+          <b>Transcription is optional.</b> If — and only if —
           you configure a transcription provider and API key, the audio you
           record is sent to that third-party provider to produce a text
-          transcript. Without a key, audio is never transmitted; it stays in the
-          local recording.
+          transcript. Publishing a report may also upload included audio to your Cloudflare account.
         </li>
       </ul>
 
@@ -274,9 +111,8 @@
         <li>Files you upload to the app or attach yourself</li>
       </ul>
       <p>
-        All of this is written to local browser storage and is only ever
-        assembled into a zip file that you explicitly export and save to your
-        own device.
+        All of this is written to local browser storage. You can export a local ZIP
+        or explicitly publish the selected report to your Cloudflare Pages project.
       </p>
 
       <h2>Redaction</h2>
@@ -286,6 +122,10 @@
         sensitive URL parameters, and password inputs. You can add rules or
         disable redaction per session on the options page.
       </p>
+
+      <h2>Annotation dictation (optional)</h2>
+      <p>Annotation comments use the recording microphone and your configured transcription provider. With the mic on, speech fills the active comment; its mic button starts or stops the recording microphone. The audio remains part of the session's voice recording. Deepgram and ElevenLabs provide live results; OpenAI uses audio segments. Typing does not start the microphone.</p>
+      <p>When an annotation is selected and an AI model is configured, a bounded excerpt of visible headings, navigation and interface labels is sent to that model to identify unusual vocabulary. Input values, editable fields and hidden content are excluded. The resulting short dictionary is sent to Deepgram or ElevenLabs to improve recognition. Page context and dictionaries are kept in memory, not saved with the session or published. No API keys are exposed to the recorded page. Provider fees apply; ElevenLabs charges extra for keyterm prompting. If extraction fails, ordinary transcription continues.</p>
 
       <h2>Third-party transcription (optional, off by default)</h2>
       <p>
@@ -315,10 +155,29 @@
         privacy policy and terms.
       </p>
 
+      <h2>Optional publishing and AI summaries</h2>
+      <p>Publishing uploads the selected report, session data, transcripts and included
+        screenshots, recordings and files directly to your Cloudflare account. You
+        configure who can sign in with Cloudflare Access. The deployed report also
+        validates Access tokens before serving any file. Reports remain hosted until
+        you delete them with Unpublish report or in Cloudflare. Deleting a local
+        recording does not unpublish it.</p>
+      <p>Filing an issue with a configured model, or choosing Regenerate summary, sends up to 60,000 characters of text evidence directly
+        to OpenAI, Anthropic, Google or the OpenAI-compatible endpoint you configure.
+        With a configured model, stopping a recording also sends this bounded text evidence to generate its session-list title automatically. Media bytes are not sent to the model. Review the text first; provider terms
+        and retention policies apply. Review the generated summary before sharing.</p>
+      <p>Filing a GitHub issue sends its title, summary and report link to
+        GitHub. The extension creates it using your configured GitHub token. The summary follows repository visibility;
+        Access protects the report, not the issue text. Drafts, deployment references and issue recovery markers are saved locally.</p>
+      <p>API keys remain in extension storage, separate from recordings, and are
+        sent only to the configured service. They are never included in exports or
+        published pages. Review screenshots, voice and attachments before publishing;
+        redaction does not remove all sensitive information.</p>
+
       <h2>Data we collect</h2>
       <p>
         <b>None.</b> Session Recorder has no analytics, no telemetry, no ads, and
-        no backend. The developer does not receive any of your recordings,
+        no developer-operated backend. The developer does not receive any of your recordings,
         transcripts, keys, or usage data.
       </p>
 
@@ -329,19 +188,29 @@
       </p>
 
       <h2>Contact</h2>
-      <p>Questions: <a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">open an issue on GitHub</a></p>
-    </main>
-
-    <footer class="foot">
-      <a class="brand" href="./index.html">
-        <img src="./logo.png" width="20" height="20" alt="" />
-        <span>Session Recorder</span>
-      </a>
-      <span class="foot__spacer"></span>
-      <a href="./index.html">Home</a>
-      <a href="https://github.com/mohsen1/session-recorder-chrome-extension"
-        >GitHub</a
-      >
-    </footer>
-  </body>
+      <p>Questions: <a href="https://github.com/prooflinedev/session-recorder-chrome-extension/issues">open an issue on GitHub</a></p>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="./features/privacy-redaction/"><b>Local storage and redaction</b><span>Sessions live in your browser. Secrets are masked at capture time, with honest limits.</span></a></li><li><a href="./local-first/"><b>Local by default</b><span>What stays in the browser, and what leaves only when you configure it.</span></a></li><li><a href="./features/protected-publishing/"><b>Protected report publishing</b><span>Publish to your own Cloudflare Pages project behind Cloudflare Access login.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="./"><img src="./logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="./features/">All features</a></li><li><a href="./features/annotations/">Annotations</a></li><li><a href="./features/github-issues/">GitHub issues</a></li><li><a href="./features/ai-summaries/">AI summaries</a></li><li><a href="./features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="./compare/">All comparisons</a></li><li><a href="./jam-alternative/">vs Jam</a></li><li><a href="./compare/marker-io/">vs Marker.io</a></li><li><a href="./compare/bugherd/">vs BugHerd</a></li><li><a href="./compare/userback/">vs Userback</a></li><li><a href="./compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="./guides/">All guides</a></li><li><a href="./claude-code/">Claude Code</a></li><li><a href="./cursor/">Cursor</a></li><li><a href="./codex/">Codex</a></li><li><a href="./chatgpt/">ChatGPT</a></li><li><a href="./example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="./help/">Help</a></li><li><a href="./privacy.html">Privacy policy</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
 </html>

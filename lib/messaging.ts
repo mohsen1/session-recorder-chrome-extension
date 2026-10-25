@@ -12,6 +12,7 @@
 
 import type {
   Asset,
+  ElementDescriptor,
   CaptureSettings,
   EventType,
   RawEvent,
@@ -44,6 +45,10 @@ export type RequestMessage =
   | { kind: 'capture/fileBlob'; event: RawEvent; dataUrl: string }
   // --- content handshake / annotation results (content -> bg) ---
   | { kind: 'content/hello' }
+  | { kind: 'dictation/focus'; id: string; context: string }
+  | { kind: 'dictation/blur'; id: string }
+  | { kind: 'dictation/mic'; on: boolean }
+  | { kind: 'audio/keyterms'; keyterms: string[] }
   | {
       kind: 'annotation/exit';
       shapes: unknown;
@@ -56,6 +61,8 @@ export type RequestMessage =
   | { kind: 'marker/add'; name?: string }
   | { kind: 'note/add'; text: string }
   | { kind: 'annotation/toggle' }
+  | { kind: 'point-annotation/toggle'; on?: boolean }
+  | { kind: 'point-annotation/save'; descriptor?: ElementDescriptor; rect: {x:number;y:number;w:number;h:number}; text: string; viewport: {w:number;h:number} }
   | { kind: 'file/attach'; fileName: string; mime: string; dataUrl: string; note?: string }
   // --- voice (sidepanel -> bg) ---
   | { kind: 'mic/toggle'; on: boolean }
@@ -88,7 +95,7 @@ export type RequestMessage =
   | { kind: 'video/segment'; sessionId: string; tStart: number; tEnd: number; assetId: string; size: number }
   // --- live streaming transcription (offscreen -> bg) ---
   | { kind: 'transcript/final'; sessionId: string; tStart: number; tEnd: number; text: string; words?: { word: string; t: number }[]; provider: string }
-  | { kind: 'transcript/interim'; sessionId: string; text: string }
+  | { kind: 'transcript/interim'; sessionId: string; text: string; tStart?: number }
   // --- storage ---
   | { kind: 'storage/estimate' };
 
@@ -105,6 +112,7 @@ export interface AppState {
   micOn: boolean;
   videoOn: boolean;
   annotating: boolean;
+  pointing: boolean;
   attachedTabIds: number[];
   error?: string;
 }
@@ -128,7 +136,13 @@ export type ResponseFor = {
   'session/rename': { ok: boolean };
   'capture/event': { ok: boolean };
   'capture/fileBlob': { ok: boolean };
-  'content/hello': { active: boolean; annotating: boolean };
+  'content/hello': { active: boolean; annotating: boolean; pointing: boolean; micOn: boolean };
+  'dictation/focus': { ok: boolean; micOn: boolean };
+  'dictation/blur': { ok: boolean };
+  'dictation/mic': { ok: boolean; micOn: boolean; error?: string };
+  'audio/keyterms': { ok: boolean };
+  'point-annotation/toggle': {ok: boolean; pointing: boolean; error?: string};
+  'point-annotation/save': {ok: boolean; error?: string};
   'annotation/exit': { ok: boolean };
   'screenshot/capture': { ok: boolean };
   'marker/add': { ok: boolean };
@@ -163,6 +177,7 @@ export type ResponseFor = {
 
 export type BroadcastMessage =
   | { kind: 'state/update'; state: AppState }
+  | { kind: 'session/updated'; session: Session }
   | { kind: 'event/tick'; event: SessionEvent; counts: Partial<Record<EventType, number>> }
   | { kind: 'export/progress'; sessionId: string; phase: string; pct: number }
   | { kind: 'transcription/progress'; sessionId: string; done: number; total: number }
@@ -182,6 +197,9 @@ export type BroadcastMessage =
 // ----------------------------------------------------------------------------
 
 export type ContentMessage =
+  | { kind: 'content/mic'; on: boolean }
+  | { kind: 'content/dictation'; id: string; segment: string; text: string; final: boolean }
+  | {kind: 'content/point-annotate'; on: boolean}
   | { kind: 'content/setActive'; active: boolean; hoverDwellMs?: number }
   | {
       kind: 'content/annotate';

@@ -1,0 +1,140 @@
+name: Publish extension release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+# Serialize every version: two releases must never replace each other's draft.
+concurrency:
+  group: chrome-web-store-release
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event.release.tag_name }}
+  RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+  RELEASE_DRAFT: ${{ github.event.release.draft }}
+
+jobs:
+  package:
+    if: github.repository == 'prooflinedev/session-recorder-chrome-extension'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Validate stable release version
+        run: node scripts/release/version.mjs
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check extension and release protocols
+        run: |
+          pnpm compile
+          pnpm test
+          node --test scripts/release/*.test.mjs
+      - name: Package the tested version
+        run: |
+          pnpm build
+          node scripts/release/version.mjs .output/chrome-mv3/manifest.json
+          mkdir -p release-assets
+          cp .output/chrome-mv3/manifest.json release-assets/manifest.json
+          # Normalize timestamps/order so retrying a tag produces the same ZIP.
+          timestamp="$(git show -s --format=%ct HEAD)"
+          find .output/chrome-mv3 -type f -exec touch -d "@$timestamp" {} +
+          cd .output/chrome-mv3
+          find . -type f | LC_ALL=C sort | zip -X -q ../../release-assets/session-recorder.zip -@
+          cd ../../release-assets
+          sha256sum session-recorder.zip > session-recorder.zip.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: extension-package
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 30
+
+  release-assets:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: extension-package
+          path: release-assets
+      - name: Attach the package and checksum without replacing existing assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cd release-assets
+          sha256sum --check session-recorder.zip.sha256
+          existing="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          for asset in session-recorder.zip session-recorder.zip.sha256; do
+            if echo "$existing" | grep -Fxq "$asset"; then
+              directory="$(mktemp -d)"
+              gh release download "$RELEASE_TAG" --pattern "$asset" --dir "$directory"
+              cmp "$asset" "$directory/$asset" || { echo "Existing release asset differs: $asset. Refusing to replace it." >&2; exit 1; }
+            else
+              gh release upload "$RELEASE_TAG" "$asset"
+            fi
+          done
+
+  chrome-web-store:
+    needs: [package, release-assets]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: chrome-web-store
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: extension-package
+          path: release-assets
+      - name: Check package and publishing configuration
+        env:
+          CWS_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.CWS_WORKLOAD_IDENTITY_PROVIDER }}
+          CWS_SERVICE_ACCOUNT: ${{ vars.CWS_SERVICE_ACCOUNT }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+        run: |
+          set -euo pipefail
+          : "${CWS_WORKLOAD_IDENTITY_PROVIDER:?Set the CWS_WORKLOAD_IDENTITY_PROVIDER repository variable}"
+          : "${CWS_SERVICE_ACCOUNT:?Set the CWS_SERVICE_ACCOUNT repository variable}"
+          : "${CWS_PUBLISHER_ID:?Set the CWS_PUBLISHER_ID repository variable}"
+          (cd release-assets && sha256sum --check session-recorder.zip.sha256)
+          unzip -p release-assets/session-recorder.zip manifest.json > release-assets/manifest.json
+          node scripts/release/version.mjs release-assets/manifest.json
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.CWS_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.CWS_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+          access_token_lifetime: 900s
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Upload and submit to Chrome Web Store review
+        env:
+          CWS_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+        run: node scripts/release/publish.mjs

@@ -8,12 +8,9 @@
  * keeping up in real time.
  */
 import React, { useRef, useState } from 'react';
-import { Mic, PenLine, Camera, Paperclip, Video } from 'lucide-react';
+import { Mic, PenLine, Camera, Paperclip, Video, MousePointer2 } from 'lucide-react';
 import { useSidepanel } from '../store';
-import {
-  isTranscriptionConfigured,
-  VoiceSetupModal,
-} from './VoiceSetupModal';
+import { isTranscriptionConfigured, VoiceSetupModal } from './VoiceSetupModal';
 
 /** A small waveform whose bars scale with the live mic level. */
 function Waveform({ level, on }: { level: number; on: boolean }): React.JSX.Element {
@@ -36,6 +33,8 @@ export function CaptureBar(): React.JSX.Element {
   const micLevel = useSidepanel((s) => s.micLevel);
   const liveTranscript = useSidepanel((s) => s.liveTranscript);
   const videoOn = useSidepanel((s) => s.videoOn);
+  const pointing = useSidepanel((s) => s.pointing);
+  const togglePointAnnotate = useSidepanel((s) => s.togglePointAnnotate);
   const annotating = useSidepanel((s) => s.annotating);
   const toggleMic = useSidepanel((s) => s.toggleMic);
   const toggleVideo = useSidepanel((s) => s.toggleVideo);
@@ -136,8 +135,20 @@ export function CaptureBar(): React.JSX.Element {
       <div className="capture__bar">
         <button
           type="button"
+          className={`capture__action capture__action--label ${pointing ? 'capture__action--on' : ''}`}
+          onClick={() => void togglePointAnnotate()}
+          aria-label="Annotate"
+          aria-pressed={pointing}
+          title="Click an element or drag an area to comment"
+        >
+          <MousePointer2 size={15} />
+          <span className="capture__label">Annotate</span>
+        </button>
+        <button
+          type="button"
           className={`capture__mic ${micOn ? 'capture__mic--on' : ''}`}
           onClick={() => void onMicClick()}
+          aria-label={micOn ? 'Mic on' : 'Mic'}
           aria-pressed={micOn}
           title={micOn ? 'Turn the mic off' : 'Turn the mic on'}
         >
@@ -149,6 +160,7 @@ export function CaptureBar(): React.JSX.Element {
           type="button"
           className={`capture__action ${videoOn ? 'capture__action--on' : ''}`}
           onClick={() => void toggleVideo()}
+          aria-label={videoOn ? 'Video on' : 'Video'}
           aria-pressed={videoOn}
           title={videoOn ? 'Stop video recording' : 'Record the tab as video'}
         >
@@ -159,15 +171,17 @@ export function CaptureBar(): React.JSX.Element {
           type="button"
           className={`capture__action ${annotating ? 'capture__action--on' : ''}`}
           onClick={() => void toggleAnnotate()}
+          aria-label="Markup"
           aria-pressed={annotating}
-          title="Draw on the page"
+          title="Draw on a screenshot"
         >
           <PenLine size={15} />
-          <span className="capture__label">Annotate</span>
+          <span className="capture__label">Markup</span>
         </button>
         <button
           type="button"
-          className="capture__action"
+          className="capture__action capture__action--label"
+          aria-label="Screenshot"
           onClick={() => void captureScreenshot()}
           title="Take a screenshot (always kept, never deduped)"
         >

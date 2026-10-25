@@ -6,3 +6,21 @@ stats.html
 .DS_Store
 dist/
 coverage/
+test-results/
+playwright-report/
+.env
+.env.*
+local.env
+!.env.example
+
+.impeccable/review/
+
+# Local Impeccable runtime and review state
+.agents/skills/impeccable/scripts/bin/
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+
+# Share project hook wiring without other local Codex state
+!.codex/
+.codex/*
+!.codex/hooks.json

@@ -1,30 +1,32 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need</title>
-    <meta name="description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence." />
-    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/ai-bug-report/" />
-
-    <meta property="og:type" content="article" />
-    <meta property="og:site_name" content="Session Recorder" />
-    <meta property="og:title" content="Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need" />
-    <meta property="og:description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence." />
-    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/ai-bug-report/" />
-    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need" />
-    <meta name="twitter:description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence." />
-    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
-
-    <link rel="icon" href="../logo.png" />
-    <link rel="apple-touch-icon" href="../logo.png" />
-    <link rel="stylesheet" href="../doc.css" />
-    <script type="application/ld+json">
-      {
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need</title>
+<meta name="description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/ai-bug-report/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need">
+<meta property="og:description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/ai-bug-report/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Browser Bug Reports for AI Coding Agents: What Claude Code, Cursor and Codex Need">
+<meta name="twitter:description" content="A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../logo.png">
+<link rel="apple-touch-icon" href="../logo.png">
+<link rel="stylesheet" href="../site.css">
+<script type="application/ld+json">
+{
         "@context": "https://schema.org",
         "@graph": [
           {
@@ -115,26 +117,20 @@
           }
         ]
       }
-    </script>
-  </head>
-  <body>
-    <header class="nav">
-      <a class="brand" href="../">
-        <img src="../logo.png" width="26" height="26" alt="" />
-        <span>Session Recorder</span>
-      </a>
-      <nav class="nav__links">
-        <a href="../">Overview</a>
-        <a href="../ai-bug-report/">Guide</a>
-        <a href="../example-report/">Example report</a>
-        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
-      </nav>
-    </header>
-
-    <main class="doc">
-      <p class="crumbs"><a href="../">Session Recorder</a> → Bug reports AI coding agents can fix</p>
-      <p class="eyebrow">Guide</p>
-      <h1>Browser bug reports for AI coding agents: what Claude Code, Cursor and Codex actually need</h1>
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../"><img src="../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../features/">Features</a><a href="../compare/">Compare</a><a href="../guides/" aria-current="page">Guides</a><a href="../help/">Help</a><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../">Home</a></li><li><a href="../guides/">Guides</a></li><li aria-current="page">Browser bug reports for AI coding agents: what Claude Code, Cursor and Codex actually need</li></ol></nav><!-- /gen:crumbs -->
+<h1>Browser bug reports for AI coding agents: what Claude Code, Cursor and Codex actually need</h1>
       <p class="lede">
         Coding agents are good at reading code and blind to runtime. Almost every
         frustrating agent debugging session comes down to that one asymmetry —
@@ -612,8 +608,9 @@
         <li>or you simply do not want a permanent archive of your screen on someone else's infrastructure.</li>
       </ul>
       <p>
-        The trade-off is real: no shareable links, no ticket integrations, no
-        cross-device history. If bugs arrive from other people, take the cloud
+        The trade-off is real: no vendor workspace, no integrations beyond GitHub, no
+        cross-device history. Session Recorder can publish a protected report to your own
+        Cloudflare account and file a GitHub issue, but that runs on accounts you set up. If bugs arrive from other people, take the cloud
         tool. If bugs arrive from you and leave to an agent, the file is enough.
         <a href="../local-first/">More on that design.</a>
       </p>
@@ -678,8 +675,8 @@
           token-like fields are masked before anything is written to storage.
         </li>
         <li>
-          <b>Local-first.</b> No account, no backend, no telemetry. The output is
-          a zip in your Downloads folder.
+          <b>Local-first.</b> No account, no backend of ours, no telemetry. The output is
+          a zip in your Downloads folder, or a GitHub issue through accounts you configure.
         </li>
       </ul>
       <p>
@@ -704,38 +701,28 @@
       <p>Small enough that the model can attend to all of it, which in practice means well under the nominal context limit. A report of roughly 50k tokens is a good default for a coding agent that is also holding your codebase; drop to about 15k for a chat window or a long session. Prefer trimming bodies and collapsing repeated requests over dropping events, because ordering is the signal you cannot reconstruct later.</p>
       <h3>Is it safe to send a browser recording to an AI service?</h3>
       <p>Only if you know what is in it. A recording of a real session can contain session tokens, authorization headers, personal data in response bodies, and whatever was on screen. Redact credentials at capture time rather than at export time, read the report before you upload it, and prefer a local-first tool if the data cannot leave your machine at all.</p>
-
-      <section class="cta">
-        <h2>Record your next bug instead of describing it</h2>
-        <p>Free, open source, and everything stays on your machine.</p>
-        <div class="btnrow">
-          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
-          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
-        </div>
-      </section>
-
-      <section class="related">
-        <h2>Keep reading</h2>
-        <p><a href="../bug-report-template/">Copy the Markdown browser bug report template</a> to document your own reproduction steps and evidence.</p>
-        <div class="related__grid">
-          <a class="card" href="../example-report/"><b>An example report</b><span>A complete, sanitized report.md, exactly as an agent receives it.</span></a>
-          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
-          <a class="card" href="../local-first/"><b>A local-first bug recorder</b><span>No account, no backend, no upload — what that means in practice.</span></a>
-          <a class="card" href="../jam-alternative/"><b>Session Recorder vs Jam</b><span>An honest comparison, including where Jam is the better choice.</span></a>
-        </div>
-      </section>
-    </main>
-
-    <footer class="foot">
-      <a class="brand" href="../">
-        <img src="../logo.png" width="20" height="20" alt="" />
-        <span>Session Recorder</span>
-      </a>
-      <span class="foot__spacer"></span>
-      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
-      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
-      <a href="../privacy.html">Privacy</a>
-      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
-    </footer>
-  </body>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../features/ai-summaries/"><b>AI issue summaries</b><span>Annotation-first issue drafts and automatic session names, using OpenAI, Anthropic, Google or a compatible endpoint.</span></a></li><li><a href="../features/export/"><b>Exports and AI handoff</b><span>A ZIP with Markdown, JSON and assets at four detail levels, ready for people or coding agents.</span></a></li><li><a href="../bug-report-template/"><b>Browser bug report template</b><span>Copyable Markdown with repro steps, console and network evidence.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../"><img src="../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../features/">All features</a></li><li><a href="../features/annotations/">Annotations</a></li><li><a href="../features/github-issues/">GitHub issues</a></li><li><a href="../features/ai-summaries/">AI summaries</a></li><li><a href="../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../compare/">All comparisons</a></li><li><a href="../jam-alternative/">vs Jam</a></li><li><a href="../compare/marker-io/">vs Marker.io</a></li><li><a href="../compare/bugherd/">vs BugHerd</a></li><li><a href="../compare/userback/">vs Userback</a></li><li><a href="../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../guides/">All guides</a></li><li><a href="../claude-code/">Claude Code</a></li><li><a href="../cursor/">Cursor</a></li><li><a href="../codex/">Codex</a></li><li><a href="../chatgpt/">ChatGPT</a></li><li><a href="../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../help/">Help</a></li><li><a href="../privacy.html">Privacy policy</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
 </html>

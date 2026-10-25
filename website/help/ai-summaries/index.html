@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automatic AI summaries — Session Recorder Help</title>
+<meta name="description" content="Turn recorded evidence into a concise issue draft when you click File GitHub issue.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/help/ai-summaries/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Automatic AI summaries — Session Recorder Help">
+<meta property="og:description" content="Turn recorded evidence into a concise issue draft when you click File GitHub issue.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/help/ai-summaries/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Automatic AI summaries — Session Recorder Help">
+<meta name="twitter:description" content="Turn recorded evidence into a concise issue draft when you click File GitHub issue.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../../logo.png">
+<link rel="apple-touch-icon" href="../../logo.png">
+<link rel="stylesheet" href="../../site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Help",
+          "item": "https://azimi.me/session-recorder-chrome-extension/help/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Automatic AI summaries",
+          "item": "https://azimi.me/session-recorder-chrome-extension/help/ai-summaries/"
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../../features/">Features</a><a href="../../compare/">Compare</a><a href="../../guides/">Guides</a><a href="../../help/" aria-current="page">Help</a><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../../">Home</a></li><li><a href="../../help/">Help</a></li><li aria-current="page">Automatic AI summaries</li></ol></nav><!-- /gen:crumbs -->
+<nav class="help-nav" aria-label="Help topics"><a href="../cloudflare/">Protected publishing</a><a href="../github/">One-click GitHub issues</a><a href="../ai-summaries/" aria-current="page">Automatic AI summaries</a></nav><h1>Automatic AI summaries</h1><p class="lede">Turn recorded evidence into a concise issue draft when you click File GitHub issue.</p>
+<h2 id="setup">Connect a provider</h2>
+<ol>
+<li>Open <strong>Settings → AI summaries</strong> and choose OpenAI, Anthropic, Google Gemini, or an OpenAI-compatible endpoint.</li>
+<li>Use the provider key link, then paste your API key. Each provider’s settings are stored separately.</li>
+<li>Select a suggested model or type an exact model ID available to your account. Choose <strong>Save summary settings</strong>.</li>
+</ol>
+<h2 id="models">Current model suggestions</h2>
+<p>Checked October 24, 2026. Suggestions stay editable so you can use another model available to your account.</p>
+<ul>
+<li><strong>OpenAI:</strong> <code>gpt-6.1-sol</code>. <a href="https://developers.openai.com/api/docs/models/gpt-6.1-sol">Model documentation</a>.</li>
+<li><strong>Anthropic:</strong> <code>claude-sonnet-5-5</code>, <code>claude-opus-5-5</code>, <code>claude-haiku-5-5</code>, or <code>claude-fable-5-1</code>. <a href="https://platform.claude.com/docs/en/models/overview">Model catalog</a>.</li>
+<li><strong>Google Gemini:</strong> <code>gemini-4-argon</code>, <code>gemini-3.8-flash</code>, or <code>gemini-3.5-flash-lite</code>. <a href="https://ai.google.dev/gemini-api/docs/models">Model catalog</a>.</li>
+</ul>
+<p>New configurations start with GPT-6.1 Sol, Claude Sonnet 5.5 or Gemini 4 Argon. Your saved model choice is preserved. Provider availability and charges depend on your account.</p>
+<h2 id="compatible">OpenAI-compatible servers</h2>
+<p>Enter a base URL that supports Chat Completions, including <code>/v1</code> if your server requires it, and the server’s model ID. Use HTTPS; HTTP is supported for localhost. A local server may leave the API key blank. No model is assumed for custom servers.</p>
+<h2 id="evidence">What is sent</h2>
+<p>The extension sends up to 60,000 characters of text evidence directly to your selected provider. Annotations lead, followed by notes, narration and interactions. Repeated diagnostics are condensed and used only when relevant to the reported concern. Screenshots, attached file bytes and audio/video bytes are excluded. Transcript text may be included. Inspect the input in <strong>Report options → Review text sent to the model</strong>.</p>
+<p>When AI is configured, stopping a recording also requests a short session title from the same evidence. It appears automatically in the Sessions list. If naming fails, the original page-based title remains; a manual rename is preserved.</p>
+<p>Keys stay in local extension storage and are excluded from reports. Provider charges may apply. Without AI configuration, you can write the draft yourself.</p>
+<h2 id="vocabulary">Vocabulary for spoken annotations</h2>
+<p>If transcription is also configured with Deepgram or ElevenLabs, selecting an annotation sends a bounded excerpt of visible headings, navigation and interface labels to your model, which returns unusual terms. That short dictionary is sent to the transcription provider to improve recognition of product names. Input values, editable fields and hidden content are excluded, and neither the excerpt nor the dictionary is saved. The extra model call is billed by your provider, and ElevenLabs charges for keyterm prompting. If it fails, ordinary transcription continues.</p>
+<h2 id="draft">Drafts and errors</h2>
+<p>Filing preserves an edited or previously generated draft. Use <strong>Regenerate summary</strong> to replace it explicitly. If generation fails, check the key, exact model ID, endpoint and quota, or write the summary manually. Transcription has its own provider settings.</p>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../../features/ai-summaries/"><b>AI issue summaries</b><span>Annotation-first issue drafts and automatic session names, using OpenAI, Anthropic, Google or a compatible endpoint.</span></a></li><li><a href="../../features/github-issues/"><b>One-click GitHub issues</b><span>File into one of several repositories, each with its own token, with progress and cancel.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../../features/">All features</a></li><li><a href="../../features/annotations/">Annotations</a></li><li><a href="../../features/github-issues/">GitHub issues</a></li><li><a href="../../features/ai-summaries/">AI summaries</a></li><li><a href="../../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../../compare/">All comparisons</a></li><li><a href="../../jam-alternative/">vs Jam</a></li><li><a href="../../compare/marker-io/">vs Marker.io</a></li><li><a href="../../compare/bugherd/">vs BugHerd</a></li><li><a href="../../compare/userback/">vs Userback</a></li><li><a href="../../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../../guides/">All guides</a></li><li><a href="../../claude-code/">Claude Code</a></li><li><a href="../../cursor/">Cursor</a></li><li><a href="../../codex/">Codex</a></li><li><a href="../../chatgpt/">ChatGPT</a></li><li><a href="../../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../../help/">Help</a></li><li><a href="../../privacy.html">Privacy policy</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/prooflinedev/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
+</html>

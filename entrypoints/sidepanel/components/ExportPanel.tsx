@@ -247,6 +247,9 @@ export function ExportPanel({ sessionId }: ExportPanelProps): React.JSX.Element 
         </div>
       )}
       {buildError && <p className="export__error">{buildError}</p>}
+      <button type="button" className="btn export__share" onClick={() => void chrome.tabs.create({ url: chrome.runtime.getURL(`/share.html?session=${encodeURIComponent(sessionId)}&level=${level}`) })}>
+        Share report & create issue
+      </button>
     </div>
   );
 }

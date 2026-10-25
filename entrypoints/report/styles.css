@@ -451,3 +451,6 @@ body {
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
+
+.r-annotation-comment { margin: 12px 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.r-annotation-target { display: block; margin-bottom: 12px; overflow-wrap: anywhere; }

@@ -1,3 +1,10 @@
+import {
+  prepareTranscriptionRetry,
+  transcriptionFailure,
+  transcriptionRequestId,
+} from '@/lib/transcription/retry';
+import { loadProoflineSettings, requireConnection } from '@/lib/proofline/settings';
+import { extractPageKeyterms } from '@/lib/transcription/vocabulary';
 /**
  * Background service worker — the session orchestrator.
  *
@@ -65,6 +72,7 @@ import { newId } from '@/lib/util/ids';
 import { transcribe } from '@/lib/transcription';
 import type { TranscriptionConfig } from '@/lib/transcription/provider';
 import { estimateForLevels } from '@/lib/export/bundle';
+import { nameRecordedSession } from '@/lib/sharing/session-title';
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -156,6 +164,7 @@ class Orchestrator {
   private micOn = false;
   private videoOn = false;
   private annotating = false;
+  private pointing = false;
 
   private writer: EventWriter | null = null;
   /** Last ~30 materialized events for the live ticker. */
@@ -173,11 +182,16 @@ class Orchestrator {
   private rehydrating = false;
   /** True while the mic is streaming live transcripts (vs batch segments). */
   private micStreaming = false;
+  private dictationTarget?: { tabId: number; id: string; since: number; sessionId: string };
+  private pageKeyterms: string[] = [];
+  private vocabularyReady: Promise<void> = Promise.resolve();
+  private vocabularyCache = new Map<string, Promise<string[]>>();
 
   // --- navigation listeners (bound refs so we can unregister) ---
   private navRegistered = false;
 
   // --- transcription queue ---
+  private readonly transcribing = new Set<string>();
   private readonly transQueue: { sessionId: string; event: SessionEvent }[] = [];
   private transRunning = false;
   private transDone = 0;
@@ -381,6 +395,7 @@ class Orchestrator {
     this.micOn = false;
     this.videoOn = false;
     this.annotating = false;
+    this.pointing = false;
     this.recent = [];
     this.lastActiveSessionTab = tabId;
     this.lastAnnotationShot = undefined;
@@ -538,6 +553,7 @@ class Orchestrator {
 
       await this.ensureContentScripts(tabId);
       await sendToTab(tabId, { kind: 'content/setActive', active: true, hoverDwellMs: session.settings.hoverDwellMs });
+      if (this.pointing) await sendToTab(tabId, {kind:'content/point-annotate',on:true});
       this.recordEvent({
         type: 'tab-opened',
         tabId,
@@ -609,6 +625,9 @@ class Orchestrator {
     await updateSession(session);
 
     this.current = null;
+    this.dictationTarget = undefined;
+    this.pageKeyterms = [];
+    this.vocabularyCache.clear();
     // Keep the just-stopped session visible in AppState so the side panel lands
     // on the post-stop review (summary + transcription + export) instead of the
     // idle screen. The panel drops it once the user hits "Done"; a new
@@ -619,18 +638,25 @@ class Orchestrator {
     this.micOn = false;
     this.videoOn = false;
     this.annotating = false;
+    this.pointing = false;
     this.lastError = undefined;
     this.broadcastState();
 
     // Open the rendered report in a new tab so the user sees the result.
     if ((session.counts && Object.keys(session.counts).length > 0) || session.assetBytes > 0) {
       chrome.tabs.create({
-        url: `${chrome.runtime.getURL('report.html')}?session=${session.id}`,
+        url: `${chrome.runtime.getURL('share.html')}?session=${session.id}`,
       }).catch(() => {});
     }
 
-    // Transcribe any voice segments still missing a transcript, in the background.
-    void this.transcribePending(session.id);
+    // Queue missing transcripts and name from available evidence without delaying the report.
+    void this.transcribePending(session.id).catch(() => {}).then(async () => {
+      const renamed = await nameRecordedSession(session);
+      if (!renamed) return;
+      if (this.lastStopped?.id === renamed.id) this.lastStopped = renamed;
+      broadcast({ kind: 'session/updated', session: renamed });
+      this.broadcastState();
+    }).catch(() => { /* The original page-based name remains usable offline. */ });
 
     return { ok: true };
   }
@@ -639,6 +665,7 @@ class Orchestrator {
     const session = this.current;
     if (!session) return { ok: false };
     this.paused = true;
+    await this.setPointing(false);
     session.status = 'paused';
     // The offscreen doc may still be recording even when the flags are off
     // (rehydrate() resets them after a SW restart); pause/resume no-op when
@@ -962,6 +989,8 @@ class Orchestrator {
         if (s) {
           s.name = msg.name;
           await updateSession(s);
+          if (this.lastStopped?.id === s.id) this.lastStopped = s;
+          broadcast({ kind: 'session/updated', session: s });
           const cur = this.current;
           if (cur && cur.id === s.id) {
             cur.name = msg.name;
@@ -985,7 +1014,25 @@ class Orchestrator {
         const tabId = sender.tab?.id;
         const active =
           !!this.current && tabId !== undefined && this.isSessionTab(tabId);
-        return { active, annotating: this.annotating };
+        return { active: active && !this.paused, annotating: this.annotating, pointing: this.pointing && !this.paused, micOn: this.micOn };
+      }
+      case 'dictation/focus': {
+        const tabId = sender.tab?.id;
+        if (!this.current || this.paused || !this.pointing || tabId === undefined || !this.isSessionTab(tabId)) return { ok: false, micOn: this.micOn };
+        const target = { tabId, id: msg.id, since: Date.now() - this.sessionStartEpoch, sessionId: this.current.id };
+        this.dictationTarget = target;
+        this.vocabularyReady = this.prepareVocabulary(msg.context, target).catch(() => {});
+        return { ok: true, micOn: this.micOn };
+      }
+      case 'dictation/blur':
+        if (this.dictationTarget?.id === msg.id && this.dictationTarget.tabId === sender.tab?.id) this.dictationTarget = undefined;
+        return { ok: true };
+      case 'dictation/mic': {
+        if (!this.current || !this.pointing || sender.tab?.id !== this.dictationTarget?.tabId) return { ok: false, micOn: this.micOn };
+        const config = await this.loadTranscriptionConfig();
+        if (msg.on && !config) return { ok: false, micOn: this.micOn, error: 'Set up a transcription provider in Settings → Transcription to dictate comments.' };
+        try { if (msg.on) await this.vocabularyReady; await this.setMic(msg.on); return { ok: this.micOn === msg.on, micOn: this.micOn, error: this.lastError }; }
+        catch (error) { return { ok: false, micOn: this.micOn, error: errMessage(error) }; }
       }
       case 'annotation/exit':
         return this.handleAnnotationExit(
@@ -1007,6 +1054,10 @@ class Orchestrator {
       case 'note/add':
         this.recordEvent({ type: 'note', payload: { text: msg.text } });
         return { ok: true };
+      case 'point-annotation/toggle':
+        return this.setPointing(msg.on ?? !this.pointing);
+      case 'point-annotation/save':
+        return this.savePointAnnotation(msg, sender);
       case 'annotation/toggle': {
         const annotating = await this.toggleAnnotation();
         return { ok: true, annotating };
@@ -1038,7 +1089,12 @@ class Orchestrator {
         const ev = events.find(
           (e) => e.id === msg.eventId && e.type === 'voice-segment',
         );
-        if (ev) this.enqueueTranscription(ev, msg.sessionId);
+        if (ev && !this.transcribing.has(`${msg.sessionId}/${ev.id}`)) {
+          const payload = prepareTranscriptionRetry(ev.payload as VoiceSegmentPayload);
+          const retry = { ...ev, payload } as SessionEvent;
+          if (payload !== ev.payload) await appendEvents([retry]);
+          this.enqueueTranscription(retry, msg.sessionId);
+        }
         return { ok: true };
       }
 
@@ -1055,10 +1111,12 @@ class Orchestrator {
       case 'transcript/final':
         return this.handleTranscriptFinal(msg);
       case 'transcript/interim':
+        this.routeDictation(msg.sessionId, msg.text, false, msg.tStart);
         broadcast({ kind: 'transcript/live', text: msg.text, final: false });
         return { ok: true };
 
       // --- audio/video control echoes (bg -> offscreen); harmless no-op here ---
+      case 'audio/keyterms':
       case 'audio/start':
       case 'audio/pause':
       case 'audio/resume':
@@ -1288,7 +1346,8 @@ class Orchestrator {
     provider: string;
   }): { ok: boolean } {
     const session = this.current;
-    if (!session) return { ok: false };
+    if (!session || session.id !== msg.sessionId) return { ok: false };
+    this.routeDictation(msg.sessionId, msg.text, true, msg.tStart);
     this.recordEvent({
       // Stamp the event at the moment the utterance BEGAN so it interleaves into
       // the timeline next to what the user was doing/seeing as they said it.
@@ -1344,7 +1403,45 @@ class Orchestrator {
     });
   }
 
+  private async setPointing(on: boolean): Promise<{ok:boolean; pointing:boolean; error?:string}> {
+    if (on && (!this.current || this.paused)) return {ok:false, pointing:false, error:'Resume recording to annotate the page.'};
+    if (on && this.annotating) {
+      for (const tab of this.current!.tabs) await sendToTab(tab.tabId, {kind:'content/annotate',on:false});
+      this.annotating = false;
+    }
+    this.pointing = on;
+    if (!on) this.dictationTarget = undefined;
+    for (const tab of this.current?.tabs ?? []) await sendToTab(tab.tabId, {kind:'content/point-annotate',on});
+    this.broadcastState();
+    return {ok:true, pointing:on};
+  }
+
+  private async savePointAnnotation(msg: Extract<RequestMessage, {kind:'point-annotation/save'}>, sender: chrome.runtime.MessageSender): Promise<{ok:boolean;error?:string}> {
+    const session = this.current;
+    const tabId = sender.tab?.id;
+    if (!session || this.paused || !this.pointing || tabId === undefined || !this.isSessionTab(tabId) || (sender.frameId ?? 0) !== 0) return {ok:false,error:'Resume recording and turn annotation on to add a comment.'};
+    const text = msg.text?.trim().slice(0,4000);
+    if (!text || !msg.rect || ![msg.rect.x,msg.rect.y,msg.rect.w,msg.rect.h,msg.viewport?.w,msg.viewport?.h].every(Number.isFinite) || msg.rect.w<=0 || msg.rect.h<=0 || msg.viewport.w<=0 || msg.viewport.h<=0) return {ok:false,error:'Select an element or area and enter a comment.'};
+    const image = await this.captureTabImage(tabId).catch(()=>undefined);
+    if (this.current !== session || this.paused) return {ok:false,error:'Recording ended before this comment was saved.'};
+    let screenshotAssetId: string | undefined;
+    if (image) {
+      const blob = await dataUrlToBlob(image);
+      if (this.current !== session || this.paused) return {ok:false,error:'Recording ended before this comment was saved.'};
+      const asset = await this.putAssetBlob('screenshot',blob,blob.type);
+      screenshotAssetId = asset.id;
+    }
+    if (this.current !== session || this.paused) return {ok:false,error:'Recording ended before this comment was saved.'};
+    const payload: AnnotationPayload = {shapes:[{tool:'text', text, color:'#2f6df0', strokeWidth:2, rect:msg.rect, targetDescriptor:msg.descriptor}],screenshotAssetId,viewport:msg.viewport};
+    this.recordEvent({type:'annotation',tabId,payload});
+    await this.writer?.flush();
+    this.broadcastState();
+    return {ok:true};
+  }
+
   private async toggleAnnotation(): Promise<boolean> {
+    if (!this.current || this.paused) return false;
+    if (this.pointing) await this.setPointing(false);
     this.annotating = !this.annotating;
     const tabId = await this.activeSessionTabId();
     if (tabId >= 0) {
@@ -1388,7 +1485,28 @@ class Orchestrator {
   // Audio / video / offscreen
   // --------------------------------------------------------------------------
 
+  private async prepareVocabulary(context: string, target: NonNullable<Orchestrator['dictationTarget']>): Promise<void> {
+    const key = `${target.sessionId}:${context.slice(0, 6000)}`;
+    let pending = this.vocabularyCache.get(key);
+    if (!pending) {
+      if (this.vocabularyCache.size >= 8) this.vocabularyCache.delete(this.vocabularyCache.keys().next().value!);
+      pending = extractPageKeyterms(context).catch(() => []);
+      this.vocabularyCache.set(key, pending);
+    }
+    const terms = await pending;
+    if (this.current?.id !== target.sessionId || this.dictationTarget !== target) return;
+    this.pageKeyterms = terms;
+    if (this.micOn) await this.sendToOffscreen({ kind: 'audio/keyterms', keyterms: terms });
+  }
+
+  private routeDictation(sessionId: string, text: string, final: boolean, tStart?: number): void {
+    const target = this.dictationTarget;
+    if (!target || this.paused || !this.pointing || target.sessionId !== sessionId || this.current?.id !== sessionId || tStart === undefined || tStart < target.since || !text.trim()) return;
+    void sendToTab(target.tabId, { kind: 'content/dictation', id: target.id, segment: `${sessionId}:${tStart}`, text, final });
+  }
+
   private async setMic(on: boolean): Promise<void> {
+    if (on === this.micOn) return;
     if (on) {
       const session = this.current;
       if (!session) throw new Error('No active session to narrate.');
@@ -1404,7 +1522,7 @@ class Orchestrator {
         kind: 'audio/start',
         sessionId: session.id,
         startedAt: this.sessionStartEpoch,
-        transcription: config,
+        transcription: config ? { ...config, keyterms: this.pageKeyterms } : null,
       });
       if (res && res.ok) {
         this.micOn = true;
@@ -1515,6 +1633,7 @@ class Orchestrator {
           | 'audio/start'
           | 'audio/pause'
           | 'audio/resume'
+          | 'audio/keyterms'
           | 'audio/stop'
           | 'video/start'
           | 'video/pause'
@@ -1621,6 +1740,9 @@ class Orchestrator {
   // --------------------------------------------------------------------------
 
   private enqueueTranscription(event: SessionEvent, sessionId: string): void {
+    const key = `${sessionId}/${event.id}`;
+    if (this.transcribing.has(key)) return;
+    this.transcribing.add(key);
     this.transTotal += 1;
     this.transQueue.push({ sessionId, event });
     void this.drainTranscription();
@@ -1633,7 +1755,11 @@ class Orchestrator {
       for (;;) {
         const job = this.transQueue.shift();
         if (!job) break;
-        await this.runTranscription(job.sessionId, job.event);
+        try {
+          await this.runTranscription(job.sessionId, job.event);
+        } finally {
+          this.transcribing.delete(`${job.sessionId}/${job.event.id}`);
+        }
         this.transDone += 1;
         broadcast({
           kind: 'transcription/progress',
@@ -1654,7 +1780,7 @@ class Orchestrator {
     sessionId: string,
     event: SessionEvent,
   ): Promise<void> {
-    const payload = event.payload as VoiceSegmentPayload;
+    let payload = event.payload as VoiceSegmentPayload;
     // Make sure the base event is durable before we overwrite it (put by id).
     await this.writer?.flush().catch(() => {});
 
@@ -1666,15 +1792,42 @@ class Orchestrator {
       const asset = await getAsset(payload.assetId);
       if (!asset) return;
 
-      const result = await transcribe(asset.blob, config);
+      if (config.managed) {
+        await this.ensureOffscreen();
+        const connection = requireConnection(await loadProoflineSettings());
+        const request: NonNullable<VoiceSegmentPayload['transcriptionRequest']> = payload.transcriptionRequest ?? {
+          id: await transcriptionRequestId(sessionId, event.id, payload.transcriptionGeneration),
+          organizationId: connection.organizationId,
+          provider: config.provider === 'elevenlabs' ? 'elevenlabs' : 'deepgram',
+          language: config.language,
+          keyterms: sessionId === this.current?.id ? [...this.pageKeyterms] : [],
+        };
+        payload = { ...payload, transcriptionRequest: request };
+        await appendEvents([{ ...event, payload } as SessionEvent]);
+        Object.assign(config, {
+          requestId: request.id,
+          organizationId: request.organizationId,
+          provider: request.provider,
+          language: request.language,
+          keyterms: request.keyterms,
+        });
+      }
+      const result = await transcribe(asset.blob, {
+        ...config,
+        keyterms: config.managed
+          ? config.keyterms
+          : sessionId === this.current?.id ? this.pageKeyterms : [],
+      });
+      this.routeDictation(sessionId, result.text, true, payload.tStart);
       const updated = {
         ...event,
         payload: {
           ...payload,
           transcript: result.text,
           words: result.words,
-          provider: config.provider,
+          provider: config.managed ? `proofline/${config.provider}` : config.provider,
           transcriptionError: undefined,
+          transcriptionTerminalFailure: undefined,
         },
       } as SessionEvent;
       await appendEvents([updated]);
@@ -1682,7 +1835,7 @@ class Orchestrator {
     } catch (e) {
       const updated = {
         ...event,
-        payload: { ...payload, transcriptionError: errMessage(e) },
+        payload: transcriptionFailure(payload, e),
       } as SessionEvent;
       await appendEvents([updated]).catch(() => {});
       this.updateRecent(updated);
@@ -1695,7 +1848,7 @@ class Orchestrator {
       for (const e of events) {
         if (e.type !== 'voice-segment') continue;
         const p = e.payload as VoiceSegmentPayload;
-        if (p.transcript === null || p.transcript === undefined) {
+        if (!p.transcriptionError && (p.transcript === null || p.transcript === undefined)) {
           this.enqueueTranscription(e, sessionId);
         }
       }
@@ -1710,6 +1863,10 @@ class Orchestrator {
       const cfg = got[STORAGE_KEYS.transcription] as
         | Partial<TranscriptionConfig>
         | undefined;
+      const proofline = await loadProoflineSettings();
+      if (proofline.aiMode === 'proofline') {
+        return { provider: cfg?.provider === 'elevenlabs' ? 'elevenlabs' : 'deepgram', apiKey: '', managed: true, language: cfg?.language };
+      }
       if (!cfg || !cfg.provider || !cfg.apiKey) return null;
       return cfg as TranscriptionConfig;
     } catch {
@@ -1780,6 +1937,7 @@ class Orchestrator {
         files: [
           'content-scripts/interactions.js',
           'content-scripts/annotations.js',
+          'content-scripts/point-annotations.js',
           'content-scripts/file-capture.js',
         ],
       });
@@ -1814,6 +1972,7 @@ class Orchestrator {
       // (mirrors micOn — the user re-toggles to resume control).
       this.videoOn = false;
       this.annotating = false;
+    this.pointing = false;
       this.recent = [];
       this.lastError = undefined;
       this.lastAnnotationShot = undefined;
@@ -1945,6 +2104,7 @@ class Orchestrator {
       micOn: this.micOn,
       videoOn: this.videoOn,
       annotating: this.annotating,
+      pointing: this.pointing,
       attachedTabIds: this.dbg.attachedTabs(),
       error: this.lastError,
     };
@@ -1952,6 +2112,7 @@ class Orchestrator {
 
   private broadcastState(): void {
     broadcast({ kind: 'state/update', state: this.buildState() });
+    for (const tab of this.current?.tabs ?? []) void sendToTab(tab.tabId, { kind: 'content/mic', on: this.micOn && !this.paused });
   }
 }
 
@@ -1960,6 +2121,7 @@ class Orchestrator {
 // ----------------------------------------------------------------------------
 
 export default defineBackground(() => {
+  void chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
   const orchestrator = new Orchestrator();
   orchestrator.init();
   // Test hook for the E2E suite (service-worker global only; not web-exposed).

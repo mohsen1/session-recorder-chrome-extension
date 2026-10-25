@@ -403,6 +403,16 @@ export interface VoiceSegmentPayload {
   transcript: string | null;
   words?: { word: string; t: number }[];
   transcriptionError?: string;
+  /** Managed request identity survives network failures without charging again. */
+  transcriptionGeneration?: number;
+  transcriptionTerminalFailure?: boolean;
+  transcriptionRequest?: {
+    id: string;
+    organizationId: string;
+    provider: 'deepgram' | 'elevenlabs';
+    language?: string;
+    keyterms: string[];
+  };
   provider?: string;
   /** True when produced live by a streaming recognizer (vs post-hoc batch). */
   streamed?: boolean;

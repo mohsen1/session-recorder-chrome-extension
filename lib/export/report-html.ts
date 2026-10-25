@@ -58,8 +58,13 @@ export function buildReportHtml(input: ReportHtmlInput): string {
     level: input.level,
     assetPath: (id) => input.imageUrl(id),
   });
-  const body = input.sanitize(marked.parse(md, { async: false, gfm: true }) as string);
-  const title = escapeHtml(input.session.name);
+  return buildMarkdownHtml(input.session.name, md, input.sanitize);
+}
+
+/** Shared document shell for standalone exports and hosted reports. */
+export function buildMarkdownHtml(name: string, md: string, sanitize: (html: string) => string): string {
+  const body = sanitize(marked.parse(md, { async: false, gfm: true }) as string);
+  const title = escapeHtml(name);
   return `<!doctype html>
 <html lang="en">
 <head>

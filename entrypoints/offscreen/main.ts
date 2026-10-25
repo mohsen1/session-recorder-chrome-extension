@@ -1,3 +1,6 @@
+import { decodePcm16 } from '@/lib/transcription/pcm';
+import { elevenLabsLiveUrl, elevenLabsAudioMessage, parseElevenLabsMessage } from '@/lib/transcription/elevenlabs-live';
+import { normalizeKeyterms } from '@/lib/transcription/keyterms';
 /**
  * Offscreen media recorder (microphone audio + tab video).
  *
@@ -62,6 +65,13 @@ let streamSocket: WebSocket | null = null;
 let streamNode: AudioWorkletNode | ScriptProcessorNode | null = null;
 let streamProvider = '';
 let streaming = false;
+let liveConfig: StreamTranscriptionConfig | undefined;
+let pendingKeyterms: string[] | undefined;
+let changingStream = false;
+let pendingPcm: ArrayBuffer[] = [];
+let bufferedBytes = 0;
+let flushingStream = false;
+let finishStreamFlush: (() => void) | undefined;
 
 /** ms elapsed relative to the session's `startedAt`. */
 function elapsed(): number {
@@ -228,18 +238,35 @@ async function startStreaming(
 ): Promise<boolean> {
   if (!stream || !audioCtx) return false;
   try {
-    const url = buildDeepgramLiveUrl(config, {
+    const isEleven = config.provider === 'elevenlabs';
+    let streamOffset = elapsed();
+    let elevenSegmentStart: number | undefined;
+    const url = isEleven ? await elevenLabsLiveUrl(config) : buildDeepgramLiveUrl(config, {
       sampleRate: DEEPGRAM_SAMPLE_RATE,
       interim: true,
     });
-    const sock = new WebSocket(url, deepgramSubprotocols(config.apiKey));
+    const sock = isEleven ? new WebSocket(url) : new WebSocket(url, deepgramSubprotocols(config.apiKey));
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => { sock.close(); reject(new Error('Dictation connection timed out.')); }, 8000);
+      sock.onopen = () => { clearTimeout(timer); resolve(); };
+      sock.onerror = () => { clearTimeout(timer); reject(new Error('Dictation could not connect.')); };
+    });
+    if (state === 'idle') { sock.close(); return false; }
+    streamOffset = Math.max(0, elapsed() - Math.round(bufferedBytes / 32));
     sock.binaryType = 'arraybuffer';
     const inRate = audioCtx.sampleRate;
 
     const pushPcm = (input: Float32Array) => {
-      if (sock.readyState !== WebSocket.OPEN || state !== 'recording') return;
+      if (state !== 'recording' || flushingStream) return;
       const pcm = downsampleToPcm16(input, inRate, DEEPGRAM_SAMPLE_RATE);
-      if (pcm.byteLength > 0) sock.send(pcm);
+      if (!pcm.byteLength) return;
+      if (changingStream || sock.readyState !== WebSocket.OPEN) {
+        if (bufferedBytes < 256000) { pendingPcm.push(pcm); bufferedBytes += pcm.byteLength; }
+        return;
+      }
+      for (const buffered of pendingPcm) sock.send(isEleven ? elevenLabsAudioMessage(buffered) : buffered);
+      pendingPcm = []; bufferedBytes = 0;
+      sock.send(isEleven ? elevenLabsAudioMessage(pcm) : pcm);
     };
 
     // PCM tap: AudioWorklet (batched Float32 posts from public/pcm-tap.worklet.js),
@@ -271,20 +298,28 @@ async function startStreaming(
 
     sock.onmessage = (ev) => {
       if (typeof ev.data !== 'string') return;
-      const p = parseDeepgramMessage(ev.data);
-      if (p.kind === 'other') return;
+      const now = (elapsed() - streamOffset) / 1000;
+      const p = isEleven ? parseElevenLabsMessage(ev.data, elevenSegmentStart ?? now, now) : parseDeepgramMessage(ev.data);
+      if (isEleven && p.kind !== 'other' && elevenSegmentStart === undefined) elevenSegmentStart = p.start;
+      if (p.kind === 'other') {
+        if (isEleven && ev.data.includes('"committed_transcript"')) {
+          finishStreamFlush?.();
+          if (pendingKeyterms && !flushingStream) void refreshElevenVocabulary();
+        }
+        return;
+      }
       if (p.kind === 'interim') {
-        void sendMessage({ kind: 'transcript/interim', sessionId, text: p.text }).catch(
+        void sendMessage({ kind: 'transcript/interim', sessionId, text: p.text, tStart: Math.round(streamOffset + p.start * 1000) }).catch(
           () => {},
         );
         return;
       }
       // final
-      const tStart = Math.round(baseOffset + p.start * 1000);
-      const tEnd = Math.round(baseOffset + (p.start + p.duration) * 1000);
+      const tStart = Math.round(streamOffset + p.start * 1000);
+      const tEnd = Math.round(streamOffset + (p.start + p.duration) * 1000);
       const words = p.words.map((w) => ({
         word: w.word,
-        t: Math.round(baseOffset + w.t * 1000),
+        t: Math.round(streamOffset + w.t * 1000),
       }));
       void sendMessage({
         kind: 'transcript/final',
@@ -293,14 +328,18 @@ async function startStreaming(
         tEnd,
         text: p.text,
         words,
-        provider: streamProvider,
+        provider: config.provider,
       }).catch(() => {});
+      finishStreamFlush?.();
+      if (isEleven) elevenSegmentStart = undefined;
+      if (pendingKeyterms && isEleven && !flushingStream) void refreshElevenVocabulary();
     };
     sock.onerror = () => {
       /* keep recording audio; transcripts just stop */
     };
 
     streamSocket = sock;
+    liveConfig = config;
     streamNode = node;
     streamProvider = config.provider;
     streaming = true;
@@ -311,10 +350,37 @@ async function startStreaming(
   }
 }
 
+async function refreshElevenVocabulary(): Promise<void> {
+  if (changingStream || flushingStream || !liveConfig || !pendingKeyterms || state !== 'recording') return;
+  changingStream = true;
+  const config = { ...liveConfig, keyterms: pendingKeyterms };
+  pendingKeyterms = undefined;
+  const oldSocket = streamSocket;
+  const oldNode = streamNode;
+  const success = await startStreaming(config);
+  if (success) { oldNode?.disconnect(); oldSocket?.close(); }
+  else streaming = oldSocket?.readyState === WebSocket.OPEN;
+  changingStream = false;
+}
+function updateKeyterms(terms: string[]): void {
+  if (!liveConfig) return;
+  const keyterms = normalizeKeyterms(terms);
+  if (JSON.stringify(keyterms) === JSON.stringify(liveConfig.keyterms ?? [])) return;
+  if (streamProvider === 'deepgram' && (liveConfig.model || 'nova-3').startsWith('nova-3')) {
+    liveConfig = { ...liveConfig, keyterms };
+    if (streamSocket?.readyState === WebSocket.OPEN) streamSocket.send(JSON.stringify({ type: 'Configure', keyterms }));
+  } else if (streamProvider === 'elevenlabs') {
+    // Install the new dictionary at the next completed utterance. Audio capture
+    // continues and PCM is buffered while the replacement socket connects.
+    pendingKeyterms = keyterms;
+    if (streamSocket?.readyState === WebSocket.OPEN) streamSocket.send(elevenLabsAudioMessage(new ArrayBuffer(0), true));
+  }
+}
+
 function stopStreaming(): void {
   try {
     if (streamSocket && streamSocket.readyState === WebSocket.OPEN) {
-      streamSocket.send(DEEPGRAM_CLOSE_MESSAGE);
+      streamSocket.send(streamProvider === 'elevenlabs' ? elevenLabsAudioMessage(new ArrayBuffer(0), true) : DEEPGRAM_CLOSE_MESSAGE);
     }
   } catch {
     /* ignore */
@@ -332,6 +398,9 @@ function stopStreaming(): void {
   streamNode = null;
   streamSocket = null;
   streaming = false;
+  liveConfig = undefined; pendingKeyterms = undefined;
+  pendingPcm = []; bufferedBytes = 0; changingStream = false;
+  finishStreamFlush?.(); flushingStream = false;
 }
 
 /** Linear-resample a Float32 mono buffer to 16-bit PCM at `outRate`. */
@@ -391,13 +460,13 @@ async function handleStart(
   // audio as ONE continuous file (no 30s rotation) since transcripts are already
   // persisted live; otherwise we keep the rotating-segment batch path.
   streaming = false;
-  if (transcription && transcription.provider === 'deepgram' && transcription.apiKey) {
+  if (transcription && !transcription.managed && ['deepgram', 'elevenlabs'].includes(transcription.provider) && transcription.apiKey) {
     streaming = await startStreaming(transcription);
   }
 
   startRecorder();
   if (!streaming) {
-    segmentTimer = setInterval(rotateSegment, SEGMENT_MS);
+    segmentTimer = setInterval(rotateSegment, transcription?.managed ? 5000 : SEGMENT_MS);
   }
   return { ok: true, streaming };
 }
@@ -419,7 +488,17 @@ function handleResume(): void {
   startLevelLoop();
 }
 
-function handleStopControl(): Promise<void> {
+async function handleStopControl(): Promise<void> {
+  if (streamSocket?.readyState === WebSocket.OPEN) {
+    flushingStream = true;
+    await new Promise<void>(resolve => {
+      const finish = () => { clearTimeout(timer); finishStreamFlush = undefined; resolve(); };
+      const timer = setTimeout(finish, 1500);
+      finishStreamFlush = finish;
+      try { streamSocket!.send(streamProvider === 'elevenlabs' ? elevenLabsAudioMessage(new ArrayBuffer(0), true) : JSON.stringify({ type: 'Finalize' })); }
+      catch { finish(); }
+    });
+  }
   if (state === 'idle') {
     teardown();
     return Promise.resolve();
@@ -451,6 +530,15 @@ chrome.runtime.onMessage.addListener((raw, _sender, sendResponse) => {
   if (!msg || typeof msg.kind !== 'string') return false;
 
   switch (msg.kind) {
+    case 'audio/decode-pcm': {
+      const dataUrl = (raw as { dataUrl: string }).dataUrl;
+      void decodePcm16(dataUrl).then(pcmBase64 => sendResponse({ pcmBase64 })).catch(() => sendResponse({ error: 'Recorded audio could not be decoded.' }));
+      return true;
+    }
+    case 'audio/keyterms':
+      updateKeyterms((raw as Extract<RequestMessage, { kind: 'audio/keyterms' }>).keyterms);
+      sendResponse({ ok: true });
+      return false;
     case 'audio/start': {
       const m = raw as Extract<RequestMessage, { kind: 'audio/start' }>;
       void handleStart(m.sessionId, m.startedAt, m.transcription).then((res) =>

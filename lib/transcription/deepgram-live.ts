@@ -1,3 +1,4 @@
+import { addDeepgramKeyterms } from './keyterms';
 /**
  * Deepgram live (streaming) transcription helpers — pure and unit-tested.
  *
@@ -36,6 +37,7 @@ export function buildDeepgramLiveUrl(
     smart_format: 'true',
   });
   if (config.language) params.set('language', config.language);
+  addDeepgramKeyterms(params, config.model || 'nova-3', config.keyterms);
   return `${base}?${params.toString()}`;
 }
 

@@ -42,6 +42,7 @@ export interface SidepanelStore {
   micOn: boolean;
   videoOn: boolean;
   annotating: boolean;
+  pointing: boolean;
   attachedTabIds: number[];
   error?: string;
 
@@ -67,6 +68,7 @@ export interface SidepanelStore {
   toggleMic: () => Promise<void>;
   toggleVideo: () => Promise<void>;
   toggleAnnotate: () => Promise<void>;
+  togglePointAnnotate: () => Promise<void>;
   addMarker: () => Promise<void>;
   addNote: (text: string) => Promise<void>;
   captureScreenshot: () => Promise<void>;
@@ -88,6 +90,7 @@ function appStatePatch(state: AppState): Partial<SidepanelStore> {
     micOn: state.micOn,
     videoOn: state.videoOn,
     annotating: state.annotating,
+    pointing: state.pointing,
     attachedTabIds: state.attachedTabIds ?? [],
     error: state.error,
   };
@@ -101,6 +104,7 @@ export const useSidepanel = create<SidepanelStore>((set, get) => ({
   micOn: false,
   videoOn: false,
   annotating: false,
+  pointing: false,
   attachedTabIds: [],
   error: undefined,
   micLevel: 0,
@@ -238,6 +242,13 @@ export const useSidepanel = create<SidepanelStore>((set, get) => ({
     }
   },
 
+  togglePointAnnotate: async () => {
+    try {
+      const res = await sendMessage({kind:'point-annotation/toggle'});
+      if (res.ok) set({pointing:res.pointing,error:undefined});
+      else set({error:res.error});
+    } catch (err) { set({error:describeError(err)}); }
+  },
   toggleAnnotate: async () => {
     try {
       const res = await sendMessage({ kind: 'annotation/toggle' });

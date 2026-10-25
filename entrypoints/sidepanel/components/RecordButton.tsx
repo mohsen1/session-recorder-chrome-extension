@@ -7,27 +7,11 @@
  * requests. All choices persist into the global capture defaults.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { ChevronDown, Video, Mic, FileJson2 } from 'lucide-react';
-import {
-  CAPTURE_DETAIL_LEVELS,
-  detailIndexFromSettings,
-  settingsForDetail,
-} from '@/lib/session/settings';
-import {
-  loadDefaultSettings,
-  loadMicFromStart,
-  loadVideoFromStart,
-  saveCaptureApiSpec,
-  saveCaptureDetail,
-  saveMicFromStart,
-  saveVideoFromStart,
-  useSidepanel,
-} from '../store';
-import {
-  isTranscriptionConfigured,
-  VoiceSetupModal,
-} from './VoiceSetupModal';
+import { CAPTURE_DETAIL_LEVELS } from '@/lib/session/settings';
+import { VoiceSetupModal } from './VoiceSetupModal';
+import { useRecordSetup } from './useRecordSetup';
 
 /** A compact switch row inside the popover: icon, label + hint, toggle. */
 function OptionRow({
@@ -66,108 +50,25 @@ function OptionRow({
 }
 
 export function RecordButton(): React.JSX.Element {
-  const startRecording = useSidepanel((s) => s.startRecording);
-  const [busy, setBusy] = useState(false);
-  const [localError, setLocalError] = useState<string | undefined>();
-  const [detail, setDetail] = useState(2);
-  const [videoFromStart, setVideoFromStart] = useState(false);
-  const [micFromStart, setMicFromStart] = useState(false);
-  const [apiSpec, setApiSpec] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [voiceSetupOpen, setVoiceSetupOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void Promise.all([
-      loadDefaultSettings(),
-      loadVideoFromStart(),
-      loadMicFromStart(),
-    ]).then(([s, video, mic]) => {
-      if (cancelled) return;
-      setDetail(detailIndexFromSettings(s));
-      setApiSpec(s.captureApiSpec);
-      setVideoFromStart(video);
-      setMicFromStart(mic);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Close the popover on an outside click.
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
-
-  const record = async () => {
-    if (busy) return;
-    // Mic will start with the session but no transcription provider is set up
-    // yet: offer voice setup BEFORE recording begins. `start()` below re-runs
-    // once the modal resolves.
-    if (micFromStart && !(await isTranscriptionConfigured())) {
-      setVoiceSetupOpen(true);
-      return;
-    }
-    await start();
-  };
-
-  const start = async () => {
-    if (busy) return;
-    setBusy(true);
-    setLocalError(undefined);
-    try {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const tabId = tabs[0]?.id;
-      if (typeof tabId !== 'number') {
-        setLocalError('No active tab to record.');
-        return;
-      }
-      // Pass the choices explicitly: the storage writes are async, so the
-      // override is what makes a quick change-then-Record race-free.
-      // From-start video/mic are handled by the background (it reads the
-      // persisted switches), so they start reliably even if this panel view
-      // unmounts the moment recording begins.
-      const res = await startRecording(tabId, {
-        ...(settingsForDetail(detail) ?? {}),
-        captureApiSpec: apiSpec,
-      });
-      if (!res.ok) {
-        setLocalError(res.error ?? 'Could not start recording.');
-        return;
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const onDetail = (value: number) => {
-    setDetail(value);
-    void saveCaptureDetail(value);
-  };
-
-  const onVideo = (on: boolean) => {
-    setVideoFromStart(on);
-    void saveVideoFromStart(on);
-  };
-
-  const onMicFromStart = (on: boolean) => {
-    setMicFromStart(on);
-    void saveMicFromStart(on);
-  };
-
-  const onApiSpec = (on: boolean) => {
-    setApiSpec(on);
-    void saveCaptureApiSpec(on);
-  };
-
+  const {
+    busy,
+    localError,
+    detail,
+    videoFromStart,
+    micFromStart,
+    apiSpec,
+    open,
+    voiceSetupOpen,
+    wrapRef,
+    record,
+    start,
+    onDetail,
+    onVideo,
+    onMicFromStart,
+    onApiSpec,
+    setVoiceSetupOpen,
+    toggleOptions,
+  } = useRecordSetup();
   const preset = CAPTURE_DETAIL_LEVELS[detail];
 
   return (
@@ -195,7 +96,7 @@ export function RecordButton(): React.JSX.Element {
         <button
           type="button"
           className="record-split__caret"
-          onClick={() => setOpen((o) => !o)}
+          onClick={toggleOptions}
           aria-label="Capture options"
           aria-expanded={open}
         >
@@ -251,7 +152,6 @@ export function RecordButton(): React.JSX.Element {
           </div>
         )}
       </div>
-      <p className="record-hero__hint">Records the active tab</p>
       {localError && <p className="record-hero__error">{localError}</p>}
     </div>
   );
