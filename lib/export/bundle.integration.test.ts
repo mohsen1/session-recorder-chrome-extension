@@ -1,11 +1,8 @@
 /**
  * End-to-end export pipeline check: fixture session -> trimmer -> markdown ->
- * bundle -> zip. Exercises every export module together with realistic data and
- * writes the rendered reports to the scratchpad for human inspection (the plan's
- * "paste-test" proxy).
+ * bundle -> zip. Exercises every export module together with realistic data.
  */
 import { describe, it, expect } from 'vitest';
-import { writeFileSync, mkdirSync } from 'node:fs';
 import { unzipSync } from 'fflate';
 
 import { SessionBuilder } from '@/lib/fixtures/session-builder';
@@ -13,8 +10,6 @@ import { makeDefaultSettings } from '@/lib/session/settings';
 import { buildBundle, estimateForLevels } from './bundle';
 import { zipFiles } from './zip';
 import type { VerbosityLevel } from '@/lib/session/types';
-
-const OUT = '/private/tmp/claude-501/-Users-mohsen-code-saas-walkthrough-chrome-extension/8a18cfe7-352b-4d33-a258-2b6237a32f09/scratchpad/reports';
 
 function richSession() {
   const b = new SessionBuilder({ name: 'Checkout bug repro' })
@@ -43,7 +38,6 @@ function richSession() {
 
 describe('export pipeline (integration)', () => {
   it('produces a readable, shrinking report across all levels and a valid zip', async () => {
-    mkdirSync(OUT, { recursive: true });
     const { session, events, assets } = richSession();
     const levels: VerbosityLevel[] = ['L0', 'L1', 'L2', 'L3'];
 
@@ -57,7 +51,6 @@ describe('export pipeline (integration)', () => {
 
       const md = report!.text!;
       reportSizes[level] = md.length;
-      writeFileSync(`${OUT}/report-${level}.md`, md);
 
       // Protected signals must survive at EVERY level.
       expect(md, `${level} keeps marker`).toContain('Bug happens here');
@@ -84,11 +77,7 @@ describe('export pipeline (integration)', () => {
     const meta = assets.map(({ blob, ...m }) => m);
     const estimates = estimateForLevels(events, meta, session);
     expect(estimates.length).toBe(4);
-    writeFileSync(`${OUT}/estimates.json`, JSON.stringify(estimates, null, 2));
     expect(estimates[0]!.tokens).toBeGreaterThanOrEqual(estimates[3]!.tokens);
-
-    // Emit a size summary for inspection.
-    writeFileSync(`${OUT}/sizes.json`, JSON.stringify({ reportSizes, estimates: estimates.map((e) => ({ level: e.level, tokens: e.tokens })) }, null, 2));
   });
 });
 
