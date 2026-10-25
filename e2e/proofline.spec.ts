@@ -75,9 +75,9 @@ test('connects by browser approval and requires an explicit switch from personal
   await page.goto(extUrl(extensionId, 'options.html#proofline'));
   await page.getByRole('button', { name: 'Connect Proofline' }).click();
   await expect(page.getByText('ABCD-EFGH', { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Use Proofline for AI and sharing' }),
-  ).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('button', { name: 'Change account' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByLabel('AI usage')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Services', exact: true }).click();
   await expect(page.getByLabel('AI usage')).toHaveValue('personal');
   await page.getByRole('button', { name: 'Use Proofline for AI and sharing' }).click();
   await expect(page.getByLabel('AI usage')).toHaveValue('proofline');
@@ -98,6 +98,7 @@ test('connects by browser approval and requires an explicit switch from personal
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
+  await page.getByRole('link', { name: 'Proofline', exact: true }).click();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'Connect Proofline', exact: true }),

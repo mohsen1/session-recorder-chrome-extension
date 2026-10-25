@@ -50,6 +50,6 @@ Live annotations follow the supplied Codex reference: click an element or drag a
 
 ## Proofline Integration
 
-The extension uses Proofline’s official mark, Geist typography, neutral console surfaces and ink primary controls. Record stays centered. An account link lives beside the brand; service modes and the paying workspace live in Settings → Proofline. Models remain automatic with an advanced override.
+The extension uses Proofline’s official mark, Geist typography, neutral console surfaces and ink primary controls. Record stays centered. An account link lives beside the brand; the paying workspace lives in Settings → Proofline, and service modes live in Settings → Services. Models remain automatic with an advanced override.
 
 The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation. Report readers are explicitly selected, and outside readers need a free Proofline account. Paid AI pauses at exhausted credits; personal keys are never a silent fallback. Publishing and issue requests save durable IDs before sending so retries resume their original operations.

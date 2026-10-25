@@ -4,7 +4,7 @@
 
 export const SITE = 'https://azimi.me/session-recorder-chrome-extension/';
 export const INSTALL = 'https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh';
-export const GITHUB = 'https://github.com/mohsen1/session-recorder-chrome-extension';
+export const GITHUB = 'https://github.com/prooflinedev/session-recorder-chrome-extension';
 export const DATE = '2026-10-25';
 export const CHECKED = 'October 25, 2026';
 const VERIFY = '4HAVCdoxXjx6F1gDZtovZwCbhuNM7j4c6EJaLfmrUs4';

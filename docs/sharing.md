@@ -1,18 +1,17 @@
 # Publish a protected report and create a GitHub issue
 
-Open a stopped session and choose **Share report & create issue** (also available
-from the report tab). Publishing and AI summaries are optional. Local ZIP export
+Open a stopped session and choose **File issue**. Publishing and AI summaries are optional. Local ZIP export
 continues to work without any keys or accounts.
 
 ## Proofline setup
 
-See [Session Recorder in Proofline Help](https://proofline.sh/help/session-recorder-proofline/) for the guided setup.
+The Proofline connection is a preview pending the backend release. Standalone recording, personal provider keys and Cloudflare publishing work independently.
 
-In Settings → Proofline, choose Connect Proofline and approve the code in your browser. Your personal workspace is selected by default when eligible. Choose Use Proofline for AI and sharing to enable managed AI, private report hosting and GitHub App issue creation. Connecting alone preserves existing personal-key settings.
+In Settings → Proofline, choose Connect Proofline and approve the code in your browser. Your personal workspace is selected by default when eligible. In Settings → Services, choose Use Proofline for AI and sharing to enable managed AI, private report hosting and GitHub App issue creation. Connecting alone preserves existing personal-key settings.
 
 The workspace selector chooses whose credits pay for AI. Switching workspaces requires browser approval. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation; sign-in alone does not grant credits. If credits run out, top up or explicitly switch to personal keys. Local recording and manual annotations remain available.
 
-Proofline keeps provider keys on the server. It meters summaries, session titles, page vocabulary and transcription. Model selection is automatic; the advanced model field can select a server-approved model. Managed dictation transcribes short audio segments using Deepgram or ElevenLabs. Personal-key mode retains direct streaming.
+Proofline keeps provider keys on the server. It meters summaries, session titles, page vocabulary and transcription. Model selection is automatic; the advanced model field in Settings → Services can select a server-approved model. Managed dictation transcribes short audio segments using Deepgram or ElevenLabs. Personal-key mode retains direct streaming.
 
 Reports are private to their creator until readers are selected. Invited outside readers require a free Proofline account. Reports remain until deleted, subject to workspace storage limits. The extension uploads Markdown and attachments rather than executable HTML. Each attachment is limited to 25 MB. Upload and issue request identifiers are saved before submission so retries resume their original requests.
 

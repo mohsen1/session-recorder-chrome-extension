@@ -255,8 +255,8 @@ ${WORKFLOW}
 <h2 id="not">What Session Recorder does not do</h2>
 ${NOT_US}
 <h2 id="sources">Sources</h2>
-<ul class="sources">${v.sources.map(([l, u]) => `<li><a href="${u}">${l}</a>, checked ${CHECKED}</li>`).join('')}<li><a href="~/features/">Session Recorder features</a> and <a href="https://github.com/mohsen1/session-recorder-chrome-extension">source code</a></li></ul>
-<p>Vendors change plans often. If something here is out of date, <a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">open an issue</a> and we will correct it.</p>`,
+<ul class="sources">${v.sources.map(([l, u]) => `<li><a href="${u}">${l}</a>, checked ${CHECKED}</li>`).join('')}<li><a href="~/features/">Session Recorder features</a> and <a href="https://github.com/prooflinedev/session-recorder-chrome-extension">source code</a></li></ul>
+<p>Vendors change plans often. If something here is out of date, <a href="https://github.com/prooflinedev/session-recorder-chrome-extension/issues">open an issue</a> and we will correct it.</p>`,
       next: [links['github-issues'], links['protected-publishing'], { href: 'compare/', label: 'All comparisons', text: 'Jam, Marker.io, BugHerd, Userback and BrowserStack Bug Capture.' }],
     }),
   }));

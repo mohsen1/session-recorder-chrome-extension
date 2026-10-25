@@ -3,6 +3,7 @@ import { ProoflineMark } from '@/lib/ui/ProoflineMark';
 import React from 'react';
 import {
   AudioLines,
+  SlidersHorizontal,
   Camera,
   Database,
   ShieldCheck,
@@ -13,6 +14,7 @@ import type { ScreenshotPolicy } from '@/lib/session/types';
 import { PROVIDERS, type TranscriptionConfig } from '@/lib/transcription';
 import { DEFAULT_HEADER_BLOCKLIST, DEFAULT_KEY_PATTERN } from '@/lib/capture/redaction';
 import { ProoflineSettings } from './ProoflineSettings';
+import { ServicesSettings } from './ServicesSettings';
 import { SharingSettings } from './SharingSettings';
 import { useSharingSettings } from './useSharingSettings';
 import { useCaptureSettings } from './useCaptureSettings';
@@ -21,6 +23,7 @@ import { formatBytes, totalEvents, clampInt } from './settings-utils';
 
 const SETTINGS_PAGES = [
   { id: 'proofline', label: 'Proofline', icon: ProoflineMark },
+  { id: 'services', label: 'Services', icon: SlidersHorizontal },
   { id: 'capture', label: 'Capture', icon: Camera },
   { id: 'redaction', label: 'Privacy', icon: ShieldCheck },
   { id: 'transcription', label: 'Transcription', icon: AudioLines },
@@ -89,6 +92,7 @@ export function SettingsForm(): React.JSX.Element {
         )}
         <fieldset className="settings-fields" disabled={!loaded || busy}>
           {page === 'proofline' && <ProoflineSettings />}
+          {page === 'services' && <ServicesSettings />}
           {['publishing', 'summaries', 'github'].includes(page) && (
             <SharingSettings
               section={page as 'publishing' | 'summaries' | 'github'}

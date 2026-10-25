@@ -27,7 +27,7 @@ Azimi.
 
 - [Overview](https://azimi.me/session-recorder-chrome-extension/): Free open-source Chrome extension for QA and product teams. Record a bug, annotate the exact element, and file a GitHub issue with an AI summary and a protected report link.
 - [Chrome Web Store listing](https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh): install the extension.
-- [Source on GitHub](https://github.com/mohsen1/session-recorder-chrome-extension): source code, issues and README. AGPL-3.0.
+- [Source on GitHub](https://github.com/prooflinedev/session-recorder-chrome-extension): source code, issues and README. AGPL-3.0.
 - [Privacy Policy](https://azimi.me/session-recorder-chrome-extension/privacy.html): Privacy policy for the Session Recorder Chrome extension. Recordings stay local by default. Optional transcription, AI summaries, and report publishing send data to services you configure.
 
 ## Features
