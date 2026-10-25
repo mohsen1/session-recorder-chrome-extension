@@ -111,3 +111,11 @@ node scripts/website/check.mjs
 A stable GitHub release tagged `vMAJOR.MINOR.PATCH` runs the release workflow. The tag must match `package.json` and the built manifest. The workflow checks and packages that revision, attaches the ZIP and checksum, then submits the same ZIP to Chrome Web Store review using a short-lived Google token. See [publishing setup and recovery](docs/chrome-store-publishing.md). Store authorization must be configured before the first submission. The workflow does not deploy Proofline. Do not advertise the latest-release ZIP until a release asset exists.
 
 Store metadata and publication requirements are in [store-listing.md](docs/store-listing.md). Preserve Chrome Web Store item ID `dboiheheijgmfpfhbmjggiijpgondghh`; moving GitHub ownership does not transfer the store publisher.
+
+## Product screenshots
+
+After `pnpm build` and installing Playwright Chromium, run
+`node scripts/capture-screenshots.mjs`. It captures the actual extension in an
+isolated profile against `demo/checkout.html`, using fictional sample evidence
+and no provider calls. Outputs are in `docs/screenshots/`; copy the matching
+images to Proofline marketing when the UI changes.
