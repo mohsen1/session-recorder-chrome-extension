@@ -6,6 +6,7 @@ import { initialDraft, type Publication, type SavedDraft } from '@/lib/sharing/d
 import type { IssueDraft } from '@/lib/sharing/summary';
 
 export interface ShareState {
+  summaryRequestId?: string;
   session?: Session;
   settings: SharingSettings;
   level: VerbosityLevel;
@@ -75,13 +76,14 @@ export function shareReducer(state: ShareState, action: ShareAction): ShareState
         draft: action.saved?.draft ?? initialDraft(action.session.name),
         repository: action.saved?.issue?.repository ?? action.saved?.attempt?.repository ?? action.saved?.repository ?? preferredRepository(action.settings),
         publication: action.saved?.publication,
+        summaryRequestId: action.saved?.summaryRequestId,
         issue: action.saved?.issue,
         attempt: action.saved?.attempt,
         draftSource: action.saved?.draftSource ?? (action.saved ? 'edited' : 'initial'),
         level: action.saved?.publication?.level ?? state.level,
       };
     case 'settings':
-      return { ...state, settings: action.settings };
+      return { ...state, settings: action.settings, repository: state.repository || preferredRepository(action.settings) };
     case 'prepare':
       return {
         ...state,

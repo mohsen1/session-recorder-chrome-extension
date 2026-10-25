@@ -1,3 +1,4 @@
+import { ProoflineBrand } from '@/lib/ui/ProoflineBrand';
 import { FilingProgress } from './FilingProgress';
 import { configuredRepositories } from '@/lib/sharing/settings';
 import { GitHubIcon } from '@/lib/ui/GitHubIcon';
@@ -17,7 +18,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { formatClock } from '@/lib/export/markdown';
 import type { VerbosityLevel } from '@/lib/session/types';
-import { REPORT_LEVELS } from '@/lib/sharing/draft';
+import { publicationUrl, REPORT_LEVELS } from '@/lib/sharing/draft';
 import { useShareReport } from './useShareReport';
 import { useReportEvidence, type EvidenceItem } from './useReportEvidence';
 
@@ -39,8 +40,7 @@ export function App(): React.JSX.Element {
     <main className="report-workspace">
       <nav className="report-rail" aria-label="Report navigation">
         <a className="report-brand" href={optionsUrl('storage')}>
-          <span className="brand-record" />
-          Recorder
+          <ProoflineBrand compact />
         </a>
         <a className="rail-link" href={optionsUrl('storage')}>
           <Film size={16} />
@@ -354,10 +354,10 @@ function ReportDetails({ share }: { share: ShareModel }) {
         <LockKeyhole size={13} />
         Report requires sign-in
       </p>
-      {state.publication && (
+      {state.publication && publicationUrl(state.publication) && (
         <a
           className="text-action"
-          href={state.publication.deployment.url}
+          href={publicationUrl(state.publication)}
           target="_blank"
           rel="noreferrer"
         >
@@ -427,7 +427,7 @@ function AdvancedReport({ share }: { share: ShareModel }) {
         </details>
         <p className="muted">
           The issue follows the repository’s visibility. The full report requires
-          Cloudflare Access.
+          sign-in.
         </p>
         {!state.publication ? (
           <button

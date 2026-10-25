@@ -1,3 +1,4 @@
+import { loadProoflineSettings } from '@/lib/proofline/settings';
 /**
  * First-run voice setup. Shown when the mic is about to turn on (capture-bar
  * toggle or record-with-mic-from-start) and no transcription provider is
@@ -14,6 +15,7 @@ import { STORAGE_KEYS } from '@/lib/session/settings';
 /** True when a usable transcription config is saved. */
 export async function isTranscriptionConfigured(): Promise<boolean> {
   try {
+    if ((await loadProoflineSettings()).aiMode === 'proofline') return true;
     const stored = await chrome.storage.local.get(STORAGE_KEYS.transcription);
     const cfg = stored[STORAGE_KEYS.transcription] as
       | TranscriptionConfig

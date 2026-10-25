@@ -1,3 +1,4 @@
+import { runProoflineAi } from '@/lib/proofline/ai';
 import { loadSharingSettings } from '@/lib/sharing/settings';
 import { isModelConfigured, requestModel } from '@/lib/sharing/summary';
 import { normalizeKeyterms } from './keyterms';
@@ -5,6 +6,10 @@ import { normalizeKeyterms } from './keyterms';
 export async function extractPageKeyterms(context: string): Promise<string[]> {
   if (!context.trim()) return [];
   const settings = await loadSharingSettings();
+  if (settings.proofline?.aiMode === 'proofline') {
+    const result = await runProoflineAi(settings.proofline, 'vocabulary', { annotations: [], page_text: context.slice(0, 6000) }, AbortSignal.timeout(30_000));
+    return normalizeKeyterms(result.terms).filter(term => context.toLocaleLowerCase().includes(term.toLocaleLowerCase()));
+  }
   const config = settings.models[settings.provider];
   if (!isModelConfigured(settings.provider, config)) return [];
   const text = await requestModel(settings.provider, config, context.slice(0, 6000),

@@ -4,6 +4,18 @@ Open a stopped session and choose **Share report & create issue** (also availabl
 from the report tab). Publishing and AI summaries are optional. Local ZIP export
 continues to work without any keys or accounts.
 
+## Proofline setup
+
+In Settings → Proofline, choose Connect Proofline and approve the code in your browser. Your personal workspace is selected by default when eligible. Choose Use Proofline for AI and sharing to enable managed AI, private report hosting and GitHub App issue creation. Connecting alone preserves existing personal-key settings.
+
+The workspace selector chooses whose credits pay for AI. Switching workspaces requires browser approval. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation; sign-in alone does not grant credits. If credits run out, top up or explicitly switch to personal keys. Local recording and manual annotations remain available.
+
+Proofline keeps provider keys on the server. It meters summaries, session titles, page vocabulary and transcription. Model selection is automatic; the advanced model field can select a server-approved model. Managed dictation transcribes short audio segments using Deepgram or ElevenLabs. Personal-key mode retains direct streaming.
+
+Reports are private to their creator until readers are selected. Invited outside readers require a free Proofline account. Reports remain until deleted, subject to workspace storage limits. The extension uploads Markdown and attachments rather than executable HTML. Each attachment is limited to 25 MB. Upload and issue request identifiers are saved before submission so retries resume their original requests.
+
+The repository dropdown lists repositories available through the selected workspace’s GitHub App installation. Managed issue creation requires Proofline hosting. Choose Cloudflare hosting and personal repository tokens for the standalone publishing path. Existing Cloudflare reports remain at their original destination.
+
 ## Cloudflare setup
 
 1. Create a dedicated **Direct Upload** Cloudflare Pages project. Its initial

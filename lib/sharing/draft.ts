@@ -4,12 +4,43 @@ import type { Deployment } from './cloudflare';
 import type { IssueDraft } from './summary';
 import type { VerbosityLevel } from '@/lib/session/types';
 
-export interface Publication {
+export interface CloudflarePublication {
   deployment: Deployment;
   destination: Omit<CloudflareConfig, 'apiToken'>;
   level: VerbosityLevel;
 }
+export interface ProoflinePublication {
+  provider: 'proofline';
+  id: string;
+  organizationId: string;
+  url: string;
+  level: VerbosityLevel;
+  requestId: string;
+  attachments: { path: string; requestId: string; uploaded: boolean }[];
+}
+export type Publication = CloudflarePublication | ProoflinePublication;
+export function isProoflinePublication(
+  publication: Publication,
+): publication is ProoflinePublication {
+  return 'provider' in publication && publication.provider === 'proofline';
+}
+export function publicationUrl(publication: Publication): string {
+  return isProoflinePublication(publication)
+    ? publication.url
+    : publication.deployment.url;
+}
+export function publicationReady(publication?: Publication): boolean {
+  return (
+    !!publication &&
+    (isProoflinePublication(publication)
+      ? !!publication.id && publication.attachments.every((asset) => asset.uploaded)
+      : publication.deployment.latest_stage?.name === 'deploy' &&
+        publication.deployment.latest_stage.status === 'success')
+  );
+}
 export interface SavedDraft {
+  summaryRequestId?: string;
+
   draft: IssueDraft;
   repository: string;
   publication?: Publication;

@@ -22,14 +22,14 @@ export function issueBody(draft: IssueDraft, reportUrl: string): string {
   const url = new URL(reportUrl);
   if (
     url.protocol !== 'https:' ||
-    !url.hostname.endsWith('.pages.dev') ||
+    !(url.hostname.endsWith('.pages.dev') || (url.origin === 'https://proofline.sh' && /^\/recorder\/reports\/[a-f0-9-]+\/[a-f0-9-]+$/.test(url.pathname))) ||
     url.username ||
     url.password ||
     url.search ||
     url.hash
   )
-    throw new Error('A published Cloudflare Pages report URL is required.');
-  return `${draft.body.trim()}\n\n### Recorded session\n[Open the full report](${url.href}) — Cloudflare Access sign-in required.\n`;
+    throw new Error('A published Cloudflare Pages or Proofline report URL is required.');
+  return `${draft.body.trim()}\n\n### Recorded session\n[Open the full report](${url.href}) — ${url.hostname === 'proofline.sh' ? 'Proofline' : 'Cloudflare Access'} sign-in required.\n`;
 }
 
 /** Keep encoded URLs small; the clipboard carries longer reviewed summaries. */
@@ -55,6 +55,7 @@ export interface CreatedIssue {
   repository: string;
 }
 export interface IssueAttempt {
+  proofline?: { organizationId: string; reportId: string; repositoryId: string };
   id: string;
   repository: string;
   startedAt: string;

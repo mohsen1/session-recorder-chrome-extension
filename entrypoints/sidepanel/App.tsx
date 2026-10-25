@@ -1,3 +1,6 @@
+import { useProoflineSettings } from './components/useProoflineSettings';
+import { ProoflineBrand } from '@/lib/ui/ProoflineBrand';
+import { PRODUCT_WEBSITE, PRODUCT_REPOSITORY } from '@/lib/proofline/settings';
 import React from 'react';
 import { Settings, X } from 'lucide-react';
 import { GitHubIcon } from '@/lib/ui/GitHubIcon';
@@ -21,6 +24,8 @@ export function App(): React.JSX.Element {
   return (
     <div className="app">
       <div className="app__actions">
+        <ProoflineBrand />
+        <AccountLink />
         <button
           type="button"
           className="icon-btn"
@@ -61,14 +66,14 @@ export function App(): React.JSX.Element {
 }
 
 function IdleFooter(): React.JSX.Element {
-  const repository = 'https://github.com/mohsen1/session-recorder-chrome-extension';
+  const repository = PRODUCT_REPOSITORY;
   return (
     <footer className="idle-foot">
       <a href={repository} target="_blank" rel="noreferrer">
         <GitHubIcon size={13} /> GitHub
       </a>
       <span aria-hidden="true">·</span>
-      <a href="https://azimi.me/session-recorder-chrome-extension/" target="_blank" rel="noreferrer">
+      <a href={PRODUCT_WEBSITE} target="_blank" rel="noreferrer">
         Website
       </a>
       <span aria-hidden="true">·</span>
@@ -109,4 +114,11 @@ function TabChips(): React.JSX.Element | null {
 
 function truncateLabel(s: string): string {
   return s.length > 22 ? `${s.slice(0, 21)}…` : s;
+}
+
+function AccountLink(): React.JSX.Element | null {
+  const { state } = useProoflineSettings();
+  if (state.status === 'loading') return null;
+  const connection = state.settings.connection;
+  return <a className="proofline-account-link" href={chrome.runtime.getURL('options.html#proofline')} target="_blank" rel="noreferrer">{connection ? (connection.expiresAt <= Date.now() ? 'Reconnect' : connection.account.organization.login) : 'Connect'}</a>;
 }

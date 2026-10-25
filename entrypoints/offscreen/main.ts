@@ -1,3 +1,4 @@
+import { decodePcm16 } from '@/lib/transcription/pcm';
 import { elevenLabsLiveUrl, elevenLabsAudioMessage, parseElevenLabsMessage } from '@/lib/transcription/elevenlabs-live';
 import { normalizeKeyterms } from '@/lib/transcription/keyterms';
 /**
@@ -459,13 +460,13 @@ async function handleStart(
   // audio as ONE continuous file (no 30s rotation) since transcripts are already
   // persisted live; otherwise we keep the rotating-segment batch path.
   streaming = false;
-  if (transcription && ['deepgram', 'elevenlabs'].includes(transcription.provider) && transcription.apiKey) {
+  if (transcription && !transcription.managed && ['deepgram', 'elevenlabs'].includes(transcription.provider) && transcription.apiKey) {
     streaming = await startStreaming(transcription);
   }
 
   startRecorder();
   if (!streaming) {
-    segmentTimer = setInterval(rotateSegment, SEGMENT_MS);
+    segmentTimer = setInterval(rotateSegment, transcription?.managed ? 5000 : SEGMENT_MS);
   }
   return { ok: true, streaming };
 }
@@ -529,6 +530,11 @@ chrome.runtime.onMessage.addListener((raw, _sender, sendResponse) => {
   if (!msg || typeof msg.kind !== 'string') return false;
 
   switch (msg.kind) {
+    case 'audio/decode-pcm': {
+      const dataUrl = (raw as { dataUrl: string }).dataUrl;
+      void decodePcm16(dataUrl).then(pcmBase64 => sendResponse({ pcmBase64 })).catch(() => sendResponse({ error: 'Recorded audio could not be decoded.' }));
+      return true;
+    }
     case 'audio/keyterms':
       updateKeyterms((raw as Extract<RequestMessage, { kind: 'audio/keyterms' }>).keyterms);
       sendResponse({ ok: true });

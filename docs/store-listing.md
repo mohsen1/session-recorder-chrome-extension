@@ -5,7 +5,7 @@ behavior and with `docs/PRIVACY.md`.
 
 ## Basics
 
-- **Name:** Session Recorder: Bug Recorder for AI Agents
+- **Name:** Session Recorder by Proofline
   - The store title field allows 75 characters. Lead with the category, not just
     the brand: people and models both search for what it does, not its name.
     Keep "Session Recorder" first so the entity stays recognizable.
@@ -23,9 +23,9 @@ behavior and with `docs/PRIVACY.md`.
     consider a Gmail filter for `[chrome web store]`-style subjects. If spam
     becomes a problem later, swap in a dedicated alias — it doesn't affect the
     account owner.
-- **Website:** https://azimi.me/session-recorder-chrome-extension/
+- **Website:** https://proofline.sh/session-recorder-chrome-extension/
   - This is the canonical URL. Do not use the mohsen1.github.io form anywhere:
-    every page on the site declares azimi.me as canonical, and pointing the store
+    the migrated marketing site uses proofline.sh as canonical, and pointing the store
     listing at the other host splits the entity across two domains.
 
 ## Short description (≤132 chars) — paste as-is
@@ -65,7 +65,7 @@ Everything lands on one timeline, in the order it happened, so the report reads 
 
 LOCAL BY DEFAULT, SHARING WHEN YOU CHOOSE
 
-Sessions are stored locally and exported as a ZIP. There is no developer-operated backend or account system. Optional publishing uploads the selected report to your own Cloudflare Pages project, protected by Cloudflare Access.
+Sessions are stored locally and exported as a ZIP. An optional Proofline account provides credit-funded AI, private reports and GitHub App issue filing. Personal API keys remain supported. Optional publishing uploads the selected report to your own Cloudflare Pages project, protected by Cloudflare Access.
 
 Voice transcription is also optional: if you add your own API key for a transcription provider (Deepgram, OpenAI, or ElevenLabs), the recorded audio is sent to that provider to produce a text transcript. AI summaries optionally send text evidence to your OpenAI, OpenAI-compatible, Anthropic or Google provider. Review the editable summary and open a GitHub issue draft containing the protected report link. Publishing can include audio recordings; review the file list first.
 
@@ -97,7 +97,7 @@ Unzip the export and hand report.md to your coding agent. It's a chronological n
 • ChatGPT — upload one self-contained file instead of pasting screenshots
 
 Step-by-step workflow guides for each, plus a complete example report:
-https://azimi.me/session-recorder-chrome-extension/
+https://proofline.sh/session-recorder-chrome-extension/
 
 
 Built for developers. Manifest V3. Free and open source.
@@ -149,7 +149,7 @@ Answer the certification form as follows:
   in the privacy policy.)
 - **Do you use remote code?** No. All code is bundled in the package.
 - **Privacy policy URL:**
-  https://azimi.me/session-recorder-chrome-extension/privacy.html
+  https://proofline.sh/session-recorder-chrome-extension/privacy.html
   (published from `website/privacy.html` via GitHub Pages)
 
 ## Store assets
@@ -191,3 +191,9 @@ Keep this file, `website/index.html`, and the README saying the same thing. The
 product definition paragraph at the top of the detailed description is the same
 sentence used on the website and in `llms.txt` on purpose: consistent phrasing
 across independent surfaces is what makes an entity legible.
+
+## Proofline ownership and release
+
+The product name is Session Recorder by Proofline. Keep the existing Chrome Web Store item ID `dboiheheijgmfpfhbmjggiijpgondghh` when moving publisher ownership; do not create a replacement listing. Publisher ownership is changed separately in the Chrome Web Store dashboard. Source and support move to `prooflinedev/session-recorder-chrome-extension`.
+
+Publishing a GitHub release in that repository runs `.github/workflows/release.yml`. It checks and packages the extension, then attaches `session-recorder.zip` and its SHA-256 checksum. The stable download is `https://github.com/prooflinedev/session-recorder-chrome-extension/releases/latest/download/session-recorder.zip`. The workflow does not create a release, publish to the Chrome Web Store, or deploy the marketing site. The existing Pages workflow remains in place until the website redirects are ready.

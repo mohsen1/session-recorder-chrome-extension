@@ -8,7 +8,7 @@ export function HelpLink({ topic, children }: {
   return (
     <a
       className="sharing-link"
-      href={`https://azimi.me/session-recorder-chrome-extension/help/${topic}/`}
+      href={`https://proofline.sh/session-recorder-chrome-extension/help/${topic}/`}
       target="_blank"
       rel="noreferrer"
     >

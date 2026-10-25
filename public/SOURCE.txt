@@ -2,7 +2,7 @@ Session Recorder — free software under the GNU Affero General Public License v
 
 The complete corresponding source code for this extension is published at:
 
-    https://github.com/mohsen1/session-recorder-chrome-extension
+    https://github.com/prooflinedev/session-recorder-chrome-extension
 
 See LICENSE in this package for the full license text.
 

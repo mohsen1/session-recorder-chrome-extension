@@ -12,7 +12,7 @@ test('loads with a service worker and the expected manifest', async ({
 
   const manifest = await background.evaluate(() => chrome.runtime.getManifest());
   expect(manifest.manifest_version).toBe(3);
-  expect(manifest.name).toBe('Session Recorder');
+  expect(manifest.name).toBe('Session Recorder by Proofline');
   expect(manifest.permissions).toEqual(
     expect.arrayContaining(['debugger', 'sidePanel', 'downloads', 'offscreen']),
   );

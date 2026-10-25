@@ -1,3 +1,4 @@
+import type { CloudflarePublication } from './draft';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fileIssue } from './file-issue';
 import { defaultSharingSettings } from './settings';
@@ -93,7 +94,7 @@ describe('one-click issue filing', () => {
     });
     await expect(fileIssue(input)).rejects.toThrow();
     expect(createGitHubIssue).not.toHaveBeenCalled();
-    expect(input.snapshots.at(-1)?.publication?.deployment).toEqual(deployment);
+    expect((input.snapshots.at(-1)?.publication as CloudflarePublication)?.deployment).toEqual(deployment);
     expect(input.snapshots.at(-1)?.attempt).toBeUndefined();
   });
   it('summarizes, publishes and creates, saving checkpoints without secrets', async () => {
@@ -103,7 +104,7 @@ describe('one-click issue filing', () => {
     expect(publishReport).toHaveBeenCalledOnce();
     expect(createGitHubIssue).toHaveBeenCalledOnce();
     expect(result.issue).toEqual(issue);
-    expect(input.snapshots.find((s) => s.attempt)?.publication?.deployment).toEqual(
+    expect((input.snapshots.find((s) => s.attempt)?.publication as CloudflarePublication)?.deployment).toEqual(
       deployment,
     );
     expect(JSON.stringify(input.snapshots)).not.toMatch(/github-key|model-key/);

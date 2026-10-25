@@ -1,3 +1,6 @@
+import { loadProoflineSettings } from '@/lib/proofline/settings';
+import { runProoflineAi } from '@/lib/proofline/ai';
+import { OFFSCREEN_MARKER } from '@/lib/messaging';
 /**
  * Transcription provider registry and dispatch.
  *
@@ -45,6 +48,41 @@ export async function transcribe(
   audio: Blob,
   config: TranscriptionConfig,
 ): Promise<TranscriptionResult> {
+  const settings = await loadProoflineSettings();
+  if (settings.aiMode === 'proofline' || config.managed) {
+    const bytes = new Uint8Array(await audio.arrayBuffer());
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 8192)
+      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    const decoded = (await chrome.runtime.sendMessage({
+      kind: 'audio/decode-pcm',
+      [OFFSCREEN_MARKER]: true,
+      dataUrl: `data:${audio.type || 'audio/webm'};base64,${btoa(binary)}`,
+    })) as { pcmBase64?: string; error?: string };
+    if (!decoded?.pcmBase64)
+      throw new Error(decoded?.error || 'Recorded audio could not be decoded.');
+    const result = await runProoflineAi(
+      settings,
+      'transcription',
+      {
+        audio: {
+          pcm_base64: decoded.pcmBase64,
+          sample_rate: 16000,
+          provider: config.provider === 'elevenlabs' ? 'elevenlabs' : 'deepgram',
+          keyterms: config.keyterms,
+          language: config.language,
+        },
+      },
+      AbortSignal.timeout(120000),
+      config.requestId,
+    );
+    if (typeof result.text !== 'string')
+      throw new Error('Proofline returned no transcript.');
+    return {
+      text: result.text,
+      words: result.words?.map((word) => ({ word: word.word, t: word.start })),
+    };
+  }
   return getProvider(config.provider).transcribe(audio, config);
 }
 

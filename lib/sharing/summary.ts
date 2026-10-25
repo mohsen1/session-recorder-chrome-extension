@@ -1,6 +1,8 @@
 import { applyLevel } from '@/lib/export/trimmer';
 import { formatClock, renderReport } from '@/lib/export/markdown';
 import type { AssetMeta, Session, SessionEvent } from '@/lib/session/types';
+import { runProoflineAi, recordedEvidence } from '@/lib/proofline/ai';
+import type { SharingSettings } from './settings';
 import type { ModelConfig, SummaryProvider } from './settings';
 
 export interface IssueDraft {
@@ -271,4 +273,13 @@ export async function requestModel(
     text = data.choices?.[0]?.message?.content ?? '';
   }
   return text;
+}
+
+export function isSummaryConfigured(settings: SharingSettings): boolean {
+  return settings.proofline?.aiMode === 'proofline' || isModelConfigured(settings.provider, settings.models[settings.provider]);
+}
+export async function generateConfiguredSummary(settings: SharingSettings, evidence: string, signal?: AbortSignal, requestId?: string): Promise<IssueDraft> {
+  if (settings.proofline?.aiMode !== 'proofline') return generateSummary(settings.provider, settings.models[settings.provider], evidence, signal);
+  const result = await runProoflineAi(settings.proofline, 'summary', recordedEvidence(evidence), signal, requestId);
+  return parseIssueDraft(JSON.stringify({ title: result.title, body: result.markdown }));
 }

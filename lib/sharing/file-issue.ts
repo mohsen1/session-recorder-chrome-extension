@@ -1,8 +1,15 @@
+import { ProoflineAiCancelledError } from '@/lib/proofline/ai';
 import type { ExportFile } from '@/lib/export/bundle';
 import type { VerbosityLevel } from '@/lib/session/types';
-import type { SavedDraft } from './draft';
+import { isProoflinePublication, publicationUrl, type SavedDraft } from './draft';
+import { fileProoflineIssue, publishProoflineReport } from '@/lib/proofline/reports';
+import { requireConnection } from '@/lib/proofline/settings';
 import { tokenForRepository, type SharingSettings } from './settings';
-import { generateSummary, isModelConfigured } from './summary';
+import {
+  generateSummary,
+  generateConfiguredSummary,
+  isSummaryConfigured,
+} from './summary';
 import { publishReport, validateFiles, waitForDeployment } from './cloudflare';
 import {
   createGitHubIssue,
@@ -38,14 +45,32 @@ export async function fileIssue(input: FileIssueInput): Promise<SavedDraft> {
   // An uncertain request is permanently tied to its original repository.
   const repository = repositoryPath(saved.attempt?.repository ?? saved.repository);
   saved = { ...saved, repository };
-  const token = tokenForRepository(settings, repository);
+  const managedGitHub =
+    !!saved.attempt?.proofline || settings.proofline?.github === 'proofline';
+  const token = managedGitHub ? '' : tokenForRepository(settings, repository);
   input.stage?.('connection');
   progress('Checking GitHub connection…');
-  await verifyGitHub(repository, token, signal);
+  if (managedGitHub) requireConnection(settings.proofline!);
+  else await verifyGitHub(repository, token, signal);
   if (saved.attempt) {
     input.stage?.('issue');
     progress('Checking the previous GitHub request…');
-    const issue = await findCreatedIssue(saved.attempt, token, signal);
+    let issue;
+    try {
+      issue = saved.attempt.proofline
+        ? await fileProoflineIssue(
+            settings.proofline!,
+            saved.attempt,
+            saved.draft,
+            signal,
+            true,
+          )
+        : await findCreatedIssue(saved.attempt, token, signal);
+    } catch (error) {
+      if (error instanceof GitHubRequestError && error.definitive)
+        await checkpoint({ attempt: undefined });
+      throw error;
+    }
     if (!issue)
       throw new Error(
         'The previous request may still be processing. Check your repository, then retry to look for the issue again. No duplicate issue was submitted.',
@@ -56,20 +81,60 @@ export async function fileIssue(input: FileIssueInput): Promise<SavedDraft> {
   signal.throwIfAborted();
   validateFiles(files);
   input.stage?.('summary');
-  const model = settings.models[settings.provider];
-  const configured = isModelConfigured(settings.provider, model);
-  if (configured && ['initial', 'title-edited'].includes(saved.draftSource ?? 'initial')) {
+  const configured = isSummaryConfigured(settings);
+  if (
+    configured &&
+    ['initial', 'title-edited'].includes(saved.draftSource ?? 'initial')
+  ) {
     progress('Generating issue summary…');
-    const draft = await generateSummary(settings.provider, model, evidence, signal);
+    if (settings.proofline?.aiMode === 'proofline' && !saved.summaryRequestId)
+      await checkpoint({ summaryRequestId: crypto.randomUUID() });
+    let draft;
+    try {
+      draft =
+        settings.proofline?.aiMode === 'proofline'
+          ? await generateConfiguredSummary(
+              settings,
+              evidence,
+              signal,
+              saved.summaryRequestId,
+            )
+          : await generateSummary(
+              settings.provider,
+              settings.models[settings.provider],
+              evidence,
+              signal,
+            );
+    } catch (error) {
+      if (error instanceof ProoflineAiCancelledError)
+        await checkpoint({ summaryRequestId: undefined });
+      throw error;
+    }
     if (saved.draftSource === 'title-edited') draft.title = saved.draft.title;
-    await checkpoint({ draft, draftSource: 'generated' });
+    await checkpoint({ draft, draftSource: 'generated', summaryRequestId: undefined });
   }
   if (!saved.draft.title.trim() || !saved.draft.body.trim())
     throw new Error('Add an issue title and summary.');
   signal.throwIfAborted();
   input.stage?.('publish');
-  if (saved.publication) {
+  if (
+    settings.proofline?.publishing === 'proofline' ||
+    (saved.publication && isProoflinePublication(saved.publication))
+  ) {
+    await publishProoflineReport(
+      settings.proofline!,
+      files,
+      saved.draft.title,
+      level,
+      saved.publication,
+      (publication) => checkpoint({ publication }),
+      progress,
+      signal,
+    );
+  } else if (saved.publication) {
     const publication = saved.publication;
+    if (isProoflinePublication(publication))
+      throw new Error('Reconnect Proofline to manage this report.');
     if (
       publication.deployment.latest_stage?.name !== 'deploy' ||
       publication.deployment.latest_stage.status !== 'success'
@@ -98,9 +163,30 @@ export async function fileIssue(input: FileIssueInput): Promise<SavedDraft> {
     await checkpoint({ publication: { deployment, destination, level } });
   }
   signal.throwIfAborted();
+  const managedRepository = settings.proofline?.connection?.account.repositories.find(
+    (entry) => entry.full_name.toLowerCase() === repository.toLowerCase(),
+  );
+  if (
+    managedGitHub &&
+    (!managedRepository ||
+      !saved.publication ||
+      !isProoflinePublication(saved.publication))
+  )
+    throw new Error(
+      'Choose a repository installed in this Proofline workspace and use Proofline report hosting.',
+    );
   const attempt = {
     id: crypto.randomUUID(),
     repository,
+    ...(managedGitHub && saved.publication && isProoflinePublication(saved.publication)
+      ? {
+          proofline: {
+            organizationId: saved.publication.organizationId,
+            reportId: saved.publication.id,
+            repositoryId: managedRepository!.id,
+          },
+        }
+      : {}),
     startedAt: new Date(Date.now() - 60_000).toISOString(),
   };
   await checkpoint({ attempt });
@@ -111,13 +197,15 @@ export async function fileIssue(input: FileIssueInput): Promise<SavedDraft> {
   input.stage?.('issue');
   progress('Creating GitHub issue…');
   try {
-    const issue = await createGitHubIssue(
-      attempt,
-      token,
-      saved.draft,
-      saved.publication!.deployment.url,
-      signal,
-    );
+    const issue = managedGitHub
+      ? await fileProoflineIssue(settings.proofline!, attempt, saved.draft, signal)
+      : await createGitHubIssue(
+          attempt,
+          token,
+          saved.draft,
+          publicationUrl(saved.publication!),
+          signal,
+        );
     await checkpoint({ issue, attempt: undefined });
   } catch (error) {
     // A rejected request is safe to retry. An uncertain response retains its marker.

@@ -1,6 +1,6 @@
-# Privacy Policy — Session Recorder
+# Privacy Policy — Session Recorder by Proofline
 
-_Last updated: 2026-10-24_
+_Last updated: 2026-10-25_
 
 Session Recorder is a Chrome extension that records a session of you using a web
 app — interactions, network traffic, console logs, screenshots, voice narration,
@@ -10,15 +10,11 @@ coding agent.
 ## Summary
 
 - **Recordings stay on your machine by default.** Sessions are stored locally in
-  your browser (IndexedDB) and exported as a zip file you save yourself. Session
-  Recorder has no developer-operated backend or account system. We do not operate any server
-  that receives your recordings.
+  your browser (IndexedDB) and exported as a zip file you save yourself. Connecting Proofline is optional. Recording and local export do not require an account.
 - **Voice transcription is optional.** If — and only if — you
-  configure a transcription provider and API key, the audio you record is sent
-  to that third-party provider (Deepgram, OpenAI, or ElevenLabs) to produce a
-  text transcript.
+  configure personal transcription credentials or explicitly select Proofline credits, recorded audio is sent to the selected service to produce a text transcript.
 - **Publishing and AI summaries are optional.** Publishing sends the selected
-  report and its included assets to your Cloudflare account. Generating a summary
+  report and its included assets to your selected Proofline workspace or Cloudflare account. Generating a summary
   sends a bounded text excerpt to the model provider you configure. Filing a
   GitHub issue sends its title, summary and report link to GitHub.
 
@@ -36,7 +32,7 @@ recording:
 - Files you upload to the app or attach yourself
 
 All of this is written to local browser storage. You can export a local ZIP or
-explicitly publish the selected report to your Cloudflare Pages project.
+explicitly publish the selected report to Proofline or your Cloudflare Pages project.
 
 ## Redaction
 
@@ -55,7 +51,7 @@ uploaded to the provider you selected in order to transcribe it:
 - **ElevenLabs** — https://elevenlabs.io/privacy
 
 Your API key is stored locally in `chrome.storage.local` and is sent only to that
-provider. We do not receive, proxy, or store your key or your audio. Your use of
+provider. In personal-key mode, Proofline does not receive or proxy your key or audio. Your use of
 a provider is governed by that provider's privacy policy and terms.
 
 ## Optional annotation dictation
@@ -90,23 +86,25 @@ File GitHub issue with a configured model or Regenerate summary. With a configur
 contain sensitive data; review it before sending. Provider terms and retention
 policies apply. Review generated summaries before sharing them.
 
-GitHub receives the title, summary and protected page link when you choose File GitHub issue. The extension creates the issue with your configured GitHub token. The summary follows the repository’s visibility; Access protects the hosted report, not the issue text. Drafts, deployment references, created issues and recovery markers are saved locally. Copy issue Markdown writes the text to your clipboard only when you choose it.
+GitHub receives the title, summary and protected page link when you choose File GitHub issue. The extension creates the issue with your configured GitHub token or the installed Proofline GitHub App. The summary follows the repository’s visibility; The report’s access policy protects the hosted report, not the issue text. Drafts, deployment references, created issues and recovery markers are saved locally. Copy issue Markdown writes the text to your clipboard only when you choose it.
 
 API credentials stay in extension storage and are sent only to their configured
 service. They are not included in report bundles or deployed pages. Screenshots,
 voice and arbitrary attachments are not automatically scrubbed of all sensitive
 information. Review them before publishing.
 
-## Data we collect
+## Optional Proofline services
 
-**None.** Session Recorder has no analytics, no telemetry, no ads, and no developer-operated backend.
-The developer does not receive any of your recordings, transcripts, keys, or
-usage data.
+Connecting Proofline uses browser approval to store an expiring, workspace-scoped token in trusted extension storage. Connecting alone does not enable paid AI. You explicitly choose Proofline credits in Settings. Personal provider keys remain local and are never sent to Proofline.
+
+In Proofline AI mode, summaries, session titles and page vocabulary are sent through the Proofline server to configured model providers. Recorded speech is decoded to mono audio and sent through Proofline to Deepgram or ElevenLabs. Provider credentials stay on the server. Paid usage is attributed to the workspace you select and recorded in Proofline’s credit ledger. AI pauses when credits are unavailable; the extension never silently switches to your personal keys or another workspace.
+
+Publishing to Proofline sends the selected report Markdown and included attachments. Reports are private to their creator and explicitly permitted readers. Outside readers need a free Proofline account and an invitation. Reports remain until deleted, subject to the workspace storage limit; deleting a local session does not delete a hosted report. Use the report’s delete action to remove the hosted copy.
 
 ## Data sharing and sale
 
-We do not sell, share, or transfer any user data, because we never receive any.
+The extension has no advertising or analytics. Optional Proofline services process the evidence and usage information described above. AI providers receive the inputs needed for your selected operations; GitHub receives issue contents when you file an issue. The extension does not sell recorded data.
 
 ## Contact
 
-Questions: open an issue at https://github.com/mohsen1/session-recorder-chrome-extension/issues
+Questions: open an issue at https://github.com/prooflinedev/session-recorder-chrome-extension/issues

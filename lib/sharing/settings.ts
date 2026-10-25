@@ -1,3 +1,4 @@
+import { loadProoflineSettings, type ProoflineSettings } from '@/lib/proofline/settings';
 import { repositoryPath } from './github';
 
 export type SummaryProvider = 'openai' | 'compatible' | 'anthropic' | 'google';
@@ -19,6 +20,7 @@ export interface GitHubRepository {
   token: string;
 }
 export interface SharingSettings {
+  proofline?: ProoflineSettings;
   cloudflare: CloudflareConfig;
   repository: string;
   /** Legacy fields are read only for migration. */
@@ -83,9 +85,11 @@ export async function loadSharingSettings(): Promise<SharingSettings> {
   const stored = await chrome.storage.local.get([SHARING_KEY, LAST_REPOSITORY_KEY]);
   const saved = stored[SHARING_KEY] as Partial<SharingSettings> | undefined;
   const defaults = defaultSharingSettings();
+  const proofline = await loadProoflineSettings();
   return {
     ...defaults,
     ...saved,
+    proofline,
     repositories: configuredRepositories(saved),
     lastRepository: stored[LAST_REPOSITORY_KEY] ?? saved?.lastRepository ?? '',
     cloudflare: { ...defaults.cloudflare, ...saved?.cloudflare },
@@ -101,7 +105,7 @@ export async function loadSharingSettings(): Promise<SharingSettings> {
 export async function saveSharingSettings(settings: SharingSettings): Promise<void> {
   // Content scripts have no reason to access provider credentials.
   await chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
-  const { lastRepository: _last, ...rest } = settings;
+  const { lastRepository: _last, proofline: _proofline, ...rest } = settings;
   await chrome.storage.local.set({
     [SHARING_KEY]: { ...rest, repository: '', githubToken: '' },
   });
@@ -123,6 +127,7 @@ export function cloudflareTokenUrl(accountId: string): string {
 
 /** Migrate the single-repository configuration without losing its credential. */
 export function configuredRepositories(settings?: Partial<SharingSettings>): GitHubRepository[] {
+  if (settings?.proofline?.github === 'proofline') return settings.proofline.connection?.account.repositories.map(repo => ({ id: repo.id, repository: repo.full_name, token: '' })) ?? [];
   if (settings?.repositories?.length) return settings.repositories;
   if (!settings?.repository) return [];
   return [{ id: 'legacy', repository: settings.repository, token: settings.githubToken ?? '' }];

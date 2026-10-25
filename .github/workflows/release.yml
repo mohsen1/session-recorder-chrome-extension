@@ -1,0 +1,49 @@
+name: Package extension release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extension-release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: github.repository == 'prooflinedev/session-recorder-chrome-extension'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check extension
+        run: |
+          pnpm compile
+          pnpm test
+      - name: Package stable download
+        run: |
+          pnpm build
+          mkdir -p release-assets
+          cd .output/chrome-mv3
+          zip -r ../../release-assets/session-recorder.zip .
+          cd ../../release-assets
+          sha256sum session-recorder.zip > session-recorder.zip.sha256
+      - name: Attach package to published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" release-assets/session-recorder.zip release-assets/session-recorder.zip.sha256

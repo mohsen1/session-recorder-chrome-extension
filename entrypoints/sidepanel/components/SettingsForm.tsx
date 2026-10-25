@@ -2,6 +2,7 @@ import { GitHubIcon } from '@/lib/ui/GitHubIcon';
 import React from 'react';
 import {
   AudioLines,
+  UserRound,
   Camera,
   Database,
   ShieldCheck,
@@ -11,6 +12,7 @@ import {
 import type { ScreenshotPolicy } from '@/lib/session/types';
 import { PROVIDERS, type TranscriptionConfig } from '@/lib/transcription';
 import { DEFAULT_HEADER_BLOCKLIST, DEFAULT_KEY_PATTERN } from '@/lib/capture/redaction';
+import { ProoflineSettings } from './ProoflineSettings';
 import { SharingSettings } from './SharingSettings';
 import { useSharingSettings } from './useSharingSettings';
 import { useCaptureSettings } from './useCaptureSettings';
@@ -18,6 +20,7 @@ import { useSettingsNavigation } from './useSettingsNavigation';
 import { formatBytes, totalEvents, clampInt } from './settings-utils';
 
 const SETTINGS_PAGES = [
+  { id: 'proofline', label: 'Proofline', icon: UserRound },
   { id: 'capture', label: 'Capture', icon: Camera },
   { id: 'redaction', label: 'Privacy', icon: ShieldCheck },
   { id: 'transcription', label: 'Transcription', icon: AudioLines },
@@ -85,6 +88,7 @@ export function SettingsForm(): React.JSX.Element {
           </p>
         )}
         <fieldset className="settings-fields" disabled={!loaded || busy}>
+          {page === 'proofline' && <ProoflineSettings />}
           {['publishing', 'summaries', 'github'].includes(page) && (
             <SharingSettings
               section={page as 'publishing' | 'summaries' | 'github'}

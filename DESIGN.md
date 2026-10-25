@@ -1,33 +1,35 @@
 ---
-name: "Session Recorder"
+name: "Session Recorder by Proofline"
 description: "Compact, clean and sharp tools for recording and reporting bugs."
 colors:
-  accent: "#bb4a35"
-  accent-text: "#ad3f2c"
+  accent: "oklch(0.205 0.012 260)"
+  accent-text: "oklch(0.49 0.13 255)"
   accent-ink: "#ffffff"
-  accent-tint: "rgba(187, 74, 53, 0.08)"
-  accent-line: "rgba(187, 74, 53, 0.5)"
-  ink: "#242424"
-  ink-2: "#494a4d"
-  muted: "#6c6e73"
-  line: "#e7e7e8"
+  accent-tint: "oklch(0.94 0.03 255)"
+  accent-line: "oklch(0.49 0.13 255 / 0.5)"
+  ink: "oklch(0.205 0.012 260)"
+  ink-2: "oklch(0.44 0.012 260)"
+  muted: "oklch(0.54 0.01 260)"
+  line: "oklch(0.915 0.004 260)"
   bg: "#ffffff"
   surface: "#ffffff"
-  surface-2: "#f8f8f9"
+  surface-2: "oklch(0.962 0.003 260)"
   ok: "#24734f"
   warn: "#8a5c08"
   danger: "#b52f36"
   danger-tint: "rgba(229, 72, 77, 0.09)"
-  accent-text-dark: "#f49785"
-  accent-tint-dark: "rgba(187, 74, 53, 0.12)"
-  accent-line-dark: "rgba(187, 74, 53, 0.55)"
-  ink-dark: "#ececee"
-  ink-2-dark: "#b9b9bf"
-  muted-dark: "#9999a3"
-  line-dark: "#303034"
-  bg-dark: "#1b1b1d"
-  surface-dark: "#1b1b1d"
-  surface-2-dark: "#242426"
+  accent-dark: "oklch(0.93 0.004 260)"
+  accent-ink-dark: "oklch(0.19 0.01 260)"
+  accent-text-dark: "oklch(0.72 0.11 255)"
+  accent-tint-dark: "oklch(0.3 0.05 255)"
+  accent-line-dark: "oklch(0.72 0.11 255 / 0.5)"
+  ink-dark: "oklch(0.93 0.004 260)"
+  ink-2-dark: "oklch(0.72 0.008 260)"
+  muted-dark: "oklch(0.62 0.009 260)"
+  line-dark: "oklch(0.275 0.008 260)"
+  bg-dark: "oklch(0.2 0.006 260)"
+  surface-dark: "oklch(0.2 0.006 260)"
+  surface-2-dark: "oklch(0.235 0.007 260)"
   ok-dark: "#79c9a2"
   warn-dark: "#e2b861"
   danger-dark: "#fa9298"
@@ -36,38 +38,38 @@ colors:
   annotation-outline: "#1683ff"
 typography:
   headline:
-    fontFamily: "ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, system-ui, sans-serif"
+    fontFamily: "Geist Variable, Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "25px"
     fontWeight: 600
     lineHeight: 1.35
     letterSpacing: "-0.025em"
   title:
-    fontFamily: "ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, system-ui, sans-serif"
+    fontFamily: "Geist Variable, Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 600
     lineHeight: 1.5
   body:
-    fontFamily: "ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, system-ui, sans-serif"
+    fontFamily: "Geist Variable, Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.5
   prose:
-    fontFamily: "ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, system-ui, sans-serif"
+    fontFamily: "Geist Variable, Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.75
   label:
-    fontFamily: "ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, system-ui, sans-serif"
+    fontFamily: "Geist Variable, Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "12px"
     fontWeight: 500
     lineHeight: 1.5
   meta:
-    fontFamily: "ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, system-ui, sans-serif"
+    fontFamily: "Geist Variable, Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "11px"
     fontWeight: 400
     lineHeight: 1.5
   code:
-    fontFamily: "ui-monospace, SF Mono, JetBrains Mono, Menlo, monospace"
+    fontFamily: "Geist Mono Variable, Geist Mono, ui-monospace, Menlo, monospace"
     fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.65
@@ -144,7 +146,7 @@ components:
 
 **Creative North Star: "Report first"**
 
-The approved replacement is compact, clean and sharp, drawing on the user’s Linear and Raycast references. Neutral surfaces, precise system typography and restrained coral actions make evidence and writing easy to scan for QA and product teams. This system supersedes the previous warm, card-heavy direction.
+The approved replacement is compact, clean and sharp, drawing on the user’s Linear and Raycast references. Neutral surfaces, precise system typography and ink primary actions make evidence and writing easy to scan for QA and product teams. This system supersedes the previous warm, card-heavy direction.
 
 The material is flat and practical: whitespace and hairlines establish structure, controls are small, and elevation signals a temporary layer. Light and dark themes follow system appearance, with explicit app theme attributes taking precedence. Captured screenshots are evidence; the replacement introduces no shipping raster decoration.
 
@@ -152,18 +154,20 @@ The material is flat and practical: whitespace and hairlines establish structure
 
 - Compact controls with a readable document hierarchy.
 - Neutral white or charcoal surfaces with quiet divisions.
-- Coral actions and text use separate contrast roles.
+- Ink actions and blue links use separate contrast roles.
 - Blue selection geometry and numbered pins belong to live annotations.
 
 Extracted from the current implementation on October 24, 2026. The user approved the replacement direction and composition. Independent screenshot review approved the composition; the final verdict resolved the text contrast, annotation pin contrast, and design persistence findings with a ship disposition. The surface-specific contract is [Report first](.impeccable/surfaces/entrypoints-share-app-tsx.md), and [PRODUCT.md](PRODUCT.md) records the approval.
 
 ## Colors
 
-The palette combines neutral paper or charcoal with restrained dark coral actions. The frontmatter contains the normative values; names ending in `-dark` override their unsuffixed roles in dark appearance. Unchanged colors retain their light value.
+The palette combines neutral paper or charcoal with Proofline ink actions. The frontmatter contains the normative values; names ending in `-dark` override their unsuffixed roles in dark appearance. Unchanged colors retain their light value.
 
 ### Primary
 
-Coral fill (`accent`) carries Record and File issue with white `accent-ink`. Coral text (`accent-text`) carries small accented labels, outlined stop actions and caret emphasis. Tint and line roles provide quieter selected states. The solid primary button keeps the fill-colored border.
+Proofline’s console theme in `entrypoints/sidepanel/styles.css` owns the active palette. The official four-part mark is the only multicolor brand element. Geist and Geist Mono are bundled locally.
+
+Proofline ink (`accent`) carries Record and File issue with a contrasting `accent-ink`. Proofline blue (`accent-text`) carries links and secondary action emphasis. Tint and line roles provide quieter selected states. The solid primary button keeps the fill-colored border.
 
 ### Secondary
 
@@ -173,11 +177,11 @@ Annotation blue has a functional selection role: the outline is bright and the n
 
 `bg` and `surface` form a continuous document canvas. `surface-2` distinguishes the rail, hover states and fields. `ink`, `ink-2` and `muted` carry reading hierarchy; `line` supplies hairlines. Prefer these semantic roles over hard-coded palette variants.
 
-**The Accent Roles Rule.** Use the fill token for solid actions and the text token for coral labels, links and outlined actions. Theme-specific text and status colors must retain their distinct roles.
+**The Accent Roles Rule.** Use the fill token for solid actions and the text token for blue labels, links and outlined actions. Theme-specific text and status colors must retain their distinct roles.
 
 ## Typography
 
-The system uses the platform sans stack and a separate platform monospace stack. These are the user's approved compact application references; there is no marketing display face or oversized hero type.
+The system uses bundled Geist and Geist Mono, with platform sans and monospace fallbacks. These are the user's approved compact application references; there is no marketing display face or oversized hero type.
 
 Report titles use the `headline` role, reducing to 23px at the intermediate report breakpoint and 22px at the narrow breakpoint. Section headings use `title`; report prose uses `prose`; controls use `label`; captions and secondary metadata use `meta`. The settings app header uses 14px type; its active section title is 20px, reducing to 18px below 600px. The recording timer is 17px monospace at weight 500 with tabular numbers. Labels use normal sentence case.
 

@@ -1,3 +1,4 @@
+import { loadProoflineSettings } from '@/lib/proofline/settings';
 import { extractPageKeyterms } from '@/lib/transcription/vocabulary';
 /**
  * Background service worker — the session orchestrator.
@@ -1773,7 +1774,11 @@ class Orchestrator {
       const asset = await getAsset(payload.assetId);
       if (!asset) return;
 
-      const result = await transcribe(asset.blob, { ...config, keyterms: sessionId === this.current?.id ? this.pageKeyterms : [] });
+      if (config.managed) await this.ensureOffscreen();
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${sessionId}/${event.id}/transcription`)));
+      const hex = [...digest.slice(0, 16)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+      const requestId = `${hex.slice(0,8)}-${hex.slice(8,12)}-5${hex.slice(13,16)}-8${hex.slice(17,20)}-${hex.slice(20)}`;
+      const result = await transcribe(asset.blob, { ...config, requestId, keyterms: sessionId === this.current?.id ? this.pageKeyterms : [] });
       this.routeDictation(sessionId, result.text, true, payload.tStart);
       const updated = {
         ...event,
@@ -1781,7 +1786,7 @@ class Orchestrator {
           ...payload,
           transcript: result.text,
           words: result.words,
-          provider: config.provider,
+          provider: config.managed ? `proofline/${config.provider}` : config.provider,
           transcriptionError: undefined,
         },
       } as SessionEvent;
@@ -1818,6 +1823,10 @@ class Orchestrator {
       const cfg = got[STORAGE_KEYS.transcription] as
         | Partial<TranscriptionConfig>
         | undefined;
+      const proofline = await loadProoflineSettings();
+      if (proofline.aiMode === 'proofline') {
+        return { provider: cfg?.provider === 'elevenlabs' ? 'elevenlabs' : 'deepgram', apiKey: '', managed: true, language: cfg?.language };
+      }
       if (!cfg || !cfg.provider || !cfg.apiKey) return null;
       return cfg as TranscriptionConfig;
     } catch {

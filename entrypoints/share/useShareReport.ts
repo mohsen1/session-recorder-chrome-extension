@@ -1,3 +1,7 @@
+import { PROOFLINE_SETTINGS_KEY } from '@/lib/proofline/settings';
+import { publishProoflineReport } from '@/lib/proofline/reports';
+import { prooflineRequest } from '@/lib/proofline/client';
+import { isProoflinePublication, publicationUrl, publicationReady } from '@/lib/sharing/draft';
 import { useEffect, useReducer, useRef } from 'react';
 import { getAssets, getEvents, getSession } from '@/lib/storage';
 import type { BuildBundleInput } from '@/lib/export/bundle';
@@ -23,7 +27,7 @@ import {
   type SavedDraft,
 } from '@/lib/sharing/draft';
 import {
-  generateSummary,
+  generateConfiguredSummary,
   summaryEvidence,
   type IssueDraft,
 } from '@/lib/sharing/summary';
@@ -89,7 +93,7 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
       changes: Record<string, chrome.storage.StorageChange>,
       area: string,
     ) => {
-      if (area === 'local' && (changes[SHARING_KEY] || changes[LAST_REPOSITORY_KEY]))
+      if (area === 'local' && (changes[SHARING_KEY] || changes[LAST_REPOSITORY_KEY] || changes[PROOFLINE_SETTINGS_KEY]))
         void loadSharingSettings()
           .then((settings) => {
             if (active) dispatch({ type: 'settings', settings });
@@ -127,6 +131,7 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
       draftSource: state.draftSource,
       issue: state.issue,
       attempt: state.attempt,
+      summaryRequestId: state.summaryRequestId,
       ...patch,
     };
   }
@@ -211,7 +216,7 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
   async function publishedConfig() {
     const current = (await loadSharingSettings()).cloudflare;
     const publication = state.publication;
-    if (!publication) throw new Error('No deployment to manage.');
+    if (!publication || isProoflinePublication(publication)) throw new Error('No Cloudflare deployment to manage.');
     if (current.accountId !== publication.destination.accountId)
       throw new Error(
         'Select this report’s Cloudflare account in settings to manage its deployment.',
@@ -222,9 +227,8 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
     return run('summary', async (signal) => {
       const config = await loadSharingSettings();
       progress('Generating issue summary…');
-      const draft = await generateSummary(
-        config.provider,
-        config.models[config.provider],
+      const draft = await generateConfiguredSummary(
+        config,
         state.evidence,
         signal,
       );
@@ -236,7 +240,13 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
   function publish() {
     return run('publish', async (signal) => {
       if (!state.files.length) throw new Error('The report is still preparing.');
-      const config = (await loadSharingSettings()).cloudflare;
+      const settings = await loadSharingSettings();
+      if (settings.proofline?.publishing === 'proofline' || (state.publication && isProoflinePublication(state.publication))) {
+        await publishProoflineReport(settings.proofline!, state.files, state.draft.title, state.level, state.publication, remember, progress, signal);
+        progress('Private report published.');
+        return;
+      }
+      const config = settings.cloudflare;
       const { apiToken: _secret, ...destination } = config;
       const deployment = await publishReport(
         config,
@@ -251,7 +261,7 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
   }
   function checkDeployment() {
     return run('check', async (signal) => {
-      if (!state.publication) return;
+      if (!state.publication || isProoflinePublication(state.publication)) return;
       const deployment = await waitForDeployment(
         await publishedConfig(),
         state.publication.deployment,
@@ -265,6 +275,14 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
   function unpublish() {
     return run('delete', async () => {
       if (!state.publication) return;
+      if (isProoflinePublication(state.publication)) {
+        const settings = await loadSharingSettings();
+        if (settings.proofline?.connection?.organizationId !== state.publication.organizationId) throw new Error('Reconnect the original Proofline workspace to delete this report.');
+        await prooflineRequest(settings.proofline, `/reports/${state.publication.id}`, { method: 'DELETE' });
+        await remember();
+        progress('Report deleted. Local recording kept.');
+        return;
+      }
       await deletePublishedReport(
         await publishedConfig(),
         state.publication.deployment.id,
@@ -273,8 +291,8 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
       progress('Report unpublished. Local recording kept.');
     });
   }
-  const finalBody = state.publication
-    ? issueBody(state.draft, state.publication.deployment.url)
+  const finalBody = state.publication && publicationReady(state.publication)
+    ? issueBody(state.draft, publicationUrl(state.publication))
     : '';
   function submitIssue() {
     return run('github', async (signal) => {
@@ -325,9 +343,7 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
     finalBody,
     publishLimit,
     busy: state.operation !== 'idle',
-    ready:
-      state.publication?.deployment.latest_stage?.name === 'deploy' &&
-      state.publication.deployment.latest_stage.status === 'success',
+    ready: publicationReady(state.publication),
     provider: SUMMARY_PROVIDERS.find((p) => p.id === state.settings.provider)!,
     totalBytes: state.files.reduce(
       (sum, f) =>
