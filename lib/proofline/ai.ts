@@ -41,12 +41,46 @@ interface AiJob {
   };
   error?: string;
 }
+/** Budget serialized UTF-8 bytes, matching the server's 64 KB evidence limit. */
+function evidenceExcerpt(text: string, byteLimit: number): string {
+  const encoder = new TextEncoder();
+  const bytes = (value: string) => encoder.encode(JSON.stringify(value)).length;
+  if (bytes(text) <= byteLimit) return text;
+  const suffix = '\n[...excerpt omitted...]';
+  let low = 0;
+  let high = text.length;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (bytes(text.slice(0, middle) + suffix) <= byteLimit) low = middle;
+    else high = middle - 1;
+  }
+  // Do not split an emoji or another supplementary Unicode character.
+  if (low > 0 && /[\uD800-\uDBFF]/.test(text[low - 1]!)) low -= 1;
+  return text.slice(0, low) + suffix;
+}
+
 export function recordedEvidence(text: string): RecorderAiInput {
-  const annotations = text.split('NOTES AND NARRATION')[0] ?? '';
+  const headings = [
+    'NOTES AND NARRATION — reporter context',
+    'INTERACTION TIMELINE — reproduction context',
+    'BACKGROUND DIAGNOSTICS — include only if related to the reported concern',
+  ];
+  const sections: string[] = [];
+  let start = 0;
+  for (const heading of headings) {
+    const boundary = text.indexOf(`\n\n${heading}\n\n`, start);
+    if (boundary < 0) return { annotations: [evidenceExcerpt(text, 24_000)] };
+    sections.push(text.slice(start, boundary));
+    start = boundary + 2;
+  }
+  sections.push(text.slice(start));
+  // Separate diagnostics even for short reports, so the server's diagnostic
+  // ceiling applies without demoting narration or reproduction steps.
   return {
-    annotations: [annotations.slice(0, 24000)],
-    transcript: text.slice(annotations.length, 48000),
-    technical_details: text.slice(48000, 60000),
+    annotations: [evidenceExcerpt(sections[0]!, 24_000)],
+    transcript: evidenceExcerpt(sections[1]!, 12_000),
+    page_text: evidenceExcerpt(sections[2]!, 14_000),
+    technical_details: evidenceExcerpt(sections[3]!, 6_000),
   };
 }
 export async function runProoflineAi(
