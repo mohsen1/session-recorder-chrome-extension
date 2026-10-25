@@ -45,8 +45,16 @@ moves to a dedicated Proofline publisher, link the service account there and
 update `CWS_PUBLISHER_ID` while preserving the extension item ID. A GitHub
 repository transfer does not transfer Chrome Web Store ownership.
 
-No live release has been submitted through this workflow yet. The first
-versioned release will exercise GitHub OIDC and the Store API together.
+Version 0.3.1 exercised the complete workflow on October 25, 2026:
+[release run](https://github.com/prooflinedev/session-recorder-chrome-extension/actions/runs/40200018346).
+Packaging, release assets, keyless Google authentication, upload and submission
+all succeeded. The Store returned `PENDING_REVIEW`, independently confirmed in
+the publisher dashboard. Google's approval is still required before the update
+is live. The downloaded ZIP's checksum and manifest version were verified.
+
+Version 0.3.0 stopped before upload because an integration test used a local Mac
+scratch directory. The test now keeps generated reports in memory, with its
+assertions preserved. Version 0.3.1 uses a new immutable tag.
 
 Missing variables fail the publishing job before authentication. An unlinked
 service account fails with an API permission error; it does not silently skip
