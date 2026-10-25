@@ -6,6 +6,8 @@ continues to work without any keys or accounts.
 
 ## Proofline setup
 
+See [Session Recorder in Proofline Help](https://proofline.sh/help/session-recorder-proofline/) for the guided setup.
+
 In Settings → Proofline, choose Connect Proofline and approve the code in your browser. Your personal workspace is selected by default when eligible. Choose Use Proofline for AI and sharing to enable managed AI, private report hosting and GitHub App issue creation. Connecting alone preserves existing personal-key settings.
 
 The workspace selector chooses whose credits pay for AI. Switching workspaces requires browser approval. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation; sign-in alone does not grant credits. If credits run out, top up or explicitly switch to personal keys. Local recording and manual annotations remain available.

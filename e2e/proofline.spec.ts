@@ -86,12 +86,14 @@ test('connects by browser approval and requires an explicit switch from personal
   await page.screenshot({
     path: '/tmp/recorder-proofline-account-light.png',
     fullPage: true,
+    animations: 'disabled',
   });
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
     path: '/tmp/recorder-proofline-account-dark-narrow.png',
     fullPage: true,
+    animations: 'disabled',
   });
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),

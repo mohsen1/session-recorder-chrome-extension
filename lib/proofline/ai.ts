@@ -1,3 +1,4 @@
+import { normalizeKeyterms } from '@/lib/transcription/keyterms';
 import { delay, prooflineRequest } from './client';
 import { type ProoflineSettings } from './settings';
 export interface RecorderAiInput {
@@ -18,6 +19,13 @@ export interface RecorderAiInput {
 export class ProoflineAiCancelledError extends Error {
   constructor() {
     super('This AI request was cancelled. Try again to start a new request.');
+  }
+}
+export class ProoflineAiFailedError extends Error {
+  constructor() {
+    super(
+      'Proofline could not finish this AI request. Try again to start a new request.',
+    );
   }
 }
 interface AiJob {
@@ -56,7 +64,17 @@ export async function runProoflineAi(
       body: JSON.stringify({
         request_id: requestId,
         operation,
-        input,
+        input: input.audio
+          ? {
+              ...input,
+              audio: {
+                ...input.audio,
+                keyterms: normalizeKeyterms(input.audio.keyterms)
+                  .filter((term) => new TextEncoder().encode(term).length <= 50)
+                  .slice(0, 20),
+              },
+            }
+          : input,
         ...(operation !== 'transcription' && settings.model.trim()
           ? { model: settings.model.trim() }
           : {}),
@@ -72,6 +90,7 @@ export async function runProoflineAi(
       );
     }
     if (job.status === 'cancelled') throw new ProoflineAiCancelledError();
+    if (job.status === 'failed') throw new ProoflineAiFailedError();
     if (job.status !== 'completed' || !job.result)
       throw new Error(
         'Proofline could not finish this AI request. Check your workspace credits and try again.',

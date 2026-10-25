@@ -66,8 +66,7 @@ When an annotation is selected and an AI model is configured, a bounded excerpt
 of visible headings, navigation and interface labels is sent to that model to
 identify unusual vocabulary. Input values, editable fields and hidden content are
 excluded. The resulting short dictionary is sent to Deepgram or ElevenLabs to
-improve recognition. Page context and dictionaries are kept in memory, not saved
-with credentials or published as an additional attachment. Provider fees apply;
+improve recognition. Page context stays in memory. Managed transcription saves its dictionary and request identity locally with the audio segment so a retry preserves the original operation. These fields are excluded from published and exported reports. Personal-key dictionaries remain in memory. Provider fees apply;
 ElevenLabs charges extra for keyterm prompting. If extraction fails, ordinary
 transcription remains available.
 

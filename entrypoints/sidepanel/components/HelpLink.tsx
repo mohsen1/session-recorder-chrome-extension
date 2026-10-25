@@ -1,3 +1,4 @@
+import { recorderHelpUrl } from '@/lib/proofline/settings';
 import type { ReactNode } from 'react';
 import { ExternalLink } from 'lucide-react';
 
@@ -8,7 +9,7 @@ export function HelpLink({ topic, children }: {
   return (
     <a
       className="sharing-link"
-      href={`https://proofline.sh/session-recorder-chrome-extension/help/${topic}/`}
+      href={recorderHelpUrl(topic)}
       target="_blank"
       rel="noreferrer"
     >

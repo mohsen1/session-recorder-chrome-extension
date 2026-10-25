@@ -1,7 +1,7 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { useProoflineSettings } from './useProoflineSettings';
-import { PROOFLINE_ORIGIN, PRODUCT_WEBSITE } from '@/lib/proofline/settings';
+import { PROOFLINE_ORIGIN, recorderHelpUrl } from '@/lib/proofline/settings';
 export function ProoflineSettings(): React.JSX.Element {
   const { state, patch, connect, disconnect, refresh, cancel } = useProoflineSettings();
   const { settings, status, error, code } = state;
@@ -197,7 +197,7 @@ export function ProoflineSettings(): React.JSX.Element {
         <a href={`${PROOFLINE_ORIGIN}/`} target="_blank" rel="noreferrer">
           Open Proofline <ExternalLink size={12} />
         </a>
-        <a href={`${PRODUCT_WEBSITE}help/`} target="_blank" rel="noreferrer">
+        <a href={recorderHelpUrl('proofline')} target="_blank" rel="noreferrer">
           Setup help
         </a>
       </div>

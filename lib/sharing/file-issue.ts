@@ -1,4 +1,4 @@
-import { ProoflineAiCancelledError } from '@/lib/proofline/ai';
+import { ProoflineAiCancelledError, ProoflineAiFailedError } from '@/lib/proofline/ai';
 import type { ExportFile } from '@/lib/export/bundle';
 import type { VerbosityLevel } from '@/lib/session/types';
 import { isProoflinePublication, publicationUrl, type SavedDraft } from './draft';
@@ -106,7 +106,10 @@ export async function fileIssue(input: FileIssueInput): Promise<SavedDraft> {
               signal,
             );
     } catch (error) {
-      if (error instanceof ProoflineAiCancelledError)
+      if (
+        error instanceof ProoflineAiCancelledError ||
+        error instanceof ProoflineAiFailedError
+      )
         await checkpoint({ summaryRequestId: undefined });
       throw error;
     }

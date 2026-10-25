@@ -213,13 +213,125 @@ it('sends decoded PCM through Proofline without leaking personal keys or a text-
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
 
-it('clears a confirmed cancelled issue attempt so the user can submit again', async () => {
+it.each(['cancelled', 'failed'] as const)(
+  'clears a confirmed %s issue attempt so the user can submit again',
+  async (status) => {
+    const settings = await loadSharingSettings();
+    settings.proofline = managed();
+    const fetcher = vi.fn(async () =>
+      Response.json({ request_id: 'attempt-1', status }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    const { fileIssue } = await import('@/lib/sharing/file-issue');
+    const save = vi.fn(async () => {});
+    await expect(
+      fileIssue({
+        saved: {
+          draft: { title: 'Improve recipes', body: 'Show help.' },
+          repository: 'alice/app',
+          attempt: {
+            id: 'attempt-1',
+            repository: 'alice/app',
+            startedAt: new Date().toISOString(),
+            proofline: {
+              organizationId: org,
+              reportId: 'report-1',
+              repositoryId: 'r1',
+            },
+          },
+        },
+        settings,
+        files: [],
+        evidence: '',
+        level: 'L1',
+        save,
+        progress: () => {},
+        signal: new AbortController().signal,
+      }),
+    ).rejects.toThrow(status === 'cancelled' ? 'cancelled' : 'could not submit');
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ attempt: undefined }));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  },
+);
+
+it('bounds managed dictation vocabulary to twenty terms and fifty UTF-8 bytes per term', async () => {
+  const allowedUnicode = 'é'.repeat(25);
+  const tooLongUnicode = '語'.repeat(17);
+  const english = Array.from(
+    { length: 24 },
+    (_, i) => `Term${String.fromCharCode(65 + i)}`,
+  );
+  let sent: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string);
+      sent = body.input.audio.keyterms;
+      return Response.json({
+        id: body.request_id,
+        status: 'completed',
+        result: { text: 'Dictation' },
+      });
+    }),
+  );
+  await runProoflineAi(managed(), 'transcription', {
+    audio: {
+      pcm_base64: 'AAAAAA==',
+      sample_rate: 16000,
+      provider: 'deepgram',
+      keyterms: [tooLongUnicode, allowedUnicode, ...english],
+    },
+  });
+  expect(sent).toEqual([allowedUnicode, ...english.slice(0, 19)]);
+  expect(sent.every((term) => new TextEncoder().encode(term).length <= 50)).toBe(true);
+});
+
+it.each(['failed', 'network'] as const)(
+  'only clears a summary request after confirmed terminal failure: %s',
+  async (outcome) => {
+    const settings = await loadSharingSettings();
+    settings.proofline = managed();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        if (outcome === 'network') throw new TypeError('Connection closed');
+        return Response.json({ id: 'summary-1', status: 'failed' });
+      }),
+    );
+    const { fileIssue } = await import('@/lib/sharing/file-issue');
+    const save = vi.fn(async () => {});
+    await expect(
+      fileIssue({
+        saved: {
+          draft: { title: 'Improve recipes', body: 'Show help.' },
+          draftSource: 'initial',
+          repository: 'alice/app',
+          summaryRequestId: 'summary-1',
+        },
+        settings,
+        files: [],
+        evidence: 'Feedback',
+        level: 'L1',
+        save,
+        progress: () => {},
+        signal: new AbortController().signal,
+      }),
+    ).rejects.toThrow(outcome === 'failed' ? 'could not finish' : 'Connection closed');
+    if (outcome === 'failed')
+      expect(save).toHaveBeenCalledWith(
+        expect.objectContaining({ summaryRequestId: undefined }),
+      );
+    else expect(save).not.toHaveBeenCalled();
+  },
+);
+
+it('retains the original issue attempt when GitHub may have received it', async () => {
   const settings = await loadSharingSettings();
   settings.proofline = managed();
-  const fetcher = vi.fn(async () =>
-    Response.json({ request_id: 'attempt-1', status: 'cancelled' }),
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.json({ request_id: 'attempt-1', status: 'uncertain' })),
   );
-  vi.stubGlobal('fetch', fetcher);
   const { fileIssue } = await import('@/lib/sharing/file-issue');
   const save = vi.fn(async () => {});
   await expect(
@@ -242,7 +354,6 @@ it('clears a confirmed cancelled issue attempt so the user can submit again', as
       progress: () => {},
       signal: new AbortController().signal,
     }),
-  ).rejects.toThrow('cancelled');
-  expect(save).toHaveBeenCalledWith(expect.objectContaining({ attempt: undefined }));
-  expect(fetcher).toHaveBeenCalledTimes(1);
+  ).rejects.toThrow('may have received');
+  expect(save).not.toHaveBeenCalled();
 });

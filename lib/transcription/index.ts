@@ -50,6 +50,13 @@ export async function transcribe(
 ): Promise<TranscriptionResult> {
   const settings = await loadProoflineSettings();
   if (settings.aiMode === 'proofline' || config.managed) {
+    if (
+      config.organizationId &&
+      config.organizationId !== settings.connection?.organizationId
+    )
+      throw new Error(
+        'Reconnect the original Proofline workspace to retry this transcription.',
+      );
     const bytes = new Uint8Array(await audio.arrayBuffer());
     let binary = '';
     for (let i = 0; i < bytes.length; i += 8192)

@@ -1,5 +1,5 @@
 import { ProoflineBrand } from '@/lib/ui/ProoflineBrand';
-import { PRODUCT_WEBSITE } from '@/lib/proofline/settings';
+import { recorderHelpUrl } from '@/lib/proofline/settings';
 /**
  * Options page UI.
  *
@@ -19,7 +19,7 @@ export function App(): React.JSX.Element {
           <ChevronRight className="options-page__separator" size={14} aria-hidden="true" />
           <h1 className="options-page__title">Settings</h1>
         </div>
-        <a className="options-page__help" href={`${PRODUCT_WEBSITE}help/`} target="_blank" rel="noreferrer">
+        <a className="options-page__help" href={recorderHelpUrl()} target="_blank" rel="noreferrer">
           Help <ExternalLink size={12} aria-hidden="true" />
         </a>
       </header>

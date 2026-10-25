@@ -230,6 +230,9 @@ function mapEventAssets(
       clone.payload.screenshotAssetId = map(clone.payload.screenshotAssetId);
       break;
     case 'voice-segment':
+      delete clone.payload.transcriptionRequest;
+      delete clone.payload.transcriptionGeneration;
+      delete clone.payload.transcriptionTerminalFailure;
       clone.payload.assetId = map(clone.payload.assetId) as string;
       break;
     case 'video-segment':

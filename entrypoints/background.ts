@@ -1,4 +1,9 @@
-import { loadProoflineSettings } from '@/lib/proofline/settings';
+import {
+  prepareTranscriptionRetry,
+  transcriptionFailure,
+  transcriptionRequestId,
+} from '@/lib/transcription/retry';
+import { loadProoflineSettings, requireConnection } from '@/lib/proofline/settings';
 import { extractPageKeyterms } from '@/lib/transcription/vocabulary';
 /**
  * Background service worker — the session orchestrator.
@@ -186,6 +191,7 @@ class Orchestrator {
   private navRegistered = false;
 
   // --- transcription queue ---
+  private readonly transcribing = new Set<string>();
   private readonly transQueue: { sessionId: string; event: SessionEvent }[] = [];
   private transRunning = false;
   private transDone = 0;
@@ -1083,7 +1089,12 @@ class Orchestrator {
         const ev = events.find(
           (e) => e.id === msg.eventId && e.type === 'voice-segment',
         );
-        if (ev) this.enqueueTranscription(ev, msg.sessionId);
+        if (ev && !this.transcribing.has(`${msg.sessionId}/${ev.id}`)) {
+          const payload = prepareTranscriptionRetry(ev.payload as VoiceSegmentPayload);
+          const retry = { ...ev, payload } as SessionEvent;
+          if (payload !== ev.payload) await appendEvents([retry]);
+          this.enqueueTranscription(retry, msg.sessionId);
+        }
         return { ok: true };
       }
 
@@ -1729,6 +1740,9 @@ class Orchestrator {
   // --------------------------------------------------------------------------
 
   private enqueueTranscription(event: SessionEvent, sessionId: string): void {
+    const key = `${sessionId}/${event.id}`;
+    if (this.transcribing.has(key)) return;
+    this.transcribing.add(key);
     this.transTotal += 1;
     this.transQueue.push({ sessionId, event });
     void this.drainTranscription();
@@ -1741,7 +1755,11 @@ class Orchestrator {
       for (;;) {
         const job = this.transQueue.shift();
         if (!job) break;
-        await this.runTranscription(job.sessionId, job.event);
+        try {
+          await this.runTranscription(job.sessionId, job.event);
+        } finally {
+          this.transcribing.delete(`${job.sessionId}/${job.event.id}`);
+        }
         this.transDone += 1;
         broadcast({
           kind: 'transcription/progress',
@@ -1762,7 +1780,7 @@ class Orchestrator {
     sessionId: string,
     event: SessionEvent,
   ): Promise<void> {
-    const payload = event.payload as VoiceSegmentPayload;
+    let payload = event.payload as VoiceSegmentPayload;
     // Make sure the base event is durable before we overwrite it (put by id).
     await this.writer?.flush().catch(() => {});
 
@@ -1774,11 +1792,32 @@ class Orchestrator {
       const asset = await getAsset(payload.assetId);
       if (!asset) return;
 
-      if (config.managed) await this.ensureOffscreen();
-      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${sessionId}/${event.id}/transcription`)));
-      const hex = [...digest.slice(0, 16)].map(byte => byte.toString(16).padStart(2, '0')).join('');
-      const requestId = `${hex.slice(0,8)}-${hex.slice(8,12)}-5${hex.slice(13,16)}-8${hex.slice(17,20)}-${hex.slice(20)}`;
-      const result = await transcribe(asset.blob, { ...config, requestId, keyterms: sessionId === this.current?.id ? this.pageKeyterms : [] });
+      if (config.managed) {
+        await this.ensureOffscreen();
+        const connection = requireConnection(await loadProoflineSettings());
+        const request: NonNullable<VoiceSegmentPayload['transcriptionRequest']> = payload.transcriptionRequest ?? {
+          id: await transcriptionRequestId(sessionId, event.id, payload.transcriptionGeneration),
+          organizationId: connection.organizationId,
+          provider: config.provider === 'elevenlabs' ? 'elevenlabs' : 'deepgram',
+          language: config.language,
+          keyterms: sessionId === this.current?.id ? [...this.pageKeyterms] : [],
+        };
+        payload = { ...payload, transcriptionRequest: request };
+        await appendEvents([{ ...event, payload } as SessionEvent]);
+        Object.assign(config, {
+          requestId: request.id,
+          organizationId: request.organizationId,
+          provider: request.provider,
+          language: request.language,
+          keyterms: request.keyterms,
+        });
+      }
+      const result = await transcribe(asset.blob, {
+        ...config,
+        keyterms: config.managed
+          ? config.keyterms
+          : sessionId === this.current?.id ? this.pageKeyterms : [],
+      });
       this.routeDictation(sessionId, result.text, true, payload.tStart);
       const updated = {
         ...event,
@@ -1788,6 +1827,7 @@ class Orchestrator {
           words: result.words,
           provider: config.managed ? `proofline/${config.provider}` : config.provider,
           transcriptionError: undefined,
+          transcriptionTerminalFailure: undefined,
         },
       } as SessionEvent;
       await appendEvents([updated]);
@@ -1795,7 +1835,7 @@ class Orchestrator {
     } catch (e) {
       const updated = {
         ...event,
-        payload: { ...payload, transcriptionError: errMessage(e) },
+        payload: transcriptionFailure(payload, e),
       } as SessionEvent;
       await appendEvents([updated]).catch(() => {});
       this.updateRecent(updated);
@@ -1808,7 +1848,7 @@ class Orchestrator {
       for (const e of events) {
         if (e.type !== 'voice-segment') continue;
         const p = e.payload as VoiceSegmentPayload;
-        if (p.transcript === null || p.transcript === undefined) {
+        if (!p.transcriptionError && (p.transcript === null || p.transcript === undefined)) {
           this.enqueueTranscription(e, sessionId);
         }
       }

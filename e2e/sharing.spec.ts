@@ -10,7 +10,7 @@ test('keeps provider credentials separate and restores each provider configurati
   await page.getByLabel('Summary provider').selectOption('openai');
   await expect(page.getByLabel('Summary model', { exact: true })).toHaveValue('gpt-6.1-sol');
   await expect(page.getByRole('link', { name: 'Set up AI summaries' })).toHaveAttribute(
-    'href', 'https://proofline.sh/session-recorder-chrome-extension/help/ai-summaries/',
+    'href', 'https://proofline.sh/help/session-recorder-ai-summaries/',
   );
   await page.getByLabel('Summary API key', { exact: true }).fill('test-openai-key');
   await page.getByLabel('Summary model', { exact: true }).fill('test-model');
@@ -38,7 +38,7 @@ test('keeps provider credentials separate and restores each provider configurati
   expect(JSON.stringify(stored.defaultSettings ?? {})).not.toContain('test-openai-key');
   await page.getByRole('link', { name: 'Publishing', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Set up protected publishing' })).toHaveAttribute(
-    'href', 'https://proofline.sh/session-recorder-chrome-extension/help/cloudflare/',
+    'href', 'https://proofline.sh/help/session-recorder-cloudflare/',
   );
   await expect(page.locator('.sharing-setup')).toHaveCount(0);
   const tokenLink = new URL(

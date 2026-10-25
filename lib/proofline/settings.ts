@@ -1,6 +1,11 @@
 export const PROOFLINE_ORIGIN = 'https://proofline.sh';
 export const PROOFLINE_SETTINGS_KEY = 'prooflineSettings';
 export const PRODUCT_WEBSITE = `${PROOFLINE_ORIGIN}/session-recorder-chrome-extension/`;
+export function recorderHelpUrl(
+  topic?: 'cloudflare' | 'github' | 'ai-summaries' | 'proofline',
+): string {
+  return `${PROOFLINE_ORIGIN}/help/session-recorder${topic ? `-${topic}` : ''}/`;
+}
 export const PRODUCT_REPOSITORY =
   'https://github.com/prooflinedev/session-recorder-chrome-extension';
 

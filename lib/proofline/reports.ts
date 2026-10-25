@@ -172,6 +172,13 @@ export async function fileProoflineIssue(
         'Issue creation was cancelled. You can file it again.',
         true,
       );
+    // The server exposes failed only when publication never reached GitHub.
+    // Requests that crossed the send boundary remain submitting or uncertain.
+    if (job.status === 'failed')
+      throw new GitHubRequestError(
+        'Proofline could not submit this issue. Check repository access and try again.',
+        true,
+      );
     if (job.status !== 'complete' || !job.url || !job.number)
       throw new Error(
         job.status === 'uncertain'
