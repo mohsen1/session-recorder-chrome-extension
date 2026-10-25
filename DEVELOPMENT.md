@@ -108,6 +108,6 @@ node scripts/website/build.mjs
 node scripts/website/check.mjs
 ```
 
-The release workflow runs when a GitHub release is published in `prooflinedev/session-recorder-chrome-extension`. It checks and builds the tagged revision, then attaches `session-recorder.zip` and its SHA-256 checksum. It does not publish to the Chrome Web Store or deploy Proofline. Do not advertise the latest-release ZIP until a release asset exists.
+A stable GitHub release tagged `vMAJOR.MINOR.PATCH` runs the release workflow. The tag must match `package.json` and the built manifest. The workflow checks and packages that revision, attaches the ZIP and checksum, then submits the same ZIP to Chrome Web Store review using a short-lived Google token. See [publishing setup and recovery](docs/chrome-store-publishing.md). Store authorization must be configured before the first submission. The workflow does not deploy Proofline. Do not advertise the latest-release ZIP until a release asset exists.
 
 Store metadata and publication requirements are in [store-listing.md](docs/store-listing.md). Preserve Chrome Web Store item ID `dboiheheijgmfpfhbmjggiijpgondghh`; moving GitHub ownership does not transfer the store publisher.

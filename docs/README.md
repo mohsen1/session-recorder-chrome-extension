@@ -23,3 +23,5 @@ The following files preserve earlier planning and observations. They are histori
 - [Original implementation phases](IMPLEMENTATION.md)
 - [Legacy search-optimization notes](gso.md)
 - [October 17 SEO campaign](seo-campaign.md)
+
+[Chrome Web Store publishing](chrome-store-publishing.md) describes versioned GitHub releases, keyless authentication and failure recovery.

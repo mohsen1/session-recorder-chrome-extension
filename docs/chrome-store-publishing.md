@@ -34,7 +34,7 @@ and this repository's `.github/workflows/release.yml` workflow at that tag.
 The `chrome-web-store` GitHub environment can add approval restrictions if the
 publisher requires them.
 
-Before publishing, enable the Chrome Web Store API in `proofline-ci`, link the
+The Chrome Web Store API is enabled in `proofline-ci`. Before publishing, link the
 service account in the publisher dashboard's Account section, and set
 `CWS_PUBLISHER_ID`. The dashboard supports one linked service account per
 publisher. Linking it grants access to that publisher's items; use the intended
