@@ -194,3 +194,160 @@ test('files through Proofline with managed AI and private attachment uploads', a
     animations: 'disabled',
   });
 });
+
+test('changes the paying workspace only after matching browser approval', async ({
+  context,
+  background,
+  extensionId,
+}) => {
+  const teamId = '10000000-0000-4000-8000-000000000002';
+  const team = {
+    id: teamId,
+    login: 'team',
+    name: 'Team workspace',
+    is_personal: false,
+  };
+  const initial = connected();
+  initial.connection.account = {
+    ...account,
+    organizations: [...account.organizations, team],
+  };
+  await background.evaluate(
+    (settings) => chrome.storage.local.set({ prooflineSettings: settings }),
+    initial,
+  );
+  let approvals = 0;
+  await context.route('https://proofline.sh/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === '/auth/device/code') {
+      expect(request.postDataJSON().organization_id).toBe(teamId);
+      approvals++;
+      await route.fulfill({
+        json: {
+          device_code: `device-${approvals}`,
+          user_code: `APPROVAL-${approvals}`,
+          verification_uri_complete: `https://proofline.sh/device?user_code=APPROVAL-${approvals}`,
+          expires_in: 600,
+          interval: 5,
+        },
+      });
+    } else if (path === '/auth/device/token') {
+      await route.fulfill({
+        json: {
+          access_token: `approved-token-${approvals}`,
+          // The browser can approve a different workspace from the URL hint.
+          organization_id: approvals === 2 ? org : teamId,
+          expires_in: 3600,
+          scope: 'recorder:read recorder:ai recorder:reports recorder:issues',
+        },
+      });
+    } else if (path.endsWith('/account')) {
+      const approvedOrg = approvals === 2 ? org : teamId;
+      expect(path).toBe(`/api/v1/organizations/${approvedOrg}/recorder/account`);
+      expect(request.headers().authorization).toBe(`Bearer approved-token-${approvals}`);
+      await route.fulfill({
+        json: {
+          ...initial.connection.account,
+          organization: approvedOrg === org ? account.organization : team,
+          repositories: approvedOrg === org ? account.repositories : [],
+        },
+      });
+    } else if (path.startsWith('/auth/') || path.startsWith('/api/')) {
+      throw new Error(`Unexpected Proofline request ${path}`);
+    } else {
+      await route.fulfill({ contentType: 'text/html', body: '<p>Approval fixture</p>' });
+    }
+  });
+  const page = await context.newPage();
+  await page.goto(extUrl(extensionId, 'options.html#proofline'));
+  const workspace = page.getByLabel('Workspace paying for usage');
+  const storedConnection = () =>
+    background.evaluate(async () =>
+      (await chrome.storage.local.get('prooflineSettings')).prooflineSettings.connection,
+    );
+
+  await workspace.selectOption(teamId);
+  await expect(page.getByText('APPROVAL-1', { exact: true })).toBeVisible();
+  await expect(workspace).toBeDisabled();
+  expect((await storedConnection()).organizationId).toBe(org);
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(workspace).toBeEnabled();
+  await expect(workspace).toHaveValue(org);
+  expect((await storedConnection()).accessToken).toBe('test-proofline-token');
+
+  await workspace.selectOption(teamId);
+  await expect(page.getByRole('alert')).toContainText('A different workspace was approved', {
+    timeout: 20000,
+  });
+  await expect(workspace).toHaveValue(org);
+  expect((await storedConnection()).accessToken).toBe('test-proofline-token');
+
+  await workspace.selectOption(teamId);
+  await expect(workspace).toHaveValue(teamId, { timeout: 20000 });
+  await expect(workspace).toBeEnabled();
+  const approved = await storedConnection();
+  expect(approved.organizationId).toBe(teamId);
+  expect(approved.accessToken).toBe('approved-token-3');
+  expect(approved.account.repositories).toEqual([]);
+  await page.reload();
+  await expect(page.getByLabel('Workspace paying for usage')).toHaveValue(teamId);
+});
+
+for (const failure of [
+  { name: 'exhausted credits', status: 402, message: 'no credits available' },
+  { name: 'revoked access', status: 401, message: 'Reconnect to Proofline' },
+  { name: 'expired connection', status: 0, message: 'connection has expired' },
+] as const) {
+  test(`filing stops on ${failure.name} without spending personal keys or publishing`, async ({
+    context,
+    background,
+    extensionId,
+  }) => {
+    const demo = await context.newPage();
+    await demo.goto('/');
+    const recording = await dispatch<{ session: { id: string } }>(background, {
+      kind: 'session/start',
+      tabId: await tabIdForUrl(background, 'http://localhost:5319'),
+    });
+    await dispatch(background, { kind: 'session/stop' });
+    const settings = connected();
+    if (failure.status === 0) settings.connection.expiresAt = 0;
+    await background.evaluate(
+      (prooflineSettings) => chrome.storage.local.set({
+        prooflineSettings,
+        sharingSettings: {
+          provider: 'openai',
+          models: { openai: { apiKey: 'personal-key-must-not-be-used' } },
+          repositories: [{ id: 'personal', repository: 'alice/product', token: 'personal-pat' }],
+        },
+      }),
+      settings,
+    );
+    const requests: string[] = [];
+    await context.route('https://**/*', async (route) => {
+      const request = route.request();
+      requests.push(request.url());
+      expect(request.url()).toBe(`https://proofline.sh/api/v1/organizations/${org}/recorder/ai`);
+      expect(request.headers().authorization).toBe('Bearer test-proofline-token');
+      expect(request.postData()).not.toContain('personal-key-must-not-be-used');
+      await route.fulfill({
+        status: failure.status || 500,
+        json: { status: failure.status, title: failure.message },
+      });
+    });
+    const page = await context.newPage();
+    await page.goto(extUrl(extensionId, `share.html?session=${recording.session.id}`));
+    await page.getByRole('button', { name: 'File GitHub issue', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText(failure.message);
+    await expect(page.getByRole('button', { name: 'File GitHub issue', exact: true })).toBeEnabled();
+    await expect(page.getByRole('heading', { name: 'Filing your issue' })).toHaveCount(0);
+    expect(requests).toHaveLength(failure.status === 0 ? 0 : 1);
+    const stored = await background.evaluate(() =>
+      chrome.storage.local.get(['prooflineSettings', 'sharingSettings']),
+    );
+    expect(stored.prooflineSettings.aiMode).toBe('proofline');
+    expect(stored.prooflineSettings.publishing).toBe('proofline');
+    expect(stored.sharingSettings.models.openai.apiKey).toBe('personal-key-must-not-be-used');
+  });
+}
