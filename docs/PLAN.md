@@ -1,4 +1,6 @@
-# Plan: session recorder Chrome extension
+# Plan: session recorder Chrome extension — historical
+
+> This is the original local-export design, retained as historical context. It predates one-click GitHub filing, live annotations, dictation and the optional Proofline services. Its “no backend” decision and phase-specific scope are superseded. Current product behavior is in [README](../README.md); development and ownership are in [DEVELOPMENT](../DEVELOPMENT.md).
 
 This Chrome extension records a full session of someone using a web app, then exports it as a local zip. It captures interactions, network traffic, screenshots, voice narration, annotations, and files. The report is built for an LLM coding agent to read, so you can use it to reproduce bugs and analyse behaviour.
 

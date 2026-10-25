@@ -1,4 +1,6 @@
-# Session Recorder SEO campaign
+# Session Recorder SEO campaign — historical
+
+> This is the October 17, 2026 campaign record, retained for its dated observations. The Proofline repository and website migration supersede its host-specific execution instructions. Revalidate measurements before using them. Current product behavior is in [README](../README.md); development and ownership are in [DEVELOPMENT](../DEVELOPMENT.md).
 
 Start: 17 October 2026. First review: 24 October. Six-week review: 28 November.
 Owner: Mohsen Azimi. This is the campaign execution record; `gso.md` contains

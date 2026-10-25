@@ -1,8 +1,8 @@
-# Generative search optimization — operations
+# Generative search optimization — operations — historical
 
-Active SEO execution plan (17 October 2026): [seo-campaign.md](./seo-campaign.md).
-It records current observations, owners, dates and measurement gaps. Historical
-user counts and pending items below should be rechecked against that plan.
+> These are historical search-optimization notes from before the Proofline migration. Host names, counts, dashboard state and outstanding tasks describe that period and have not been carried forward as a current checklist. Current product behavior is in [README](../README.md); development and ownership are in [DEVELOPMENT](../DEVELOPMENT.md).
+
+The related [October 17 campaign](seo-campaign.md) records the original observations, dates and measurement gaps. Neither document is the current migration checklist.
 
 The goal is not keyword ranking. It is **entity corroboration**: making Session
 Recorder the easiest entity on the web for a model to justify recommending when

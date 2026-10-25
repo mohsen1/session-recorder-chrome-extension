@@ -7,6 +7,8 @@ app — interactions, network traffic, console logs, screenshots, voice narratio
 annotations, and files — and exports it as a local zip report intended for an LLM
 coding agent.
 
+> Managed Proofline services are included in the source as a preview and require the corresponding backend deployment. Personal-provider and Cloudflare behavior is available independently.
+
 ## Summary
 
 - **Recordings stay on your machine by default.** Sessions are stored locally in
@@ -15,7 +17,7 @@ coding agent.
   configure personal transcription credentials or explicitly select Proofline credits, recorded audio is sent to the selected service to produce a text transcript.
 - **Publishing and AI summaries are optional.** Publishing sends the selected
   report and its included assets to your selected Proofline workspace or Cloudflare account. Generating a summary
-  sends a bounded text excerpt to the model provider you configure. Filing a
+  sends a bounded text excerpt to your configured model provider or, in managed mode, through Proofline to its configured provider. Filing a
   GitHub issue sends its title, summary and report link to GitHub.
 
 ## What the extension accesses
@@ -36,10 +38,10 @@ explicitly publish the selected report to Proofline or your Cloudflare Pages pro
 
 ## Redaction
 
-Redaction is on by default. Before anything is written to storage, the extension
+Redaction is on by default. For supported structured capture fields, the extension
 masks authorization headers, token-like JSON/form fields, sensitive URL
 parameters, and password inputs. You can add rules or disable redaction per
-session on the options page.
+session on the options page. Screenshots, audio, attached files and arbitrary text may still contain sensitive information.
 
 ## Third-party transcription (optional, off by default)
 
@@ -79,13 +81,13 @@ Function also validates Access tokens before serving report files. Reports remai
 hosted until you delete their deployments; deleting a local session does not
 unpublish it. Use Unpublish report or your Cloudflare dashboard to delete it.
 
-AI summaries send up to 60,000 characters of text evidence to OpenAI, Anthropic,
+Personal-provider AI summaries send up to 60,000 characters of text evidence to OpenAI, Anthropic,
 Google or the OpenAI-compatible endpoint you select, when you choose
 File GitHub issue with a configured model or Regenerate summary. With a configured model, stopping a recording also sends this bounded text evidence to generate its session-list title automatically. No media bytes are sent for summarization or naming. The text may still
 contain sensitive data; review it before sending. Provider terms and retention
 policies apply. Review generated summaries before sharing them.
 
-GitHub receives the title, summary and protected page link when you choose File GitHub issue. The extension creates the issue with your configured GitHub token or the installed Proofline GitHub App. The summary follows the repository’s visibility; The report’s access policy protects the hosted report, not the issue text. Drafts, deployment references, created issues and recovery markers are saved locally. Copy issue Markdown writes the text to your clipboard only when you choose it.
+GitHub receives the title, summary and protected page link when you choose File GitHub issue. The extension creates the issue with your configured GitHub token or the installed Proofline GitHub App. The summary follows the repository’s visibility; the report’s access policy protects the hosted report, not the issue text. Drafts, deployment references, created issues and recovery markers are saved locally. Copy issue Markdown writes the text to your clipboard only when you choose it.
 
 API credentials stay in extension storage and are sent only to their configured
 service. They are not included in report bundles or deployed pages. Screenshots,
@@ -94,9 +96,9 @@ information. Review them before publishing.
 
 ## Optional Proofline services
 
-Connecting Proofline uses browser approval to store an expiring, workspace-scoped token in trusted extension storage. Connecting alone does not enable paid AI. You explicitly choose Proofline credits in Settings. Personal provider keys remain local and are never sent to Proofline.
+Connecting Proofline uses browser approval to store an expiring, workspace-scoped token in trusted extension storage. Connecting alone does not enable paid AI. You explicitly choose Proofline credits in Settings → Services. Personal provider keys remain local and are never sent to Proofline.
 
-In Proofline AI mode, summaries, session titles and page vocabulary are sent through the Proofline server to configured model providers. Recorded speech is decoded to mono audio and sent through Proofline to Deepgram or ElevenLabs. Provider credentials stay on the server. Paid usage is attributed to the workspace you select and recorded in Proofline’s credit ledger. AI pauses when credits are unavailable; the extension never silently switches to your personal keys or another workspace.
+In Proofline AI mode, bounded text for summaries, session titles and page vocabulary is sent through the Proofline server to configured model providers. Recorded speech is decoded to mono audio and sent through Proofline to Deepgram or ElevenLabs. Provider credentials stay on the server. Paid usage is attributed to the workspace you select and recorded in Proofline’s credit ledger. AI pauses when credits are unavailable; the extension never silently switches to your personal keys or another workspace.
 
 Publishing to Proofline sends the selected report Markdown and included attachments. Reports are private to their creator and explicitly permitted readers. Outside readers need a free Proofline account and an invitation. Reports remain until deleted, subject to the workspace storage limit; deleting a local session does not delete a hosted report. Use the report’s delete action to remove the hosted copy.
 

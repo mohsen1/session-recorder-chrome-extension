@@ -1,4 +1,6 @@
-# Implementation plan
+# Implementation plan — historical
+
+> This is the original phased implementation plan, retained as historical context. Its spikes, estimates, dependency proposals and exit criteria are not current tasks. The implemented system has moved beyond these phases. Current product behavior is in [README](../README.md); development and ownership are in [DEVELOPMENT](../DEVELOPMENT.md).
 
 This plan is the build companion to `PLAN.md`. It has 8 phases, and each phase ends in something you can demonstrate. There is no code here, only pseudocode where the logic is not obvious.
 

@@ -1,0 +1,113 @@
+# Development
+
+Session Recorder is a Chrome Manifest V3 extension built with WXT, React and TypeScript. User setup is in the [README](README.md) and [sharing guide](docs/sharing.md).
+
+## Build and load
+
+Use Node.js 22 and the pnpm version declared in `package.json`.
+
+```sh
+git clone https://github.com/prooflinedev/session-recorder-chrome-extension.git
+cd session-recorder-chrome-extension
+pnpm install --frozen-lockfile
+pnpm build
+```
+
+In `chrome://extensions`, enable Developer mode, select **Load unpacked**, and choose `.output/chrome-mv3`. Pin the extension and select its toolbar icon to open the recorder.
+
+For subsequent builds, keep the same unpacked directory and use **Reload** on its extension card. Chrome derives an unpacked extension's identity from its path; loading another directory can give it separate settings and recordings. Reloading closes extension pages, so stop any active recording first.
+
+```sh
+pnpm dev       # WXT development server
+pnpm build     # Production files in .output/chrome-mv3
+pnpm zip       # WXT ZIP package
+```
+
+The `dev:firefox` script is a WXT development entry point, not a supported Firefox release. Capture relies on Chrome APIs including `debugger`, `sidePanel`, `offscreen` and `tabCapture`.
+
+## Check changes
+
+```sh
+pnpm compile        # Extension TypeScript
+pnpm compile:e2e    # Browser-test TypeScript
+pnpm test           # Vitest
+pnpm exec playwright install chromium
+pnpm test:e2e       # Build, then Playwright
+pnpm test:e2e:headed
+```
+
+Run focused suites while editing, then the checks affected by the change. Playwright loads the built extension into an isolated Chromium profile and serves `demo/` on port 5319. It uses synthetic audio/video devices. Tests cover capture and export, redaction, annotation, publishing, managed connection, permissions and failure recovery; network fixtures keep automated sharing tests from creating real issues or reports.
+
+To run a focused browser test after building:
+
+```sh
+pnpm exec playwright test e2e/proofline.spec.ts
+```
+
+Personal credentials belong in the extension settings. Local `.env*` and `local.env` files are ignored; do not commit keys or embed them in the browser bundle. Managed credentials belong on the Proofline server. The extension stores only its expiring, workspace-scoped connection token.
+
+## Code map
+
+| Path | Responsibility |
+| --- | --- |
+| `entrypoints/background.ts` | Session lifecycle, event ingestion, capture coordination and runtime messages |
+| `entrypoints/*.content.ts` | Interactions, files, live annotations and screenshot annotation |
+| `entrypoints/sidepanel/` | Recording controls, session list and shared settings components |
+| `entrypoints/options/` | Full-page settings |
+| `entrypoints/share/` | Issue draft, evidence, repository picker and filing progress |
+| `entrypoints/report/` | Full local report and export |
+| `entrypoints/offscreen/` | Microphone and tab-video recording |
+| `entrypoints/mic-permission/` | Visible microphone-permission flow |
+| `lib/session/` | Session/event types, defaults, importance and protected signals |
+| `lib/capture/` | CDP, console, network, screenshots, tabs and redaction |
+| `lib/annotations/` | Annotation state, overlay, dictation and page vocabulary |
+| `lib/storage/` | IndexedDB and batched event writes |
+| `lib/export/` | Trimming, Markdown/HTML, token estimates, OpenAPI and ZIP bundles |
+| `lib/sharing/` | Personal-key summaries, Cloudflare publishing and GitHub issues |
+| `lib/proofline/` | Device authorization, managed AI, reports and service settings |
+| `lib/transcription/` | Provider adapters, streaming, keyterms and PCM conversion |
+| `e2e/`, `demo/` | Browser fixtures and capture test page |
+
+## Architectural rules
+
+Capture sources feed the background event funnel, which assigns event identity and timestamps before storing them in IndexedDB. Content scripts use typed messages from `lib/messaging.ts`; they do not receive provider credentials. Large assets live in IndexedDB rather than Chrome messages.
+
+Keep UI state in focused hooks and reducers. Effects synchronize browser lifecycle and external storage; button handlers own user-requested work. Pure export transforms clone their inputs. `lib/session/types.ts` and `lib/session/events.ts` define the event contract and protected signals.
+
+AI summaries prioritize annotations and narration. Filing persists operation identities and checkpoints so retries do not blindly duplicate uploads or GitHub issues. Personal keys are an explicit mode, never an automatic fallback from exhausted Proofline credits.
+
+Changes to the Proofline API span this repository and [prooflinedev/proofline](https://github.com/prooflinedev/proofline). Keep workspace approval, credit accounting, report access, idempotency and cancellation contracts aligned. The server owns provider secrets and permission checks; client checks are not authorization.
+
+See [internal modules](docs/internal-api.md), [event schema](docs/event-schema.md) and [report format](docs/report-format.md).
+
+## Chrome permissions
+
+The manifest is generated from `wxt.config.ts`.
+
+| Permission | Use |
+| --- | --- |
+| `debugger` | CDP network, console, exception and screenshot capture |
+| `sidePanel` | Recorder UI |
+| `tabs`, `webNavigation` | Recorded tabs and navigation |
+| `scripting` | Activate content scripts |
+| `storage`, `unlimitedStorage` | Settings and local recording persistence |
+| `offscreen` | Microphone and tab-video recording |
+| `tabCapture` | Capture tab video and sound |
+| `downloads` | Save report ZIPs |
+| `alarms` | Flush capture buffers while recording |
+| `<all_urls>` | Record the web application selected by the user |
+
+## Website and release ownership
+
+The Proofline marketing site and help center are implemented in `apps/marketing` in the Proofline repository. The destination is `https://proofline.sh/session-recorder-chrome-extension/`, with help under `/help/session-recorder/`. Deployment is separate from publishing this extension.
+
+This repository retains the legacy static site in `website/` and its source generator in `scripts/website/` during cutover. Do not treat old campaign documents as instructions to deploy the former host.
+
+```sh
+node scripts/website/build.mjs
+node scripts/website/check.mjs
+```
+
+The release workflow runs when a GitHub release is published in `prooflinedev/session-recorder-chrome-extension`. It checks and builds the tagged revision, then attaches `session-recorder.zip` and its SHA-256 checksum. It does not publish to the Chrome Web Store or deploy Proofline. Do not advertise the latest-release ZIP until a release asset exists.
+
+Store metadata and publication requirements are in [store-listing.md](docs/store-listing.md). Preserve Chrome Web Store item ID `dboiheheijgmfpfhbmjggiijpgondghh`; moving GitHub ownership does not transfer the store publisher.
