@@ -1,0 +1,24 @@
+{
+  "source": "scripts/capture-screenshots.mjs",
+  "fixture": "demo/checkout.html",
+  "data": "Fictional Northstar checkout. No account, API keys or external requests.",
+  "views": {
+    "record": {
+      "width": 1600,
+      "height": 780
+    },
+    "recording": {
+      "width": 1600,
+      "height": 780
+    },
+    "annotate": {
+      "width": 1600,
+      "height": 780
+    },
+    "report": {
+      "width": 1600,
+      "height": 780
+    }
+  },
+  "composition": "Record, recording and annotation pair screenshots of the actual demo tab and actual extension side panel at native dimensions. Report captures the actual issue draft page. The report draft is deterministic fixture copy."
+}
