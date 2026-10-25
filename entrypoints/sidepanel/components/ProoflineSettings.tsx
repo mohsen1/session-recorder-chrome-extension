@@ -13,7 +13,7 @@ export function ProoflineSettings(): React.JSX.Element {
     <section className="settings__section proofline-settings" aria-label="Proofline account">
       <header className="proofline-settings__heading">
         <ProoflineMark size={26} />
-        <h2>Proofline</h2>
+        <h2>Proofline · Preview</h2>
       </header>
       {account ? (
         <>
@@ -72,7 +72,7 @@ export function ProoflineSettings(): React.JSX.Element {
       ) : (
         <div className="proofline-settings__intro">
           <p className="proofline-settings__description">
-            Use Proofline credits for AI and share private reports with your team.
+            Proofline credits and private reports are in preview. Use personal API keys until the managed service is available.
           </p>
           <button
             className="btn btn--primary btn--sm proofline-settings__connect"
