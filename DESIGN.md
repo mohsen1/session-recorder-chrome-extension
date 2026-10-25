@@ -165,7 +165,7 @@ The palette combines neutral paper or charcoal with Proofline ink actions. The f
 
 ### Primary
 
-Proofline’s console theme in `entrypoints/sidepanel/styles.css` owns the active palette. The official four-part mark is the only multicolor brand element. Geist and Geist Mono are bundled locally.
+Proofline’s console theme in `entrypoints/sidepanel/styles.css` owns the active palette. In the extension UI, the official four-part mark uses the foreground color: black in light appearance and white in dark appearance. Geist and Geist Mono are bundled locally.
 
 Proofline ink (`accent`) carries Record and File issue with a contrasting `accent-ink`. Proofline blue (`accent-text`) carries links and secondary action emphasis. Tint and line roles provide quieter selected states. The solid primary button keeps the fill-colored border.
 

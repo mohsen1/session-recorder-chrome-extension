@@ -1,4 +1,5 @@
 import React from 'react';
+import { ProoflineMark } from './ProoflineMark';
 export function ProoflineBrand({
   compact = false,
 }: {
@@ -6,7 +7,7 @@ export function ProoflineBrand({
 }): React.JSX.Element {
   return (
     <span className="proofline-brand">
-      <img src="/proofline-mark.svg" width="22" height="22" alt="" />
+      <ProoflineMark />
       <span>
         {compact ? 'Recorder' : 'Session Recorder'}
         <small>by Proofline</small>

@@ -1,8 +1,8 @@
 import { GitHubIcon } from '@/lib/ui/GitHubIcon';
+import { ProoflineMark } from '@/lib/ui/ProoflineMark';
 import React from 'react';
 import {
   AudioLines,
-  UserRound,
   Camera,
   Database,
   ShieldCheck,
@@ -20,7 +20,7 @@ import { useSettingsNavigation } from './useSettingsNavigation';
 import { formatBytes, totalEvents, clampInt } from './settings-utils';
 
 const SETTINGS_PAGES = [
-  { id: 'proofline', label: 'Proofline', icon: UserRound },
+  { id: 'proofline', label: 'Proofline', icon: ProoflineMark },
   { id: 'capture', label: 'Capture', icon: Camera },
   { id: 'redaction', label: 'Privacy', icon: ShieldCheck },
   { id: 'transcription', label: 'Transcription', icon: AudioLines },
