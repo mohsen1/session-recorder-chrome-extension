@@ -24,6 +24,7 @@ import { sessionFolderName } from '@/lib/util/naming';
 import { broadcast, onBroadcast } from '@/lib/messaging';
 import type {
   AssetMeta,
+  AnnotationShape,
   NetRequestPayload,
   SessionEvent,
   VerbosityLevel,
@@ -31,6 +32,9 @@ import type {
 
 const params = new URLSearchParams(location.search);
 const sessionId = params.get('session');
+document.getElementById('share')?.addEventListener('click', () => {
+  if (sessionId) void chrome.tabs.create({ url: `${chrome.runtime.getURL('share.html')}?session=${encodeURIComponent(sessionId)}&level=${level}` });
+});
 
 const reportEl = document.getElementById('report') as HTMLElement;
 const titleEl = document.getElementById('bar-title') as HTMLElement;
@@ -41,7 +45,7 @@ const downloadBtn = document.getElementById('download') as HTMLButtonElement;
 // Start at Standard — the same default as the side panel's export chooser, so
 // the two surfaces agree the moment a session stops. Selections sync both ways
 // via the report/level broadcast.
-let level: VerbosityLevel = 'L1';
+let level: VerbosityLevel = ['L0', 'L1', 'L2', 'L3'].includes(params.get('level') ?? '') ? params.get('level') as VerbosityLevel : 'L1';
 let loaded: {
   session: Awaited<ReturnType<typeof getSession>>;
   events: SessionEvent[];
@@ -293,7 +297,7 @@ function eventNode(e: SessionEvent, mediaUrls: Map<string, string>): HTMLElement
     case 'screenshot':
       return shotBlock(e.t, mediaUrls.get(e.payload.assetId ?? ''), e.payload.contextText);
     case 'annotation':
-      return annotationBlock(e.t, mediaUrls.get(e.payload.screenshotAssetId ?? ''), e.payload.shapes.length);
+      return annotationBlock(e.t, mediaUrls.get(e.payload.screenshotAssetId ?? ''), e.payload.shapes);
     case 'video-segment':
       return videoBlock(
         e.t,
@@ -428,11 +432,16 @@ function shotBlock(t: number, url: string | undefined, ctx?: string): HTMLElemen
   return b;
 }
 
-function annotationBlock(t: number, url: string | undefined, shapes: number): HTMLElement {
+function annotationBlock(t: number, url: string | undefined, shapes: AnnotationShape[]): HTMLElement {
   const b = el('div', 'r-shot');
   const head = el('div', 'r-shot__head');
-  head.append(el('span', 'r-time', formatClock(t)), tag('annotate'), el('span', 'r-txt', `Annotation (${shapes} shape${shapes === 1 ? '' : 's'})`));
+  head.append(el('span', 'r-time', formatClock(t)), tag('annotate'), el('span', 'r-txt', `Annotation (${shapes.length} shape${shapes.length === 1 ? '' : 's'})`));
   b.appendChild(head);
+  for (const shape of shapes) {
+    if (!shape.text) continue;
+    b.appendChild(el('p', 'r-annotation-comment', shape.text));
+    if (shape.targetDescriptor?.selector) b.appendChild(el('code', 'r-annotation-target', shape.targetDescriptor.selector));
+  }
   if (url) {
     const img = el('img');
     img.src = url;

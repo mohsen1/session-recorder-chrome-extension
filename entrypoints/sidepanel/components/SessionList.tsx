@@ -4,46 +4,17 @@
  * delete button removes the session (cascading its events + assets).
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { sendMessage } from '@/lib/messaging';
+import React from 'react';
 import { formatClock } from '@/lib/export/markdown';
 import type { Session } from '@/lib/session/types';
-import { formatBytes, useSidepanel } from '../store';
+import { useSessionList } from './useSessionList';
 
 interface SessionListProps {
   onOpen: (sessionId: string) => void;
 }
 
 export function SessionList({ onOpen }: SessionListProps): React.JSX.Element {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-  // Re-fetch whenever the live session id changes (a session just ended).
-  const liveSessionId = useSidepanel((s) => s.session?.id);
-  const recording = useSidepanel((s) => s.recording);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await sendMessage({ kind: 'session/list' });
-      // Never trust the response shape: a background-side error replies
-      // {ok:false, error} (no sessions field), and a restarting service worker
-      // can resolve undefined. Rendering must survive both.
-      setSessions(Array.isArray(res?.sessions) ? res.sessions : []);
-    } catch {
-      setSessions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load, liveSessionId, recording]);
-
-  const onDelete = async (id: string) => {
-    await sendMessage({ kind: 'session/delete', sessionId: id });
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-  };
+  const { sessions, loading, remove, now } = useSessionList();
 
   if (loading && sessions.length === 0) {
     return <p className="sessions__empty">Loading…</p>;
@@ -55,8 +26,7 @@ export function SessionList({ onOpen }: SessionListProps): React.JSX.Element {
 
   return (
     <div className="sessions">
-      <div className="sessions__head">Sessions</div>
-      <ul className="sessions__list">
+      <ul className="sessions__list" aria-label="Recorded sessions">
         {sessions.map((s) => (
           <li key={s.id} className="session-row">
             <button
@@ -66,8 +36,7 @@ export function SessionList({ onOpen }: SessionListProps): React.JSX.Element {
             >
               <span className="session-row__name">{s.name}</span>
               <span className="session-row__meta">
-                {formatDate(s.startedAt)} · {formatClock(durationOf(s))} ·{' '}
-                {formatBytes(s.assetBytes)}
+                <time dateTime={new Date(s.startedAt).toISOString()} title={new Date(s.startedAt).toLocaleString()}>{relativeTime(s.startedAt, now)}</time> · {formatClock(durationOf(s))}
               </span>
             </button>
             <button
@@ -75,7 +44,7 @@ export function SessionList({ onOpen }: SessionListProps): React.JSX.Element {
               className="session-row__delete"
               aria-label={`Delete ${s.name}`}
               title="Delete"
-              onClick={() => void onDelete(s.id)}
+              onClick={() => void remove(s.id)}
             >
               ✕
             </button>
@@ -90,11 +59,11 @@ function durationOf(s: Session): number {
   return Math.max(0, (s.endedAt ?? s.startedAt) - s.startedAt);
 }
 
-function formatDate(ms: number): string {
-  return new Date(ms).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+function relativeTime(startedAt: number, now: number): string {
+  const seconds = Math.max(0, (now - startedAt) / 1000);
+  if (seconds < 60) return 'Just now';
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [['year', 31_536_000], ['month', 2_592_000], ['day', 86_400], ['hour', 3600], ['minute', 60]];
+  const [unit, scale] = units.find(([, scale]) => seconds >= scale)!;
+  return relative.format(-Math.floor(seconds / scale), unit);
 }

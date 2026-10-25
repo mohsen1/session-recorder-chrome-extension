@@ -21,6 +21,7 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@noble/hashes": "^1.8.0",
     "dompurify": "^3.4.11",
     "fabric": "^6.9.1",
     "fflate": "^0.8.2",

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session Recorder vs Marker.io: Visual Website Feedback or Recorded Bug Reports</title>
+<meta name="description" content="Compare Session Recorder and Marker.io for bug reporting: a website feedback widget for clients and UAT versus a free open-source recorder that files GitHub issues.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/compare/marker-io/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Session Recorder vs Marker.io: Visual Website Feedback or Recorded Bug Reports">
+<meta property="og:description" content="Compare Session Recorder and Marker.io for bug reporting: a website feedback widget for clients and UAT versus a free open-source recorder that files GitHub issues.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/compare/marker-io/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Session Recorder vs Marker.io: Visual Website Feedback or Recorded Bug Reports">
+<meta name="twitter:description" content="Compare Session Recorder and Marker.io for bug reporting: a website feedback widget for clients and UAT versus a free open-source recorder that files GitHub issues.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../../logo.png">
+<link rel="apple-touch-icon" href="../../logo.png">
+<link rel="stylesheet" href="../../site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Compare",
+          "item": "https://azimi.me/session-recorder-chrome-extension/compare/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "vs Marker.io",
+          "item": "https://azimi.me/session-recorder-chrome-extension/compare/marker-io/"
+        }
+      ]
+    },
+    {
+      "@type": "Article",
+      "headline": "Session Recorder vs Marker.io",
+      "description": "Compare Session Recorder and Marker.io for bug reporting: a website feedback widget for clients and UAT versus a free open-source recorder that files GitHub issues.",
+      "dateModified": "2026-10-25",
+      "author": {
+        "@type": "Person",
+        "name": "Mohsen Azimi",
+        "url": "https://azimi.me/"
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../../features/">Features</a><a href="../../compare/" aria-current="page">Compare</a><a href="../../guides/">Guides</a><a href="../../help/">Help</a><a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../../">Home</a></li><li><a href="../../compare/">Compare</a></li><li aria-current="page">vs Marker.io</li></ol></nav><!-- /gen:crumbs -->
+<h1>Session Recorder vs Marker.io</h1>
+<p class="lede">Both help a developer see a bug they did not witness. They make different assumptions about who reports, where reports live and what you pay for. Prices and plans were checked on October 25, 2026.</p>
+<h2 id="short">The short answer</h2>
+<p><b>Choose Marker.io if:</b></p>
+<ul><li>Clients or non-technical stakeholders report issues on a site you build, and installing an extension is too much to ask.</li><li>You run structured UAT and want feedback to flow into Jira, Linear or another tracker you already use.</li><li>You want a vendor to host and administer the feedback workflow.</li></ul>
+<p><b>Choose Session Recorder if:</b></p>
+<ul><li>The reporters are your own QA and product people, and the destination is GitHub.</li><li>You want full network bodies, console output and a timeline in every report rather than on a higher tier.</li><li>You prefer free, open-source tooling that keeps recordings out of a third-party workspace.</li></ul>
+<h2 id="vendor">About Marker.io</h2>
+<p>Marker.io collects visual feedback through a widget on your website or a browser extension. Reporters annotate screenshots, Marker.io adds technical metadata, and issues go into your tracker. Its Team plan adds session replay, console and network logs, and more advanced integrations. It suits client feedback and user acceptance testing. <a class="cite" href="https://marker.io/pricing">Marker.io pricing</a></p>
+<h2 id="table">Side by side</h2>
+<div class="tablewrap" role="region" aria-label="Session Recorder and Marker.io compared" tabindex="0">
+<table class="comparison-table">
+<thead><tr><th scope="col"><span class="vh">Aspect</span></th><th scope="col">Session Recorder</th><th scope="col">Marker.io</th></tr></thead>
+<tbody>
+<tr><th scope="row">Core workflow</th><td><span class="cell-label" aria-hidden="true">Session Recorder</span>Record in Chrome, annotate the live page, file a GitHub issue that links to a protected report</td><td><span class="cell-label" aria-hidden="true">Marker.io</span>Reporters annotate a screenshot in a website widget or extension; issues sync to your tracker</td></tr>
+<tr><th scope="row">Typical reporters</th><td><span class="cell-label" aria-hidden="true">Session Recorder</span>Internal QA, product and engineering people with the extension installed</td><td><span class="cell-label" aria-hidden="true">Marker.io</span>Clients, stakeholders and QA, often without an engineering account</td></tr>
+<tr><th scope="row">Where reports live</th><td><span class="cell-label" aria-hidden="true">Session Recorder</span>Your browser; optionally your own Cloudflare Pages project and GitHub repository</td><td><span class="cell-label" aria-hidden="true">Marker.io</span>Marker.io’s service and your issue tracker</td></tr>
+<tr><th scope="row">Issue tracker output</th><td><span class="cell-label" aria-hidden="true">Session Recorder</span>GitHub issues; ZIP or protected link for anything else</td><td><span class="cell-label" aria-hidden="true">Marker.io</span>Native issue tracker integrations</td></tr>
+<tr><th scope="row">Developer context</th><td><span class="cell-label" aria-hidden="true">Session Recorder</span>Interactions, console, network bodies, screenshots, optional video and voice</td><td><span class="cell-label" aria-hidden="true">Marker.io</span>Screenshot metadata; session replay and devtools data on Team</td></tr>
+<tr><th scope="row">AI assistance</th><td><span class="cell-label" aria-hidden="true">Session Recorder</span>Optional, with your own OpenAI, Anthropic, Google or compatible model</td><td><span class="cell-label" aria-hidden="true">Marker.io</span>See vendor for current AI features</td></tr>
+<tr><th scope="row">Paid pricing (checked October 25, 2026)</th><td><span class="cell-label" aria-hidden="true">Session Recorder</span>Free (AGPL-3.0). Your model, transcription and Cloudflare usage is billed by those providers.</td><td><span class="cell-label" aria-hidden="true">Marker.io</span>Starter: $39/month billed annually or $59 monthly, 3 members. Team: $149/month billed annually or $199 monthly, 15 members. <a class="cite" href="https://help.marker.io/en/articles/14625673-plans-and-pricing">source</a></td></tr>
+<tr><th scope="row">Source code</th><td><span class="cell-label" aria-hidden="true">Session Recorder</span>Open source</td><td><span class="cell-label" aria-hidden="true">Marker.io</span>Proprietary</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="pricing">Pricing</h2>
+<p>Starter costs $39 per month billed annually, or $59 month to month, and includes 3 members. Team costs $149 per month billed annually, or $199 month to month, for 15 members, and adds session replay and developer context. There is a 15-day trial. Guest and project limits differ between Marker.io’s help centre and marketing page, so check them directly. <a class="cite" href="https://help.marker.io/en/articles/14625673-plans-and-pricing">Marker.io plans</a> <a class="cite" href="https://marker.io/pricing">marker.io/pricing, checked October 25, 2026</a></p>
+<p>Session Recorder is free and open source under the AGPL-3.0, with no plan tiers. Optional integrations use your own accounts: model providers and transcription services bill usage, and published reports use Cloudflare Pages Functions, where your Cloudflare plan’s limits and billing apply.</p>
+
+<h2 id="workflow">How the workflows differ</h2>
+<p><b>Hosted workspace or your own accounts.</b> Hosted tools give everyone one place to view, comment on and route reports, with no setup beyond inviting people. Session Recorder has no workspace. Reports live in the browser that recorded them, and when you share them they go to your own Cloudflare Pages project and GitHub repository. That means a one-time setup and fewer collaboration features, in exchange for keeping the data under accounts you already control.</p>
+<p><b>Who is reporting.</b> Widget-based tools let clients and customers report without installing anything. Session Recorder assumes the reporter can install a Chrome extension, which fits internal QA and product teams.</p>
+<p><b>What the developer gets.</b> Session Recorder puts annotations first, then the full timeline of interactions, console output and network requests with bodies. Exports are Markdown designed for coding agents as well as people.</p>
+<p><b>Cost model.</b> Paid tools charge per member, creator or plan tier. Session Recorder costs nothing, but optional AI summaries, transcription and publishing run on your provider accounts, where usage charges and limits apply.</p>
+<h2 id="not">What Session Recorder does not do</h2>
+<p>Session Recorder does not offer a hosted shared workspace, client review boards, surveys, broad native integrations beyond GitHub, or enterprise administration such as SSO and seat management. If you need those, a hosted product is the better choice.</p>
+<h2 id="sources">Sources</h2>
+<ul class="sources"><li><a href="https://help.marker.io/en/articles/14625673-plans-and-pricing">Marker.io plans and pricing (help centre)</a>, checked October 25, 2026</li><li><a href="https://marker.io/pricing">Marker.io pricing</a>, checked October 25, 2026</li><li><a href="../../features/">Session Recorder features</a> and <a href="https://github.com/mohsen1/session-recorder-chrome-extension">source code</a></li></ul>
+<p>Vendors change plans often. If something here is out of date, <a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">open an issue</a> and we will correct it.</p>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../../features/github-issues/"><b>One-click GitHub issues</b><span>File into one of several repositories, each with its own token, with progress and cancel.</span></a></li><li><a href="../../features/protected-publishing/"><b>Protected report publishing</b><span>Publish to your own Cloudflare Pages project behind Cloudflare Access login.</span></a></li><li><a href="../../compare/"><b>All comparisons</b><span>Jam, Marker.io, BugHerd, Userback and BrowserStack Bug Capture.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../../features/">All features</a></li><li><a href="../../features/annotations/">Annotations</a></li><li><a href="../../features/github-issues/">GitHub issues</a></li><li><a href="../../features/ai-summaries/">AI summaries</a></li><li><a href="../../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../../compare/">All comparisons</a></li><li><a href="../../jam-alternative/">vs Jam</a></li><li><a href="../../compare/marker-io/">vs Marker.io</a></li><li><a href="../../compare/bugherd/">vs BugHerd</a></li><li><a href="../../compare/userback/">vs Userback</a></li><li><a href="../../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../../guides/">All guides</a></li><li><a href="../../claude-code/">Claude Code</a></li><li><a href="../../cursor/">Cursor</a></li><li><a href="../../codex/">Codex</a></li><li><a href="../../chatgpt/">ChatGPT</a></li><li><a href="../../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../../help/">Help</a></li><li><a href="../../privacy.html">Privacy policy</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
+</html>

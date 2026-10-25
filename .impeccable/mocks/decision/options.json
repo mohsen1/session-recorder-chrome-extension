@@ -1,0 +1,79 @@
+{
+  "title": "A sharper Session Recorder",
+  "question": "Same compact Linear / Raycast direction. Three ways to arrange the full-page report after recording.",
+  "options": [
+    {
+      "id": "report-first",
+      "kind": "grounded",
+      "label": "Report first",
+      "thesis": "Read the bug, skim the evidence, file the issue.",
+      "palette": [
+        "#111214",
+        "#f7f8fa",
+        "#68707d",
+        "#e65446"
+      ],
+      "materials": [
+        "Compact rows",
+        "Sharp system typography",
+        "Flat surfaces"
+      ],
+      "viewport": "A compact navigation rail, readable issue draft, evidence below, and File issue fixed in the header.",
+      "risk": "The screenshot sits below the summary; best when the written report leads.",
+      "html": ".impeccable/mocks/decision/report-first.html",
+      "htmlFrame": "1440x900",
+      "comp": ".impeccable/mocks/decision/report-first.png"
+    },
+    {
+      "id": "evidence-first",
+      "kind": "grounded",
+      "label": "Evidence beside the draft",
+      "thesis": "See the captured problem while reading or editing its summary.",
+      "palette": [
+        "#111214",
+        "#f7f8fa",
+        "#68707d",
+        "#e65446"
+      ],
+      "materials": [
+        "Compact rows",
+        "Sharp system typography",
+        "Flat surfaces"
+      ],
+      "viewport": "A large evidence viewer and compact event strip beside the issue draft; File issue stays in the header.",
+      "risk": "The split view needs more width, and collapses into sections on smaller screens.",
+      "html": ".impeccable/mocks/decision/evidence-first.html",
+      "htmlFrame": "1440x900",
+      "comp": ".impeccable/mocks/decision/evidence-first.png"
+    },
+    {
+      "id": "timeline-first",
+      "kind": "grounded",
+      "label": "Recording as a timeline",
+      "thesis": "Follow the reproduction in order, then file the resulting report.",
+      "palette": [
+        "#111214",
+        "#f7f8fa",
+        "#68707d",
+        "#e65446"
+      ],
+      "materials": [
+        "Compact rows",
+        "Sharp system typography",
+        "Flat surfaces"
+      ],
+      "viewport": "A dense timeline with a selected screenshot and annotation, plus a concise issue summary.",
+      "risk": "More investigation-oriented; may be too much interface for quick filing.",
+      "html": ".impeccable/mocks/decision/timeline-first.html",
+      "htmlFrame": "1440x900",
+      "comp": ".impeccable/mocks/decision/timeline-first.png"
+    }
+  ],
+  "steer": true,
+  "reroll": true,
+  "canon": false,
+  "buildPath": {
+    "value": "code",
+    "toggle": true
+  }
+}

@@ -1,32 +1,26 @@
 /**
  * Options page UI.
  *
- * A thin wrapper around the shared <SettingsForm/> (the same component the side
- * panel renders behind its header gear), centered in a narrow column so both
- * entry points stay in sync from one implementation.
+ * The full settings page, opened by the recorder's gear button.
  */
 
 import React from 'react';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import { SettingsForm } from '../sidepanel/components/SettingsForm';
 
 export function App(): React.JSX.Element {
   return (
     <div className="options-page">
       <header className="options-page__header">
-        <img
-          className="options-page__logo"
-          src="/icon/128.png"
-          alt=""
-          aria-hidden="true"
-          width={34}
-          height={34}
-        />
-        <div>
-          <h1 className="options-page__title">Session Recorder Settings</h1>
-          <p className="options-page__subtitle">
-            Configure transcription, redaction, capture, and manage stored data.
-          </p>
+        <div className="options-page__identity">
+          <img src="/icon/32.png" width="22" height="22" alt="" />
+          <span className="options-page__brand">Session Recorder</span>
+          <ChevronRight className="options-page__separator" size={14} aria-hidden="true" />
+          <h1 className="options-page__title">Settings</h1>
         </div>
+        <a className="options-page__help" href="https://azimi.me/session-recorder-chrome-extension/help/" target="_blank" rel="noreferrer">
+          Help <ExternalLink size={12} aria-hidden="true" />
+        </a>
       </header>
       <SettingsForm />
     </div>

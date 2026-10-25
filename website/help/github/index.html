@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One-click GitHub issues — Session Recorder Help</title>
+<meta name="description" content="Connect a repository once, then file an issue directly from a finished recording.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/help/github/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="One-click GitHub issues — Session Recorder Help">
+<meta property="og:description" content="Connect a repository once, then file an issue directly from a finished recording.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/help/github/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="One-click GitHub issues — Session Recorder Help">
+<meta name="twitter:description" content="Connect a repository once, then file an issue directly from a finished recording.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../../logo.png">
+<link rel="apple-touch-icon" href="../../logo.png">
+<link rel="stylesheet" href="../../site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Help",
+          "item": "https://azimi.me/session-recorder-chrome-extension/help/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "One-click GitHub issues",
+          "item": "https://azimi.me/session-recorder-chrome-extension/help/github/"
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../../features/">Features</a><a href="../../compare/">Compare</a><a href="../../guides/">Guides</a><a href="../../help/" aria-current="page">Help</a><a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../../">Home</a></li><li><a href="../../help/">Help</a></li><li aria-current="page">One-click GitHub issues</li></ol></nav><!-- /gen:crumbs -->
+<nav class="help-nav" aria-label="Help topics"><a href="../cloudflare/">Protected publishing</a><a href="../github/" aria-current="page">One-click GitHub issues</a><a href="../ai-summaries/">Automatic AI summaries</a></nav><h1>One-click GitHub issues</h1><p class="lede">Connect a repository once, then file an issue directly from a finished recording.</p>
+<h2 id="setup">Connect your repository</h2>
+<ol>
+<li>Complete <a href="../cloudflare/">protected publishing setup</a>. Optionally configure <a href="../ai-summaries/">AI summaries</a> to draft the issue automatically.</li>
+<li>Open <strong>Settings → GitHub</strong>, choose <strong>Add repository</strong>, and enter <code>owner/repository</code>.</li>
+<li>Choose <strong>Create a GitHub token</strong>. Select the correct resource owner and only the repository you want to file into. Give it <strong>Issues: Read and write</strong>; GitHub includes required Metadata access. Choose an expiration and generate the token.</li>
+<li>Paste the token into that repository’s token field and choose <strong>Save GitHub settings</strong>. The extension checks repository access before saving.</li>
+</ol>
+<p>Add another repository for each destination you use. Each repository has its own token, so credentials can be scoped to just that repository.</p>
+<p>See <a href="https://docs.github.com/en/rest/issues/issues#create-an-issue">GitHub’s issue creation permissions</a> for the API requirements.</p>
+<h2 id="filing">File from the report</h2>
+<p>Stop recording to open the report. Choose <strong>File GitHub issue</strong>. The extension generates a summary when configured, publishes the protected report, and creates the issue with a link. An existing or edited draft is preserved.</p>
+<p>The arrow beside <strong>File issue</strong> selects a configured repository. New reports remember your last selection; existing drafts keep their saved destination.</p>
+<p>A full-page progress screen shows repository verification, summary preparation, publishing and issue creation. <strong>Cancel</strong> stops further work and keeps saved drafts and published reports. If GitHub may already have received the issue, use <strong>Check GitHub issue</strong> to find it before retrying. Cancellation does not undo a completed upload or issue creation.</p>
+<p>Keep the report tab open while filing. Once complete, <strong>View issue</strong> opens the created issue. The summary is visible to everyone who can read the repository; the linked report still requires Access sign-in.</p>
+<h2 id="troubleshooting">If filing fails</h2>
+<ul>
+<li><strong>401 or 403:</strong> check the token’s expiration, repository selection and Issues permission. An organization may require token approval.</li>
+<li><strong>404:</strong> check the repository spelling and whether the token can access it.</li>
+<li><strong>Uncertain response:</strong> use <strong>Check GitHub issue</strong> to reconcile the request before retrying. The extension checks for an accepted request to avoid duplicate issues.</li>
+<li><strong>Publishing error:</strong> follow the <a href="../cloudflare/#troubleshooting">Cloudflare troubleshooting steps</a>.</li>
+</ul>
+<p>The token stays in local extension storage and is excluded from reports and exports. Unpublishing a report does not delete its GitHub issue.</p>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../../features/github-issues/"><b>One-click GitHub issues</b><span>File into one of several repositories, each with its own token, with progress and cancel.</span></a></li><li><a href="../../features/ai-summaries/"><b>AI issue summaries</b><span>Annotation-first issue drafts and automatic session names, using OpenAI, Anthropic, Google or a compatible endpoint.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../../features/">All features</a></li><li><a href="../../features/annotations/">Annotations</a></li><li><a href="../../features/github-issues/">GitHub issues</a></li><li><a href="../../features/ai-summaries/">AI summaries</a></li><li><a href="../../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../../compare/">All comparisons</a></li><li><a href="../../jam-alternative/">vs Jam</a></li><li><a href="../../compare/marker-io/">vs Marker.io</a></li><li><a href="../../compare/bugherd/">vs BugHerd</a></li><li><a href="../../compare/userback/">vs Userback</a></li><li><a href="../../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../../guides/">All guides</a></li><li><a href="../../claude-code/">Claude Code</a></li><li><a href="../../cursor/">Cursor</a></li><li><a href="../../codex/">Codex</a></li><li><a href="../../chatgpt/">ChatGPT</a></li><li><a href="../../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../../help/">Help</a></li><li><a href="../../privacy.html">Privacy policy</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
+</html>

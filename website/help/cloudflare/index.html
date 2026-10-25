@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protected publishing — Session Recorder Help</title>
+<meta name="description" content="Publish reports to Cloudflare Pages and let your team sign in through Cloudflare Access.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/help/cloudflare/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Protected publishing — Session Recorder Help">
+<meta property="og:description" content="Publish reports to Cloudflare Pages and let your team sign in through Cloudflare Access.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/help/cloudflare/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Protected publishing — Session Recorder Help">
+<meta name="twitter:description" content="Publish reports to Cloudflare Pages and let your team sign in through Cloudflare Access.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../../logo.png">
+<link rel="apple-touch-icon" href="../../logo.png">
+<link rel="stylesheet" href="../../site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Help",
+          "item": "https://azimi.me/session-recorder-chrome-extension/help/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Protected publishing",
+          "item": "https://azimi.me/session-recorder-chrome-extension/help/cloudflare/"
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../../features/">Features</a><a href="../../compare/">Compare</a><a href="../../guides/">Guides</a><a href="../../help/" aria-current="page">Help</a><a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../../">Home</a></li><li><a href="../../help/">Help</a></li><li aria-current="page">Protected publishing</li></ol></nav><!-- /gen:crumbs -->
+<nav class="help-nav" aria-label="Help topics"><a href="../cloudflare/" aria-current="page">Protected publishing</a><a href="../github/">One-click GitHub issues</a><a href="../ai-summaries/">Automatic AI summaries</a></nav><h1>Protected publishing</h1><p class="lede">Publish reports to Cloudflare Pages and let your team sign in through Cloudflare Access.</p>
+<h2 id="project">Create the report project</h2>
+<ol>
+<li>Open <a href="https://dash.cloudflare.com/?to=/:account/workers-and-pages">Workers &amp; Pages</a> and create a dedicated <strong>Pages Direct Upload</strong> project. Upload an empty placeholder page for the initial deployment. Keep recorded reports out of that production deployment.</li>
+<li>In your Pages project, open <strong>Settings → General → Enable access policy</strong>. This protects preview deployments. The production hostname and custom domains need separate rules if you use them. See <a href="https://developers.cloudflare.com/pages/configuration/preview-deployments/">Cloudflare’s preview Access guide</a>.</li>
+<li>Manage the generated application in <a href="https://one.dash.cloudflare.com/">Zero Trust → Access controls → Applications</a>. Its hostname should be <code>*.your-project.pages.dev</code>, covering all paths. Use the actual Pages hostname, including any suffix Cloudflare assigned.</li>
+<li>Add an <strong>Allow</strong> policy for your readers’ email addresses or configured identity provider. Email one-time PIN is also supported. Remove Bypass and Service Auth policies and public path overrides from this application.</li>
+</ol>
+<p>For project creation details, see <a href="https://developers.cloudflare.com/pages/get-started/direct-upload/">Cloudflare’s Direct Upload guide</a>.</p>
+<h2 id="connect">Connect the extension</h2>
+<ol>
+<li>Open <strong>Settings → Publishing</strong> in Session Recorder. Copy your Cloudflare account ID from the dashboard into the account field.</li>
+<li>Choose <strong>Create a preconfigured API token</strong>. Review the requested permissions: <strong>Cloudflare Pages: Edit</strong> and <strong>Access: Apps and Policies: Read</strong>. Scope it to your reporting account, choose an expiration, then create and copy it. Use an API token, not the Global API Key.</li>
+<li>Enter the token and Pages project name. Copy the Access <strong>application ID</strong> (a UUID, not its audience/AUD tag) and your team domain, such as <code>your-team.cloudflareaccess.com</code>, from Zero Trust.</li>
+<li>Choose <strong>Verify Access &amp; save</strong>. Session Recorder checks the configuration before publishing.</li>
+</ol>
+<h2 id="readers">What readers see</h2>
+<p>Each report gets its own preview deployment and permanent deployment URL. Readers sign in through your Access policy. The extension also checks Access tokens before serving report files and configures Functions to fail closed.</p>
+<p>Cloudflare account limits and billing apply. A GitHub issue’s summary follows the repository’s visibility; Access protects the linked report, not the issue text.</p>
+<h2 id="troubleshooting">If verification or login fails</h2>
+<ul>
+<li><strong>Permission error:</strong> check the token’s account scope, permissions and expiration.</li>
+<li><strong>Application not found:</strong> use the application UUID rather than its audience tag.</li>
+<li><strong>403 or no login prompt:</strong> check the wildcard hostname, all-path coverage and team domain. Allow time for a new policy to propagate.</li>
+<li><strong>A reader cannot sign in:</strong> confirm their email or identity provider is allowed. A Cloudflare dashboard login is separate from report login.</li>
+</ul>
+<p>After changing the Access application or team domain, republish the report. To remove a published report, use <strong>Report options → Unpublish report</strong> or delete its deployment in Cloudflare. Deleting a local recording does not remove published copies.</p>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../../features/protected-publishing/"><b>Protected report publishing</b><span>Publish to your own Cloudflare Pages project behind Cloudflare Access login.</span></a></li><li><a href="../../features/github-issues/"><b>One-click GitHub issues</b><span>File into one of several repositories, each with its own token, with progress and cancel.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../../features/">All features</a></li><li><a href="../../features/annotations/">Annotations</a></li><li><a href="../../features/github-issues/">GitHub issues</a></li><li><a href="../../features/ai-summaries/">AI summaries</a></li><li><a href="../../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../../compare/">All comparisons</a></li><li><a href="../../jam-alternative/">vs Jam</a></li><li><a href="../../compare/marker-io/">vs Marker.io</a></li><li><a href="../../compare/bugherd/">vs BugHerd</a></li><li><a href="../../compare/userback/">vs Userback</a></li><li><a href="../../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../../guides/">All guides</a></li><li><a href="../../claude-code/">Claude Code</a></li><li><a href="../../cursor/">Cursor</a></li><li><a href="../../codex/">Codex</a></li><li><a href="../../chatgpt/">ChatGPT</a></li><li><a href="../../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../../help/">Help</a></li><li><a href="../../privacy.html">Privacy policy</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
+</html>

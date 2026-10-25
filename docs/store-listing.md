@@ -63,11 +63,11 @@ WHAT IT CAPTURES
 Everything lands on one timeline, in the order it happened, so the report reads as a coherent story instead of a pile of logs.
 
 
-EVERYTHING STAYS ON YOUR MACHINE
+LOCAL BY DEFAULT, SHARING WHEN YOU CHOOSE
 
-There is no account and no backend. Sessions are stored locally in your browser and exported as a zip file you save yourself. Nothing is uploaded.
+Sessions are stored locally and exported as a ZIP. There is no developer-operated backend or account system. Optional publishing uploads the selected report to your own Cloudflare Pages project, protected by Cloudflare Access.
 
-The only exception is voice transcription, and only if you turn it on: if you add your own API key for a transcription provider (Deepgram, OpenAI, or ElevenLabs), the recorded audio is sent to that provider to produce a text transcript. Without a key, audio never leaves your machine.
+Voice transcription is also optional: if you add your own API key for a transcription provider (Deepgram, OpenAI, or ElevenLabs), the recorded audio is sent to that provider to produce a text transcript. AI summaries optionally send text evidence to your OpenAI, OpenAI-compatible, Anthropic or Google provider. Review the editable summary and open a GitHub issue draft containing the protected report link. Publishing can include audio recordings; review the file list first.
 
 
 SECRETS ARE HIDDEN BY DEFAULT

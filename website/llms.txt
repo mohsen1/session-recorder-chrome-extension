@@ -1,39 +1,72 @@
 # Session Recorder
 
-> Session Recorder is a free, open-source, local-first Chrome extension for
-> recording web bugs for AI coding agents. It captures clicks, console errors,
-> network requests and responses, screenshots, video, voice narration, DOM
-> interactions, annotations, and uploaded files, then exports an LLM-ready
-> Markdown report for Claude Code, Codex, Cursor, ChatGPT, and other coding
-> agents.
+> Session Recorder is a free, open-source (AGPL-3.0) Chrome extension for QA
+> and product teams. Record a bug in the browser, annotate the exact element or
+> area, and file a GitHub issue in one action with an AI-written summary and a
+> link to a login-protected report.
 
-Key facts: no account, no backend, no telemetry. Recordings are stored in the
-browser's IndexedDB and exported as a zip the user saves. Secrets (passwords,
-authorization headers, token-like fields) are masked at capture time. Export is
-token-budgeted at four levels — Full, Standard, Compact (~50k tokens), Minimal
-(~15k tokens) — each with a live token estimate, and trimming is deterministic
-with no model call. Manifest V3. Free software under the AGPL-3.0, developed
-by Mohsen Azimi.
+Key facts: recording, annotation, local storage and ZIP export work without
+any account, subscription or developer-operated server. Recordings are stored
+in the browser (IndexedDB). Redaction of authorization headers, cookies,
+token-like fields, sensitive URL parameters and password inputs is on by
+default at capture time; it does not catch everything, so review evidence
+before sharing. Optional integrations use the user's own credentials and send
+data directly to those services: AI summaries and session names (OpenAI,
+OpenAI-compatible endpoints, Anthropic, Google Gemini), voice transcription
+(Deepgram, OpenAI, ElevenLabs; also used for spoken annotation comments,
+with an optional page-vocabulary hint built by the configured model from
+visible interface labels), report publishing (the user's Cloudflare
+Pages project behind Cloudflare Access) and issue filing (GitHub). Those
+providers' charges and limits apply. Exports are ZIP files containing
+report.md, session.json, MANIFEST.md, transcript.json and assets (plus an
+optional standalone report.html), at four detail levels (Full, Standard,
+Compact, Minimal). Developed by Mohsen
+Azimi.
 
 ## Product
 
-- [Overview](https://azimi.me/session-recorder-chrome-extension/): what it captures, how the loop works, install.
+- [Overview](https://azimi.me/session-recorder-chrome-extension/): Free open-source Chrome extension for QA and product teams. Record a bug, annotate the exact element, and file a GitHub issue with an AI summary and a protected report link.
 - [Chrome Web Store listing](https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh): install the extension.
-- [Source on GitHub](https://github.com/mohsen1/session-recorder-chrome-extension): full source, architecture notes, report format spec. Licensed AGPL-3.0.
-- [Privacy policy](https://azimi.me/session-recorder-chrome-extension/privacy.html): what is stored, what never leaves the machine.
+- [Source on GitHub](https://github.com/mohsen1/session-recorder-chrome-extension): source code, issues and README. AGPL-3.0.
+- [Privacy Policy](https://azimi.me/session-recorder-chrome-extension/privacy.html): Privacy policy for the Session Recorder Chrome extension. Recordings stay local by default. Optional transcription, AI summaries, and report publishing send data to services you configure.
 
-## Agent workflows
+## Features
 
-- [With Claude Code](https://azimi.me/session-recorder-chrome-extension/claude-code/): unzip the report into the repo and prompt Claude Code against it.
-- [With Cursor](https://azimi.me/session-recorder-chrome-extension/cursor/): attach report.md to Cursor's Agent; includes a reusable project rule.
-- [With Codex](https://azimi.me/session-recorder-chrome-extension/codex/): local CLI and cloud-task workflows, plus an AGENTS.md snippet.
-- [With ChatGPT](https://azimi.me/session-recorder-chrome-extension/chatgpt/): upload one self-contained report instead of pasting screenshots.
+- [All features](https://azimi.me/session-recorder-chrome-extension/features/): Everything Session Recorder does: browser recording, live annotations, screenshots and video, voice notes, AI issue summaries, GitHub filing, protected publishing, redaction and exports.
+- [Browser recording](https://azimi.me/session-recorder-chrome-extension/features/browser-recording/): Record a bug reproduction in Chrome with interactions, console errors, network requests and responses, and tabs the app opens, all on one timeline. Free and open source.
+- [Annotations](https://azimi.me/session-recorder-chrome-extension/features/annotations/): Annotate the live page while recording: click an element or drag a freeform rectangle and type a comment. Numbered pins lead the report and the AI issue summary.
+- [Screenshots and video](https://azimi.me/session-recorder-chrome-extension/features/screenshots-video/): Session Recorder takes screenshots at every interaction, at key moments or on demand, skips near-duplicate frames, and can record the tab as video with audio.
+- [Voice notes and transcription](https://azimi.me/session-recorder-chrome-extension/features/voice-notes/): Narrate a bug while you record it. Audio stays local; add your own Deepgram, OpenAI or ElevenLabs key to get a timestamped transcript on the timeline.
+- [AI issue summaries](https://azimi.me/session-recorder-chrome-extension/features/ai-summaries/): Generate a GitHub issue title and summary from a recorded bug with your own OpenAI, Anthropic, Google Gemini or OpenAI-compatible model. Annotations lead; diagnostics support.
+- [One-click GitHub issues](https://azimi.me/session-recorder-chrome-extension/features/github-issues/): Choose File GitHub issue on a recorded bug: the extension summarizes it, publishes a protected report and creates the issue with a link. Multiple repositories, scoped tokens.
+- [Protected report publishing](https://azimi.me/session-recorder-chrome-extension/features/protected-publishing/): Share a recorded bug as a web report hosted in your own Cloudflare Pages project. Readers sign in through Cloudflare Access, and a Pages Function checks every request.
+- [Local storage and redaction](https://azimi.me/session-recorder-chrome-extension/features/privacy-redaction/): Session Recorder stores recordings in your browser and masks auth headers, cookies, token-like fields and password inputs as they are captured. What leaves, and when.
+- [Exports and AI handoff](https://azimi.me/session-recorder-chrome-extension/features/export/): Export a recorded bug as a ZIP with report.md, session.json, a manifest, transcript and assets, at Full, Standard, Compact or Minimal detail with live token estimates.
 
-## Reference
+## Comparisons
 
-- [Example report](https://azimi.me/session-recorder-chrome-extension/example-report/): a complete, sanitized report.md and the same request rendered at all four verbosity levels.
-- [Bug reports AI coding agents can fix](https://azimi.me/session-recorder-chrome-extension/ai-bug-report/): the eight signals a browser bug report needs, temporal ordering, token budgets, deterministic trimming vs AI summarization, redaction, and live-browser vs recorded evidence.
-- [Local-first design](https://azimi.me/session-recorder-chrome-extension/local-first/): what no-account/no-backend means in practice, and the trade-offs it costs.
-- [Session Recorder vs Jam](https://azimi.me/session-recorder-chrome-extension/jam-alternative/): factual comparison, including where Jam is the better choice.
+- [All comparisons](https://azimi.me/session-recorder-chrome-extension/compare/): Honest comparisons of Session Recorder with Jam, Marker.io, BugHerd, Userback and BrowserStack Bug Capture: who each suits, workflow differences and current paid pricing.
+- [Session Recorder vs Jam](https://azimi.me/session-recorder-chrome-extension/jam-alternative/): An honest comparison of Session Recorder and Jam: hosted bug-reporting workspace with integrations versus a free open-source extension that files GitHub issues from your own accounts.
+- [Session Recorder vs Marker.io](https://azimi.me/session-recorder-chrome-extension/compare/marker-io/): Compare Session Recorder and Marker.io for bug reporting: a website feedback widget for clients and UAT versus a free open-source recorder that files GitHub issues.
+- [Session Recorder vs BugHerd](https://azimi.me/session-recorder-chrome-extension/compare/bugherd/): Compare Session Recorder and BugHerd: pinned website feedback and a task board for agencies and client projects versus a free open-source recorder that files GitHub issues.
+- [Session Recorder vs Userback](https://azimi.me/session-recorder-chrome-extension/compare/userback/): Compare Session Recorder and Userback: a customer feedback platform with widgets, surveys and session replay versus a free open-source recorder for internal bug reports to GitHub.
+- [Session Recorder vs BrowserStack Bug Capture](https://azimi.me/session-recorder-chrome-extension/compare/browserstack-bug-capture/): Compare Session Recorder and BrowserStack Bug Capture, formerly Bird Eats Bug: a capture tool bundled with BrowserStack plans versus a free open-source recorder that files GitHub issues.
 
-- [Browser bug report template](https://azimi.me/session-recorder-chrome-extension/bug-report-template/): copyable Markdown template, filled example, and a prompt for handing evidence to a coding agent.
+## Guides
+
+- [All guides](https://azimi.me/session-recorder-chrome-extension/guides/): Guides for using Session Recorder reports with Claude Code, Cursor, Codex and ChatGPT, a browser bug report template, an example report, and what makes a bug report fixable.
+- [Debug browser bugs with Claude Code](https://azimi.me/session-recorder-chrome-extension/claude-code/): Record a browser bug — console, network, screenshots, voice — with a free open-source Chrome extension, then hand Claude Code an LLM-ready report it can read from your repo.
+- [Debug browser bugs with Cursor](https://azimi.me/session-recorder-chrome-extension/cursor/): Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and attach an LLM-ready report to Cursor&#x27;s Agent instead of retyping repro steps.
+- [Debug browser bugs with Codex](https://azimi.me/session-recorder-chrome-extension/codex/): Record a browser bug with a free open-source Chrome extension — console, network, screenshots, voice — and give Codex an LLM-ready report it can read locally or in a cloud task.
+- [Give ChatGPT a complete browser bug report](https://azimi.me/session-recorder-chrome-extension/chatgpt/): Record a browser bug with a free open-source Chrome extension and upload one self-contained report — console, network, screenshots, narration — to ChatGPT instead of pasting screenshots.
+- [Browser bug reports for AI coding agents: what Claude Code, Cursor and Codex actually need](https://azimi.me/session-recorder-chrome-extension/ai-bug-report/): A technical guide to building browser bug reports AI coding agents can actually fix: the eight signals that matter, why screenshots fail, temporal ordering, token budgets, deterministic trimming, redaction, and live browser vs recorded evidence.
+- [Browser bug report template for AI coding agents](https://azimi.me/session-recorder-chrome-extension/bug-report-template/): Copy a Markdown browser bug report template with reproduction steps, expected behavior, console errors and network evidence for Claude Code, Cursor and Codex.
+- [What an LLM-ready bug report actually looks like](https://azimi.me/session-recorder-chrome-extension/example-report/): A complete, sanitized example of the Markdown bug report Session Recorder exports for AI coding agents: timeline, network, console errors, annotations, narration, and every verbosity level.
+- [Local-first design](https://azimi.me/session-recorder-chrome-extension/local-first/): Session Recorder keeps recordings in your browser with no account or developer-operated backend. Transcription, AI summaries and publishing are optional and use your own providers.
+
+## Setup help
+
+- [Help](https://azimi.me/session-recorder-chrome-extension/help/): Set up protected reports, one-click GitHub issues, and automatic AI summaries.
+- [One-click GitHub issues](https://azimi.me/session-recorder-chrome-extension/help/github/): Connect a repository once, then file an issue directly from a finished recording.
+- [Automatic AI summaries](https://azimi.me/session-recorder-chrome-extension/help/ai-summaries/): Turn recorded evidence into a concise issue draft when you click File GitHub issue.
+- [Protected publishing](https://azimi.me/session-recorder-chrome-extension/help/cloudflare/): Publish reports to Cloudflare Pages and let your team sign in through Cloudflare Access.

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File GitHub Issues from a Browser Recording in One Click — Session Recorder</title>
+<meta name="description" content="Choose File GitHub issue on a recorded bug: the extension summarizes it, publishes a protected report and creates the issue with a link. Multiple repositories, scoped tokens.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/features/github-issues/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="File GitHub Issues from a Browser Recording in One Click — Session Recorder">
+<meta property="og:description" content="Choose File GitHub issue on a recorded bug: the extension summarizes it, publishes a protected report and creates the issue with a link. Multiple repositories, scoped tokens.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/features/github-issues/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="File GitHub Issues from a Browser Recording in One Click — Session Recorder">
+<meta name="twitter:description" content="Choose File GitHub issue on a recorded bug: the extension summarizes it, publishes a protected report and creates the issue with a link. Multiple repositories, scoped tokens.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../../logo.png">
+<link rel="apple-touch-icon" href="../../logo.png">
+<link rel="stylesheet" href="../../site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Features",
+          "item": "https://azimi.me/session-recorder-chrome-extension/features/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "One-click GitHub issues",
+          "item": "https://azimi.me/session-recorder-chrome-extension/features/github-issues/"
+        }
+      ]
+    },
+    {
+      "@type": "TechArticle",
+      "headline": "One-click GitHub issues",
+      "description": "Choose File GitHub issue on a recorded bug: the extension summarizes it, publishes a protected report and creates the issue with a link. Multiple repositories, scoped tokens.",
+      "dateModified": "2026-10-25",
+      "author": {
+        "@type": "Person",
+        "name": "Mohsen Azimi",
+        "url": "https://azimi.me/"
+      },
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "Session Recorder",
+        "applicationCategory": "DeveloperApplication"
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../../features/" aria-current="page">Features</a><a href="../../compare/">Compare</a><a href="../../guides/">Guides</a><a href="../../help/">Help</a><a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../../">Home</a></li><li><a href="../../features/">Features</a></li><li aria-current="page">One-click GitHub issues</li></ol></nav><!-- /gen:crumbs -->
+<h1>One-click GitHub issues</h1>
+<p><span class="tag tag--byo">Uses your own account</span></p>
+<p class="lede">Configure the destination once. After that, a finished recording becomes a GitHub issue with one action: summary, protected report link and all.</p>
+<dl class="facts"><dt>Needs</dt><dd>A fine-grained GitHub token per repository and <a href="../../features/protected-publishing/">protected publishing</a></dd><dt>Optional</dt><dd>An <a href="../../features/ai-summaries/">AI model</a> to write the summary</dd><dt>Help</dt><dd><a href="../../help/github/">Connect a repository</a></dd></dl>
+<h2 id="flow">What happens when you file</h2>
+<ol class="steps">
+<li><h3>Stop the recording</h3><p>The report opens with <b>File issue</b> in the header and the editable draft above the evidence.</p></li>
+<li><h3>Choose File GitHub issue</h3><p>The extension checks the repository, prepares the summary if a model is configured, publishes the report to your Cloudflare project, and creates the issue with a link to it.</p></li>
+<li><h3>Open the issue</h3><p>When it finishes, the issue opens. Later, the report shows <b>View issue</b> instead.</p></li>
+</ol>
+<p>A full-page progress view shows the current stage and has <b>Cancel</b>. Cancelling stops further work and keeps saved drafts and deployments. It cannot undo an upload or issue request that GitHub or Cloudflare already accepted.</p>
+
+<h2 id="repos">Several repositories</h2>
+<p>Add as many repositories as you file into, each with its own token scoped to that repository with <b>Issues: Read and write</b>. Saving checks access to each one. The arrow beside <b>File issue</b> picks the destination; new reports remember your last choice, and an existing draft keeps the repository it was started for.</p>
+
+<h2 id="safety">Avoiding duplicates</h2>
+<p>If the network fails after GitHub may have received the request, the extension does not post again automatically. <b>Check GitHub issue</b> looks for the earlier request first, and a retry reuses the existing deployment instead of uploading again.</p>
+
+<h2 id="visibility">Who can see what</h2>
+<ul>
+<li>The issue title and summary are as visible as the repository. In a public repository, anyone can read them.</li>
+<li>The linked report requires Cloudflare Access sign-in, independent of GitHub permissions.</li>
+<li>Tokens stay in extension storage and are never included in exports or published reports. Unpublishing a report does not delete the issue.</li>
+</ul>
+<p>Prefer another tracker? Use <b>Publish report only</b> for a protected link, or <a href="../../features/export/">export a ZIP</a> and attach it anywhere.</p>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../../help/github/"><b>Connect a repository</b><span>Step-by-step setup and troubleshooting.</span></a></li><li><a href="../../features/protected-publishing/"><b>Protected report publishing</b><span>Publish to your own Cloudflare Pages project behind Cloudflare Access login.</span></a></li><li><a href="../../features/ai-summaries/"><b>AI issue summaries</b><span>Annotation-first issue drafts and automatic session names, using OpenAI, Anthropic, Google or a compatible endpoint.</span></a></li><li><a href="../../features/export/"><b>Exports and AI handoff</b><span>A ZIP with Markdown, JSON and assets at four detail levels, ready for people or coding agents.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../../"><img src="../../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../../features/">All features</a></li><li><a href="../../features/annotations/">Annotations</a></li><li><a href="../../features/github-issues/">GitHub issues</a></li><li><a href="../../features/ai-summaries/">AI summaries</a></li><li><a href="../../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../../compare/">All comparisons</a></li><li><a href="../../jam-alternative/">vs Jam</a></li><li><a href="../../compare/marker-io/">vs Marker.io</a></li><li><a href="../../compare/bugherd/">vs BugHerd</a></li><li><a href="../../compare/userback/">vs Userback</a></li><li><a href="../../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../../guides/">All guides</a></li><li><a href="../../claude-code/">Claude Code</a></li><li><a href="../../cursor/">Cursor</a></li><li><a href="../../codex/">Codex</a></li><li><a href="../../chatgpt/">ChatGPT</a></li><li><a href="../../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../../help/">Help</a></li><li><a href="../../privacy.html">Privacy policy</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
+</html>

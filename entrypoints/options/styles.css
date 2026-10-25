@@ -1,42 +1,69 @@
-/* Session Recorder — options page.
-   Design tokens, buttons, and the shared <SettingsForm/> styles all come from
-   the side panel stylesheet (imported first in main.tsx). This file only lays
-   out the centered options wrapper around that shared form. */
-
-body {
-  font-size: 14px;
-}
-
+/* Shared fields and tokens live in the side panel stylesheet. */
+:root { scrollbar-gutter: stable; }
 .options-page {
-  max-width: 560px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 40px 24px 72px;
+  padding: 0 28px 72px;
 }
-
 .options-page__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 72px;
+  margin-bottom: 36px;
+  border-bottom: 1px solid var(--line);
+}
+.options-page__identity {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
+  min-width: 0;
 }
-
-.options-page__logo {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  display: block;
-  flex: 0 0 auto;
-}
-
-.options-page__title {
-  margin: 0 0 2px;
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.options-page__subtitle {
-  margin: 0;
-  color: var(--muted);
+.options-page__identity img { flex: none; }
+.options-page__brand {
   font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.options-page__separator { color: var(--muted); flex: none; }
+.options-page__title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.options-page__help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 8px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.options-page__help:hover { color: var(--ink); }
+.options-page__help:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.options-page .settings__title { font-size: 20px; letter-spacing: -0.025em; }
+.options-page .settings__head > svg { display: none; }
+.options-page .settings__head { margin-bottom: 8px; min-height: 28px; }
+@media (max-width: 600px) {
+  .options-page { padding: 0 20px 48px; }
+  .options-page__header { min-height: 64px; gap: 12px; margin-bottom: 16px; }
+  .options-page__identity { gap: 8px; }
+  .options-page__brand { font-size: 12px; }
+  .options-page .settings__title { font-size: 18px; }
+}
+@media (max-width: 359px) {
+  .options-page__identity {
+    display: grid;
+    grid-template-columns: 22px auto;
+    gap: 2px 8px;
+  }
+  .options-page__identity img { grid-row: span 2; align-self: center; }
+  .options-page__title { grid-column: 2; }
+  .options-page__separator { display: none; }
 }

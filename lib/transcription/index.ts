@@ -76,13 +76,13 @@ export const PROVIDERS: ProviderMeta[] = [
     streamModel: 'nova-3',
   },
   {
-    // Scribe v2 Realtime exists, but only Deepgram's live path is wired here;
-    // ElevenLabs uses fine-grained batch segments (still near-real-time).
     id: 'elevenlabs',
     label: 'ElevenLabs (Scribe v2)',
     defaultBaseUrl: 'https://api.elevenlabs.io/v1/speech-to-text',
     defaultModel: 'scribe_v2',
-    streaming: false,
+    streaming: true,
+    streamUrl: 'wss://api.elevenlabs.io/v1/speech-to-text/realtime',
+    streamModel: 'scribe_v2_realtime',
   },
   {
     id: 'openai',

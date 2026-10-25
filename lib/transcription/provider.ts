@@ -17,6 +17,8 @@ export interface TranscriptionConfig {
   model?: string;
   apiKey: string;
   language?: string;
+  /** Ephemeral page vocabulary; never part of saved credentials. */
+  keyterms?: string[];
 }
 
 export interface TranscriptionProvider {

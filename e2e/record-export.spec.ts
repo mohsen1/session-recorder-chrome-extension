@@ -11,23 +11,9 @@
  */
 import { unzipSync } from 'fflate';
 import { test, expect, extUrl, dispatch, tabIdForUrl } from './support';
-import type { Page } from '@playwright/test';
 
 type StartRes = { ok: boolean; session?: { id: string; name: string }; error?: string };
 type EventsRes = { events: Array<{ type: string; payload: any }> };
-
-async function reachExportPanel(sp: Page): Promise<void> {
-  const download = sp.getByRole('button', { name: /Download .zip/i });
-  const row = sp.locator('.session-row__main').first();
-  await Promise.race([
-    download.waitFor({ state: 'visible' }).catch(() => {}),
-    row.waitFor({ state: 'visible' }).catch(() => {}),
-  ]);
-  if (!(await download.isVisible().catch(() => false))) {
-    await row.click();
-  }
-  await expect(download).toBeVisible();
-}
 
 test('records interactions and exports a readable, valid zip', async ({
   context,
@@ -91,8 +77,7 @@ test('records interactions and exports a readable, valid zip', async ({
   expect(
     selects.some(
       (e) =>
-        e.payload?.cleared === false &&
-        String(e.payload?.text ?? '').includes('Demo'),
+        e.payload?.cleared === false && String(e.payload?.text ?? '').includes('Demo'),
     ),
   ).toBe(true);
   expect(selects.some((e) => e.payload?.cleared === true)).toBe(true);
@@ -118,18 +103,22 @@ test('records interactions and exports a readable, valid zip', async ({
   // Exactly one must hold — the session is never silently empty of both.
   const hasNet = types.includes('net-request');
   const hasDegradedNote = events.some(
-    (e) => e.type === 'session-note' && /Deep capture unavailable/.test(e.payload?.text ?? ''),
+    (e) =>
+      e.type === 'session-note' &&
+      /Deep capture unavailable/.test(e.payload?.text ?? ''),
   );
   expect(hasNet || hasDegradedNote).toBe(true);
 
-  // 8) Export through the real side-panel UI.
-  const sp = await context.newPage();
-  await sp.goto(extUrl(extensionId, 'sidepanel.html'));
-  await reachExportPanel(sp);
+  // 8) Follow the report-first workspace into its full timeline/export tools.
+  const workspace = await context.newPage();
+  await workspace.goto(extUrl(extensionId, `share.html?session=${sessionId}`));
+  const opened = context.waitForEvent('page');
+  await workspace.getByRole('link', { name: 'Full timeline' }).click();
+  const sp = await opened;
+  await expect(sp.getByRole('button', { name: /Download .zip/i })).toBeVisible();
 
-  // Four verbosity levels with token estimates are shown.
-  await expect(sp.locator('input[name="verbosity"]')).toHaveCount(4);
-  await expect(sp.locator('.level__tokens').first()).toBeVisible();
+  // All four export levels remain reachable from the full timeline.
+  await expect(sp.locator('.r-level')).toHaveCount(4);
 
   // 9) Capture the real Download-button output by intercepting chrome.downloads.
   await sp.evaluate(() => {
@@ -145,7 +134,7 @@ test('records interactions and exports a readable, valid zip', async ({
   });
 
   // Pick the Full (L0) level so bodies/labels are present, then download.
-  await sp.locator('input[name="verbosity"][value="L0"]').check();
+  await sp.getByRole('button', { name: 'Full', exact: true }).click();
   await sp.getByRole('button', { name: /Download .zip/i }).click();
   await sp.waitForFunction(() => (window as any).__dl !== null, undefined, {
     timeout: 20_000,

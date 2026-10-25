@@ -1,3 +1,4 @@
+import { addDeepgramKeyterms } from './keyterms';
 /**
  * Deepgram speech-to-text provider.
  *
@@ -13,7 +14,7 @@ import type {
 } from './provider';
 
 const DEFAULT_BASE_URL = 'https://api.deepgram.com/v1/listen';
-const DEFAULT_MODEL = 'nova-2';
+const DEFAULT_MODEL = 'nova-3';
 
 interface DeepgramWord {
   word?: unknown;
@@ -46,6 +47,7 @@ export class DeepgramProvider implements TranscriptionProvider {
       punctuate: 'true',
     });
     if (config.language) params.set('language', config.language);
+  addDeepgramKeyterms(params, config.model || 'nova-3', config.keyterms);
     const url = `${base}?${params.toString()}`;
 
     const res = await fetch(url, {

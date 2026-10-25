@@ -74,6 +74,20 @@ export async function getSession(id: string): Promise<Session | undefined> {
   return (await db()).get('sessions', id);
 }
 
+/** Apply an asynchronous suggestion without reviving deleted sessions or replacing a manual rename. */
+export async function renameSessionIfUnchanged(id: string, previousName: string, name: string): Promise<Session | undefined> {
+  const tx = (await db()).transaction('sessions', 'readwrite');
+  const session = await tx.store.get(id);
+  if (!session || session.name !== previousName || session.status !== 'stopped') {
+    await tx.done;
+    return undefined;
+  }
+  const renamed = { ...session, name };
+  await tx.store.put(renamed);
+  await tx.done;
+  return renamed;
+}
+
 /** All sessions, newest first (by `startedAt` descending). */
 export async function listSessions(): Promise<Session[]> {
   const all = await (await db()).getAll('sessions');

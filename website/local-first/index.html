@@ -1,266 +1,152 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Local-First Bug Recorder: No Account, No Backend, No Upload</title>
-    <meta name="description" content="Session Recorder is a local-first, open-source Chrome extension: recordings stay in your browser, secrets are masked at capture time, and the only export is a zip you save yourself." />
-    <link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/local-first/" />
-
-    <meta property="og:type" content="article" />
-    <meta property="og:site_name" content="Session Recorder" />
-    <meta property="og:title" content="Local-First Bug Recorder: No Account, No Backend, No Upload" />
-    <meta property="og:description" content="Session Recorder is a local-first, open-source Chrome extension: recordings stay in your browser, secrets are masked at capture time, and the only export is a zip you save yourself." />
-    <meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/local-first/" />
-    <meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Local-First Bug Recorder: No Account, No Backend, No Upload" />
-    <meta name="twitter:description" content="Session Recorder is a local-first, open-source Chrome extension: recordings stay in your browser, secrets are masked at capture time, and the only export is a zip you save yourself." />
-    <meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png" />
-
-    <link rel="icon" href="../logo.png" />
-    <link rel="apple-touch-icon" href="../logo.png" />
-    <link rel="stylesheet" href="../doc.css" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Session Recorder",
-                "item": "https://azimi.me/session-recorder-chrome-extension/"
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "A local-first bug recorder",
-                "item": "https://azimi.me/session-recorder-chrome-extension/local-first/"
-              }
-            ]
-          },
-          {
-            "@type": "TechArticle",
-            "headline": "A local-first bug recorder, for when the recording cannot leave",
-            "author": {
-              "@type": "Person",
-              "name": "Mohsen Azimi",
-              "url": "https://azimi.me/"
-            },
-            "about": {
-              "@type": "SoftwareApplication",
-              "name": "Session Recorder",
-              "url": "https://azimi.me/session-recorder-chrome-extension/"
-            }
-          }
-        ]
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local-First Bug Recorder: No Account, Optional Integrations on Your Own Terms</title>
+<meta name="description" content="Session Recorder keeps recordings in your browser with no account or developer-operated backend. Transcription, AI summaries and publishing are optional and use your own providers.">
+<link rel="canonical" href="https://azimi.me/session-recorder-chrome-extension/local-first/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1b1d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Session Recorder">
+<meta property="og:title" content="Local-First Bug Recorder: No Account, Optional Integrations on Your Own Terms">
+<meta property="og:description" content="Session Recorder keeps recordings in your browser with no account or developer-operated backend. Transcription, AI summaries and publishing are optional and use your own providers.">
+<meta property="og:url" content="https://azimi.me/session-recorder-chrome-extension/local-first/">
+<meta property="og:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Session Recorder: record a browser bug, annotate it, and file a GitHub issue.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Local-First Bug Recorder: No Account, Optional Integrations on Your Own Terms">
+<meta name="twitter:description" content="Session Recorder keeps recordings in your browser with no account or developer-operated backend. Transcription, AI summaries and publishing are optional and use your own providers.">
+<meta name="twitter:image" content="https://azimi.me/session-recorder-chrome-extension/og-image.png">
+<link rel="icon" href="../logo.png">
+<link rel="apple-touch-icon" href="../logo.png">
+<link rel="stylesheet" href="../site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Session Recorder",
+          "item": "https://azimi.me/session-recorder-chrome-extension/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Guides",
+          "item": "https://azimi.me/session-recorder-chrome-extension/guides/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Local by default",
+          "item": "https://azimi.me/session-recorder-chrome-extension/local-first/"
+        }
+      ]
+    },
+    {
+      "@type": "TechArticle",
+      "headline": "A local-first bug recorder",
+      "dateModified": "2026-10-25",
+      "author": {
+        "@type": "Person",
+        "name": "Mohsen Azimi",
+        "url": "https://azimi.me/"
       }
-    </script>
-  </head>
-  <body>
-    <header class="nav">
-      <a class="brand" href="../">
-        <img src="../logo.png" width="26" height="26" alt="" />
-        <span>Session Recorder</span>
-      </a>
-      <nav class="nav__links">
-        <a href="../">Overview</a>
-        <a href="../ai-bug-report/">Guide</a>
-        <a href="../example-report/">Example report</a>
-        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
-      </nav>
-    </header>
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+<div class="top__in">
+<a class="brand" href="../"><img src="../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<nav class="top__nav" aria-label="Primary"><a href="../features/">Features</a><a href="../compare/">Compare</a><a href="../guides/" aria-current="page">Guides</a><a href="../help/">Help</a><a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a></nav>
+<a class="btn btn--primary btn--sm top__cta" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
+</div>
+</header>
+<main id="content" class="doc">
+<!-- gen:crumbs --><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../">Home</a></li><li><a href="../guides/">Guides</a></li><li aria-current="page">Local by default</li></ol></nav><!-- /gen:crumbs -->
+<h1>A local-first bug recorder</h1>
+<p class="lede">Most bug-capture tools upload every recording to the vendor’s cloud. Session Recorder stores recordings in your browser, and anything that leaves goes to an account you configured, not to us.</p>
+<div class="definition"><p><b>Session Recorder is a free, open-source Chrome extension for recording browser bugs.</b> It has no account system, no developer-operated backend and no telemetry. Sessions are written to IndexedDB in your Chrome profile.</p></div>
 
-    <main class="doc">
-      <p class="crumbs"><a href="../">Session Recorder</a> → A local-first bug recorder</p>
-      <p class="eyebrow">Privacy</p>
-      <h1>A local-first bug recorder, for when the recording cannot leave</h1>
-      <p class="lede">
-        Most bug-capture tools are cloud products: you record, it uploads, you
-        share a link. Session Recorder has no upload step, because it has no
-        server to upload to.
-      </p>
+<h2 id="what">What “local-first” means here</h2>
+<ul>
+<li><b>No account.</b> Install it and press Record. There is no sign-up, workspace or seat.</li>
+<li><b>No backend of ours.</b> The extension makes no requests to any server operated by its author.</li>
+<li><b>No telemetry.</b> No analytics, crash reporting or usage counts.</li>
+<li><b>Storage is your browser.</b> Deleting a session deletes the local data.</li>
+<li><b>Export is a file.</b> A ZIP in your Downloads folder, shared however you choose.</li>
+<li><b>No remote code.</b> Everything the extension runs ships in the package.</li>
+</ul>
 
-      <div class="definition">
-        <p>
-          <b>Session Recorder is a free, open-source, local-first Chrome
-          extension for recording web bugs for AI coding agents.</b>
-          There is no account, no backend, and no telemetry. Sessions are written
-          to IndexedDB inside your own browser and leave only as a zip file you
-          save yourself.
-        </p>
-      </div>
+<h2 id="optional">Optional integrations, on your accounts</h2>
+<p>Four features send data out, and only after you configure them with your own credentials. Each sends directly from the extension to that service:</p>
+<ul>
+<li><b>Transcription</b> sends recorded audio to Deepgram, OpenAI or ElevenLabs.</li>
+<li><b>AI summaries and session names</b> send up to 60,000 characters of text evidence, never media, to OpenAI, Anthropic, Google or your compatible endpoint.</li>
+<li><b>Publishing</b> uploads the report and its media to your Cloudflare Pages project, behind your Cloudflare Access policy.</li>
+<li><b>GitHub issues</b> send the title, summary and report link to the repository you choose.</li>
+</ul>
+<p>Spoken annotation comments use the same transcription provider. With an AI model configured, selecting an annotation also sends a bounded excerpt of visible page labels (never input values or hidden content) to the model to build a short vocabulary list for Deepgram or ElevenLabs; neither is saved. Provider pricing, limits and retention policies apply to all of these. The <a href="../privacy.html">privacy policy</a> lists them in full.</p>
 
-      <h2 id="what">What “local-first” means here, concretely</h2>
-      <ul>
-        <li>
-          <b>No account.</b> Install it and press Record. There is no sign-up, no
-          workspace, no seat, and nothing to log into.
-        </li>
-        <li>
-          <b>No backend.</b> The extension makes no requests to any server
-          operated by its author. There is nothing to breach and nothing to
-          subpoena.
-        </li>
-        <li>
-          <b>No telemetry.</b> No analytics, no crash reporting, no usage counts.
-        </li>
-        <li>
-          <b>Storage is your browser.</b> Recordings live in IndexedDB in your
-          Chrome profile. Deleting the session deletes the data.
-        </li>
-        <li>
-          <b>Export is a file.</b> The output is a zip in your Downloads folder.
-          Where it goes next is a decision you make, one file at a time.
-        </li>
-        <li>
-          <b>No remote code.</b> Everything the extension runs is bundled in the
-          package — a Chrome Web Store requirement the extension meets rather
-          than works around.
-        </li>
-      </ul>
+<h2 id="redaction">Secrets are masked before they are written</h2>
+<p>Redaction runs at capture time. Authorization headers, cookies, token-like JSON and form fields, sensitive URL parameters and password inputs are masked on the way into storage, so the unmasked value is never saved. You can add rules or turn redaction off per session.</p>
+<p>It is not a guarantee. Redaction is pattern-based and does not inspect screenshots, video or audio, or recognise personal data in ordinary fields. Review evidence before sharing it. <a href="../features/privacy-redaction/">Details and limits</a>.</p>
 
-      <div class="callout">
-        <p>
-          <b>One exception, and it is opt-in.</b> If you turn on voice
-          transcription and supply your own API key for Deepgram, OpenAI, or
-          ElevenLabs, the recorded audio is sent to the provider you chose to
-          produce a transcript. Without a key, audio stays on your machine and
-          the report keeps the raw audio file instead. This is the only outbound
-          call the extension can make, and it is disclosed in the
-          <a href="../privacy.html">privacy policy</a>.
-        </p>
-      </div>
+<h2 id="who">Who this design suits</h2>
+<ul>
+<li><b>Internal and regulated apps</b>, where recordings of production screens should not land in a third-party workspace.</li>
+<li><b>Pre-release work</b>, where a recording of an unannounced feature should stay with the team.</li>
+<li><b>Teams already on GitHub and Cloudflare</b>, who would rather use those accounts than add another vendor.</li>
+<li><b>Agent workflows</b> with <a href="../claude-code/">Claude Code</a>, <a href="../cursor/">Cursor</a> or <a href="../codex/">Codex</a> against a local checkout.</li>
+</ul>
 
-      <h2 id="redaction">Secrets are masked before they are written</h2>
-      <p>
-        Redaction runs at capture time, not at export time. Authorization
-        headers, token-like JSON and form fields, sensitive URL parameters, and
-        password inputs are masked on the way into storage, so the unredacted
-        value never exists on disk in the first place. You can add your own rules
-        or disable redaction per session on the options page.
-      </p>
-      <p>
-        This matters more than it sounds: a tool that scrubs at export has
-        already persisted the secret. One that scrubs at capture never has it.
-      </p>
-
-      <h2 id="who">Who this design is for</h2>
-      <ul>
-        <li>
-          <b>Regulated and internal apps.</b> Health, finance, legal, government
-          — anywhere a session recording of a production screen is not allowed to
-          land in a third-party bucket.
-        </li>
-        <li>
-          <b>Pre-release and unannounced work.</b> A recording of an unshipped
-          feature is a leak with a URL attached if it lives in someone else's
-          cloud.
-        </li>
-        <li>
-          <b>Solo developers and small teams.</b> Nothing to administer, no seats
-          to buy, no vendor to evaluate.
-        </li>
-        <li>
-          <b>Agent workflows that are already local.</b> If you run
-          <a href="../claude-code/">Claude Code</a>,
-          <a href="../cursor/">Cursor</a>, or
-          <a href="../codex/">Codex</a> against a local checkout, a cloud round
-          trip in the middle of the loop is friction with no payoff.
-        </li>
-      </ul>
-
-      <h2 id="tradeoffs">The honest trade-offs</h2>
-      <p>
-        Local-first is a real constraint, not just a virtue. What you give up:
-      </p>
-      <div class="tablewrap">
-        <table>
-          <thead>
-            <tr>
-              <th>You lose</th>
-              <th>Why</th>
-              <th>What to do instead</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Shareable links</td>
-              <td>There is no server to host the recording.</td>
-              <td>Send the zip, or attach it to the ticket you already have.</td>
-            </tr>
-            <tr>
-              <td>Jira / Linear / Slack integrations</td>
-              <td>Same reason: integrations need a backend to call them.</td>
-              <td>Attach <code>report.md</code> to the issue.</td>
-            </tr>
-            <tr>
-              <td>Non-technical reporters</td>
-              <td>Recording is easy; the report is written for an agent.</td>
-              <td>A cloud tool is genuinely better for customer-facing capture. <a href="../jam-alternative/">See the comparison.</a></td>
-            </tr>
-            <tr>
-              <td>Cross-device history</td>
-              <td>IndexedDB is per-profile, per-machine.</td>
-              <td>Keep the exported zips wherever you keep artifacts.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h2 id="verify">You do not have to take our word for it</h2>
-      <p>
-        The whole extension is on
-        <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>.
-        The claims above are checkable in about ten minutes: grep the source for
-        <code>fetch(</code>, read the permission justifications, or open
-        DevTools' network panel on the extension itself while recording and watch
-        nothing go out. The permissions the extension asks for and why it needs
-        each one are documented in the README, and the export pipeline —
-        capture, redaction, deterministic trimming, zip — is all in
-        <code>lib/</code>.
-      </p>
-      <p>
-        Trimming is deterministic and contains no model call: the same recording
-        at the same level produces the same report, every time. Nothing about
-        your session is sent anywhere to be summarized.
-      </p>
-
-      <section class="cta">
-        <h2>Record your next bug instead of describing it</h2>
-        <p>Free, open source, and everything stays on your machine.</p>
-        <div class="btnrow">
-          <a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a>
-          <a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">View on GitHub</a>
-        </div>
-      </section>
-
-      <section class="related">
-        <h2>Keep reading</h2>
-        <div class="related__grid">
-          <a class="card" href="../jam-alternative/"><b>Session Recorder vs Jam</b><span>An honest comparison, including where Jam is the better choice.</span></a>
-          <a class="card" href="../ai-bug-report/"><b>Bug reports AI coding agents can fix</b><span>What context Claude Code, Cursor and Codex actually need.</span></a>
-          <a class="card" href="../example-report/"><b>An example report</b><span>A complete, sanitized report.md, exactly as an agent receives it.</span></a>
-          <a class="card" href="../claude-code/"><b>Session Recorder with Claude Code</b><span>Record the bug in the browser, hand Claude Code the report.</span></a>
-        </div>
-      </section>
-    </main>
-
-    <footer class="foot">
-      <a class="brand" href="../">
-        <img src="../logo.png" width="20" height="20" alt="" />
-        <span>Session Recorder</span>
-      </a>
-      <span class="foot__spacer"></span>
-      <a href="https://github.com/mohsen1/session-recorder-chrome-extension">GitHub</a>
-      <a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a>
-      <a href="../privacy.html">Privacy</a>
-      <a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">AGPL-3.0</a>
-    </footer>
-  </body>
+<h2 id="tradeoffs">The trade-offs</h2>
+<div class="tablewrap" role="region" aria-label="Trade-offs of a local-first design" tabindex="0">
+<table>
+<thead><tr><th scope="col">You give up</th><th scope="col">What to do instead</th></tr></thead>
+<tbody>
+<tr><th scope="row">A shared vendor workspace</th><td>Publish protected reports to your Cloudflare account and discuss them in GitHub issues.</td></tr>
+<tr><th scope="row">Integrations beyond GitHub</th><td>Use Publish report only for a link, or attach the ZIP to any tracker.</td></tr>
+<tr><th scope="row">Cross-device history</th><td>Sessions live in one Chrome profile. Export or publish what others need.</td></tr>
+<tr><th scope="row">Reports from customers</th><td>Use a widget-based tool. See the <a href="../compare/">comparisons</a>.</td></tr>
+</tbody>
+</table>
+</div>
+<!-- gen:next --><nav class="next" aria-labelledby="next-h"><h2 id="next-h">Related</h2><ul class="index"><li><a href="../features/privacy-redaction/"><b>Local storage and redaction</b><span>Sessions live in your browser. Secrets are masked at capture time, with honest limits.</span></a></li><li><a href="../features/protected-publishing/"><b>Protected report publishing</b><span>Publish to your own Cloudflare Pages project behind Cloudflare Access login.</span></a></li><li><a href="../privacy.html"><b>Privacy policy</b><span>Exactly what is stored and what is sent, per integration.</span></a></li></ul></nav><!-- /gen:next -->
+</main>
+<section class="band" aria-labelledby="install-band">
+<div class="band__in">
+<div>
+<h2 id="install-band">Record your next bug instead of describing it</h2>
+<p>Free and open source. Recording and ZIP export need no account with us. AI, transcription and publishing are optional and use your own providers, whose charges apply.</p>
+</div>
+<div class="btnrow"><a class="btn btn--primary" href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Add to Chrome</a><a class="btn" href="https://github.com/mohsen1/session-recorder-chrome-extension">Source on GitHub</a></div>
+</div>
+</section>
+<footer class="foot">
+<div class="foot__in">
+<div class="foot__about">
+<a class="brand" href="../"><img src="../logo.png" width="22" height="22" alt=""><span>Session Recorder</span></a>
+<p class="foot__note">A Chrome extension by Mohsen Azimi, licensed AGPL-3.0. Recordings stay in your browser unless you use transcription, AI summaries or publishing you have configured.</p>
+</div>
+<div><h2>Product</h2><ul><li><a href="../features/">All features</a></li><li><a href="../features/annotations/">Annotations</a></li><li><a href="../features/github-issues/">GitHub issues</a></li><li><a href="../features/ai-summaries/">AI summaries</a></li><li><a href="../features/export/">Export</a></li></ul></div>
+<div><h2>Compare</h2><ul><li><a href="../compare/">All comparisons</a></li><li><a href="../jam-alternative/">vs Jam</a></li><li><a href="../compare/marker-io/">vs Marker.io</a></li><li><a href="../compare/bugherd/">vs BugHerd</a></li><li><a href="../compare/userback/">vs Userback</a></li><li><a href="../compare/browserstack-bug-capture/">vs BrowserStack Bug Capture</a></li></ul></div>
+<div><h2>Guides</h2><ul><li><a href="../guides/">All guides</a></li><li><a href="../claude-code/">Claude Code</a></li><li><a href="../cursor/">Cursor</a></li><li><a href="../codex/">Codex</a></li><li><a href="../chatgpt/">ChatGPT</a></li><li><a href="../example-report/">Example report</a></li></ul></div>
+<div><h2>Project</h2><ul><li><a href="../help/">Help</a></li><li><a href="../privacy.html">Privacy policy</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension">Source code</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/issues">Report a problem</a></li><li><a href="https://github.com/mohsen1/session-recorder-chrome-extension/blob/main/LICENSE">License</a></li><li><a href="https://chromewebstore.google.com/detail/session-recorder/dboiheheijgmfpfhbmjggiijpgondghh">Chrome Web Store</a></li></ul></div>
+</div>
+</footer>
+</body>
 </html>

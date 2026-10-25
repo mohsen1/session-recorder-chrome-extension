@@ -54,7 +54,8 @@ Website: [azimi.me/session-recorder-chrome-extension](https://azimi.me/session-r
   there and comes back when the tab closes
 - an OpenAPI spec compiled from the requests your app made, when you turn it on
 - a report sized to fit your model, with a live token estimate for each level
-- secrets hidden by default and nothing uploaded: it all stays on your machine
+- secrets hidden by default and recordings stored locally, with optional sharing
+- protected Cloudflare Pages reports and editable AI summaries for GitHub issues
 
 ### Dial in how much you capture
 
@@ -131,14 +132,32 @@ actions and marker, and a typed password appears nowhere in the output.
 
 ## Voice narration and transcription (optional)
 
-Talk while you record to explain what's happening. With Deepgram (Nova-3)
+Talk while you record to explain what's happening. With Deepgram (Nova-3) or ElevenLabs (Scribe v2 Realtime)
 configured, the extension transcribes in real time over a streaming websocket.
 Each utterance lands on the timeline stamped at the moment you began speaking,
 so the report reads: narration "while clicking 'Checkout'". OpenAI
-(gpt-4o-transcribe) and ElevenLabs (Scribe v2) transcribe in batches instead.
+(gpt-4o-transcribe) transcribes in batches instead.
 
 Set the provider, model, and API key on the options page. The key stays in
 `chrome.storage.local`. Without a key, sessions keep the raw audio.
+
+An open annotation comment receives speech from the active recording mic. Its mic
+button turns dictation on or off. With an AI model configured, visible page labels
+provide a small vocabulary of unusual terms for Deepgram or ElevenLabs. Provider
+charges apply, including ElevenLabs keyterm prompting charges.
+
+## Share a report as a GitHub issue (optional)
+
+Choose **Share report & create issue** on a stopped session. Configure your own
+Cloudflare API token, Direct Upload Pages project and Access login policy, then
+publish a report behind Cloudflare Access. The settings include a preconfigured
+token-creation link. Generate an editable summary with your own OpenAI,
+OpenAI-compatible, Anthropic or Google API key, or write it yourself. Open GitHub
+with the summary and protected report link, then submit the issue there.
+
+See [Sharing setup](docs/sharing.md) for token permissions, login configuration,
+provider setup, upload limits and deleting published reports. Recording and ZIP
+export still work without these integrations.
 
 ## Using a report with an LLM agent
 
@@ -199,8 +218,7 @@ demo/                local test page that exercises every capture path
 
 ## Not in v1
 
-Backend upload and shareable links, LLM-powered summarization, Firefox and
-Safari ports, and DOM snapshot replay. See [`PLAN.md`](./PLAN.md) §11.
+Firefox and Safari ports, and DOM snapshot replay. See [`PLAN.md`](./PLAN.md) §11.
 
 ## License
 

@@ -339,7 +339,7 @@ function visualFor(e: SessionEvent): Visual {
     case 'annotation':
       return {
         Icon: Pencil,
-        label: 'Annotation',
+        label: e.payload.shapes.find(shape => shape.text)?.text ?? 'Annotation',
         tone: 'signal',
         thumbAssetId: e.payload.screenshotAssetId,
       };
