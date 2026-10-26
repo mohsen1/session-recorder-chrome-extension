@@ -299,6 +299,11 @@ for (const failure of [
   { name: 'exhausted credits', status: 402, message: 'no credits available' },
   { name: 'revoked access', status: 401, message: 'Reconnect to Proofline' },
   { name: 'expired connection', status: 0, message: 'connection has expired' },
+  {
+    name: 'workspace retention policy',
+    status: 409,
+    message: 'This organization requires zero-retention model routing.',
+  },
 ] as const) {
   test(`filing stops on ${failure.name} without spending personal keys or publishing`, async ({
     context,
@@ -334,7 +339,11 @@ for (const failure of [
       expect(request.postData()).not.toContain('personal-key-must-not-be-used');
       await route.fulfill({
         status: failure.status || 500,
-        json: { status: failure.status, title: failure.message },
+        json: {
+          status: failure.status,
+          title: failure.message,
+          detail: failure.message,
+        },
       });
     });
     const page = await context.newPage();
