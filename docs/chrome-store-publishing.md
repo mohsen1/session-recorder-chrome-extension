@@ -48,9 +48,10 @@ repository transfer does not transfer Chrome Web Store ownership.
 Version 0.3.1 exercised the complete workflow on October 25, 2026:
 [release run](https://github.com/prooflinedev/session-recorder-chrome-extension/actions/runs/40200018346).
 Packaging, release assets, keyless Google authentication, upload and submission
-all succeeded. The Store returned `PENDING_REVIEW`, independently confirmed in
-the publisher dashboard. Google's approval is still required before the update
-is live. The downloaded ZIP's checksum and manifest version were verified.
+all succeeded. The [public Store listing](https://chromewebstore.google.com/detail/session-recorder-by-proof/dboiheheijgmfpfhbmjggiijpgondghh)
+now offers version 0.3.1 as Session Recorder by Proofline. It still names
+Mohsen Azimi as the publisher; publisher transfer remains separate. The
+downloaded ZIP's checksum and manifest version were verified.
 
 Version 0.3.0 stopped before upload because an integration test used a local Mac
 scratch directory. The test now keeps generated reports in memory, with its
