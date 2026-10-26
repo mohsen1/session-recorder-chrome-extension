@@ -22,9 +22,10 @@ export class ProoflineAiCancelledError extends Error {
   }
 }
 export class ProoflineAiFailedError extends Error {
-  constructor() {
+  constructor(detail?: string) {
     super(
-      'Proofline could not finish this AI request. Try again to start a new request.',
+      detail?.trim() ||
+        'Proofline could not finish this AI request. Try again to start a new request.',
     );
   }
 }
@@ -124,7 +125,7 @@ export async function runProoflineAi(
       );
     }
     if (job.status === 'cancelled') throw new ProoflineAiCancelledError();
-    if (job.status === 'failed') throw new ProoflineAiFailedError();
+    if (job.status === 'failed') throw new ProoflineAiFailedError(job.error);
     if (job.status !== 'completed' || !job.result)
       throw new Error(
         'Proofline could not finish this AI request. Check your workspace credits and try again.',

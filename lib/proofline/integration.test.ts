@@ -286,15 +286,34 @@ it('bounds managed dictation vocabulary to twenty terms and fifty UTF-8 bytes pe
   expect(sent.every((term) => new TextEncoder().encode(term).length <= 50)).toBe(true);
 });
 
-it.each(['failed', 'network'] as const)(
+it.each([
+  'failed',
+  'network',
+  'policy-at-admission',
+  'policy-after-admission',
+] as const)(
   'only clears a summary request after confirmed terminal failure: %s',
   async (outcome) => {
     const settings = await loadSharingSettings();
     settings.proofline = managed();
+    const refusal =
+      'This organization requires zero-retention model routing; ask the operator to attest the model account.';
+    const endpoint = `https://proofline.sh/api/v1/organizations/${org}/recorder/ai`;
+    let submitted = false;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => {
+      vi.fn(async (url: string) => {
+        expect([endpoint, `${endpoint}/summary-1`]).toContain(url);
         if (outcome === 'network') throw new TypeError('Connection closed');
+        if (outcome === 'policy-at-admission')
+          return Response.json({ detail: refusal }, { status: 409 });
+        if (outcome === 'policy-after-admission') {
+          if (!submitted) {
+            submitted = true;
+            return Response.json({ id: 'summary-1', status: 'queued' });
+          }
+          return Response.json({ id: 'summary-1', status: 'failed', error: refusal });
+        }
         return Response.json({ id: 'summary-1', status: 'failed' });
       }),
     );
@@ -316,8 +335,14 @@ it.each(['failed', 'network'] as const)(
         progress: () => {},
         signal: new AbortController().signal,
       }),
-    ).rejects.toThrow(outcome === 'failed' ? 'could not finish' : 'Connection closed');
-    if (outcome === 'failed')
+    ).rejects.toThrow(
+      outcome.startsWith('policy-')
+        ? refusal
+        : outcome === 'failed'
+          ? 'could not finish'
+          : 'Connection closed',
+    );
+    if (outcome === 'failed' || outcome === 'policy-after-admission')
       expect(save).toHaveBeenCalledWith(
         expect.objectContaining({ summaryRequestId: undefined }),
       );

@@ -39,7 +39,7 @@ export async function prooflineRequest<T>(
   );
   if (!response.ok) {
     const code = response.status === 402 ? 'recorder_credits_exhausted' : undefined;
-    const message =
+    let message =
       response.status === 402
         ? 'Your Proofline workspace has no credits available. Top up in Proofline or switch to personal API keys in Settings → Proofline.'
         : response.status === 401
@@ -49,6 +49,11 @@ export async function prooflineRequest<T>(
             : response.status === 413
               ? 'This upload exceeds the report or workspace storage limit. Free up storage or use Cloudflare.'
               : `Proofline could not complete the request (${response.status}). Try again or check your Proofline settings.`;
+    if (response.status === 409) {
+      const problem = await response.json().catch(() => undefined);
+      if (typeof problem?.detail === 'string' && problem.detail.trim())
+        message = problem.detail;
+    }
     throw new ProoflineError(message, response.status, code);
   }
   if (response.status === 204) return undefined as T;
