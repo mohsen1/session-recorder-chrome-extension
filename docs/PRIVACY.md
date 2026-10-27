@@ -1,13 +1,13 @@
 # Privacy Policy — Session Recorder by Proofline
 
-_Last updated: 2026-10-25_
+_Last updated: 2026-10-27_
 
 Session Recorder is a Chrome extension that records a session of you using a web
 app — interactions, network traffic, console logs, screenshots, voice narration,
 annotations, and files — and exports it as a local zip report intended for an LLM
 coding agent.
 
-> Managed Proofline services are included in the source as a preview and require the corresponding backend deployment. Personal-provider and Cloudflare behavior is available independently.
+> The Proofline backend is deployed, and the optional connection remains in preview. Managed speech is disabled until its providers are configured. Personal-provider and Cloudflare behavior is available independently.
 
 ## Summary
 

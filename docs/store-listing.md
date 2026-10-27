@@ -12,7 +12,7 @@ Publication copy for **Session Recorder by Proofline**. Match the submitted pack
 - Website destination: https://proofline.sh/session-recorder-chrome-extension/.
 - Privacy policy destination: https://proofline.sh/session-recorder-chrome-extension/privacy.html.
 
-Keep the existing item ID and install link when transferring to the Proofline publisher. GitHub repository ownership and Chrome Web Store publisher ownership are separate. Confirm the active publisher, public support email, visibility and working website/privacy URLs in the dashboard before submission. The new website and managed services require their own deployment.
+Keep the existing item ID and install link when transferring to the Proofline publisher. GitHub repository ownership and Chrome Web Store publisher ownership are separate. Confirm the active publisher, public support email, visibility and working website/privacy URLs in the dashboard before submission. The backend and website are deployed; managed speech still requires provider configuration.
 
 ## Short description
 
@@ -46,7 +46,11 @@ Sessions stay in Chrome locally by default. Redaction masks common credentials a
 
 ## Managed-service copy
 
-The source also includes Proofline account connection, credit-funded AI, private reports and GitHub App issue filing. Add the following paragraph to the production listing only when those services and their help pages are deployed:
+The public listing's paragraph that says the backend deployment is pending is obsolete. Replace it with:
+
+> The optional Proofline account connection remains in preview. The Proofline backend is deployed. Managed speech is unavailable until its providers are configured. Personal API keys and your own Cloudflare account work independently.
+
+After authorized customer acceptance, use the following paragraph to describe the managed services:
 
 > Connect Proofline to use workspace credits for AI and share private reports with selected readers. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation. Personal API keys and your own Cloudflare account remain supported. Outside report readers need a free Proofline account. Paid AI pauses when credits are unavailable; the extension does not silently switch to personal keys.
 
