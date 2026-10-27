@@ -25,7 +25,7 @@ The repository variables are:
 | --- | --- |
 | `CWS_WORKLOAD_IDENTITY_PROVIDER` | `projects/376004211572/locations/global/workloadIdentityPools/recorder-publishing/providers/github-release` |
 | `CWS_SERVICE_ACCOUNT` | `recorder-store-publisher@proofline-ci.iam.gserviceaccount.com` |
-| `CWS_PUBLISHER_ID` | `38546fb7-da1d-4b1e-a7a3-7613bc8b82a2` |
+| `CWS_PUBLISHER_ID` | `3a8d4e0f-7b04-416c-8f70-d2cb9d179588` |
 
 All three variables and their Google identity configuration are configured.
 The provider trusts only the immutable repository and owner IDs for
@@ -34,31 +34,25 @@ and this repository's `.github/workflows/release.yml` workflow at that tag.
 The `chrome-web-store` GitHub environment can add approval restrictions if the
 publisher requires them.
 
-The Chrome Web Store API is enabled in `proofline-ci`. On October 25, 2026, the
-service account was linked to the existing publisher owned by `me@azimi.me`;
-the link was verified after reloading the dashboard. Google grants this account
-API access to all that publisher's items, including Nyx. The release script
-explicitly targets only Session Recorder's existing item ID.
+The Chrome Web Store API is enabled in `proofline-ci`. The service account is
+linked to the Proofline publisher. `mohsen@proofline.sh` is its Admin and verified
+public contact; `me@azimi.me` is an Item manager. The publisher is registered as
+Non-trader and has no optional public postal address.
 
-The dashboard supports one linked service account per publisher. If ownership
-moves to a dedicated Proofline publisher, link the service account there and
-update `CWS_PUBLISHER_ID` while preserving the extension item ID. A GitHub
-repository transfer does not transfer Chrome Web Store ownership.
+Session Recorder retains item ID `dboiheheijgmfpfhbmjggiijpgondghh`. The original
+personal publisher retains Nyx. The release script explicitly targets only
+Session Recorder's existing item ID.
 
-Version 0.3.1 exercised the complete workflow on October 25, 2026:
-[release run](https://github.com/prooflinedev/session-recorder-chrome-extension/actions/runs/40200018346).
-Packaging, release assets, keyless Google authentication, upload and submission
-all succeeded. The downloaded ZIP's checksum and manifest version were verified.
+The dashboard supports one linked service account per publisher. A future
+publisher move requires linking the existing service account there and updating
+`CWS_PUBLISHER_ID` after verifying item custody. A GitHub repository transfer does
+not transfer Chrome Web Store ownership.
 
-Version 0.3.2 also completed the [release workflow](https://github.com/prooflinedev/session-recorder-chrome-extension/actions/runs/40429722160).
-Its GitHub release assets and latest download match the verified package.
-The [public Store listing](https://chromewebstore.google.com/detail/session-recorder-by-proof/dboiheheijgmfpfhbmjggiijpgondghh)
-shows version 0.3.2, updated October 27, 2026. It still names Mohsen Azimi as
-the publisher; publisher transfer remains separate.
-
-Version 0.3.0 stopped before upload because an integration test used a local Mac
-scratch directory. The test now keeps generated reports in memory, with its
-assertions preserved. Version 0.3.1 uses a new immutable tag.
+The [release workflow runs](https://github.com/prooflinedev/session-recorder-chrome-extension/actions/workflows/release.yml)
+and [public Store listing](https://chromewebstore.google.com/detail/session-recorder-by-proof/dboiheheijgmfpfhbmjggiijpgondghh)
+show package submission and live version status separately. A pending metadata
+review also blocks submission of a different package revision; finish or cancel
+that review in the dashboard before cutting the next release.
 
 Missing variables fail the publishing job before authentication. An unlinked
 service account fails with an API permission error; it does not silently skip
