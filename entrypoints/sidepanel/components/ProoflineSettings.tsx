@@ -4,13 +4,18 @@ import { ProoflineMark } from '@/lib/ui/ProoflineMark';
 import { useProoflineSettings } from './useProoflineSettings';
 import { PROOFLINE_ORIGIN, recorderHelpUrl } from '@/lib/proofline/settings';
 export function ProoflineSettings(): React.JSX.Element {
-  const { state, connect, disconnect, refresh, cancel } = useProoflineSettings();
+  const { state, connect, disconnect, refresh, cancel, patch } =
+    useProoflineSettings();
   const { settings, status, error, code } = state;
   const account = settings.connection?.account;
   const busy = status !== 'idle';
-  const expired = settings.connection && settings.connection.expiresAt <= Date.now();
+  const expired =
+    settings.connection && settings.connection.expiresAt <= Date.now();
   return (
-    <section className="settings__section proofline-settings" aria-label="Proofline account">
+    <section
+      className="settings__section proofline-settings"
+      aria-label="Proofline account"
+    >
       <header className="proofline-settings__heading">
         <ProoflineMark size={26} />
         <h2>Proofline · Preview</h2>
@@ -19,7 +24,9 @@ export function ProoflineSettings(): React.JSX.Element {
         <>
           <div className="proofline-account">
             <strong>{account.user.login}</strong>
-            <span>{account.organization.name || account.organization.login}</span>
+            <span>
+              {account.organization.name || account.organization.login}
+            </span>
           </div>
           <label className="settings__field">
             <span className="settings__label">Workspace paying for usage</span>
@@ -52,6 +59,17 @@ export function ProoflineSettings(): React.JSX.Element {
               Refresh
             </button>
           </div>
+          {settings.aiMode !== 'proofline' && (
+            <div className="settings__actions">
+              <button
+                className="btn btn--primary btn--sm"
+                disabled={busy || !!expired}
+                onClick={() => void patch({ aiMode: 'proofline' })}
+              >
+                Use Proofline credits for AI
+              </button>
+            </div>
+          )}
           <div className="settings__actions">
             <button
               className="btn btn--sm"
@@ -72,7 +90,8 @@ export function ProoflineSettings(): React.JSX.Element {
       ) : (
         <div className="proofline-settings__intro">
           <p className="proofline-settings__description">
-            Proofline credits and private reports are in preview. Use personal API keys until the managed service is available.
+            Connect your Proofline workspace to use its credits for AI, share
+            private reports and file GitHub issues.
           </p>
           <button
             className="btn btn--primary btn--sm proofline-settings__connect"

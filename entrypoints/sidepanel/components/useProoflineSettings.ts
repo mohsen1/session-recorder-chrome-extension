@@ -1,11 +1,15 @@
 import { useEffect, useReducer, useRef } from 'react';
-import { beginProoflineSignIn, finishProoflineSignIn } from '@/lib/proofline/auth';
+import {
+  beginProoflineSignIn,
+  finishProoflineSignIn,
+} from '@/lib/proofline/auth';
 import { prooflineRequest } from '@/lib/proofline/client';
 import {
   defaultProoflineSettings,
   loadProoflineSettings,
   saveProoflineSettings,
   PROOFLINE_SETTINGS_KEY,
+  PROOFLINE_ORIGIN,
   type ProoflineAccount,
   type ProoflineSettings,
 } from '@/lib/proofline/settings';
@@ -111,8 +115,18 @@ export function useProoflineSettings() {
         const code = await beginProoflineSignIn(abort.signal, organizationId);
         const url = new URL(code.verification_uri_complete);
         dispatch({ type: 'code', code: code.user_code });
-        await chrome.tabs.create({ url: url.href });
-        const connection = await finishProoflineSignIn(code, settings, abort.signal);
+        const settingsTab = await chrome.tabs.getCurrent();
+        const approvalTab = await chrome.tabs.create({
+          url: url.href,
+          ...(settingsTab?.id !== undefined
+            ? { openerTabId: settingsTab.id }
+            : {}),
+        });
+        const connection = await finishProoflineSignIn(
+          code,
+          settings,
+          abort.signal,
+        );
         if (organizationId && connection.organizationId !== organizationId)
           throw new Error(
             'A different workspace was approved. Your existing connection was kept; reconnect and select the intended workspace.',
@@ -120,6 +134,35 @@ export function useProoflineSettings() {
         const next = { ...settings, connection };
         await saveProoflineSettings(next);
         dispatch({ type: 'loaded', settings: next });
+        // Credentials stay in extension storage. The website never receives an
+        // extension URL, token, or a new external-message permission.
+        try {
+          const settingsUrl = `${chrome.runtime.getURL('options.html')}#proofline`;
+          if (settingsTab?.id !== undefined) {
+            await chrome.tabs.update(settingsTab.id, {
+              active: true,
+              url: settingsUrl,
+            });
+          } else {
+            await chrome.tabs.create({ url: settingsUrl });
+          }
+          if (approvalTab.id !== undefined) {
+            const tab = await chrome.tabs.get(approvalTab.id);
+            const current = tab.url ? new URL(tab.url) : undefined;
+            if (
+              current?.origin === PROOFLINE_ORIGIN &&
+              current.pathname === '/auth/device' &&
+              current.searchParams.get('user_code') === code.user_code
+            )
+              await chrome.tabs.remove(approvalTab.id);
+          }
+        } catch {
+          dispatch({
+            type: 'error',
+            error:
+              'Proofline is connected. Return to Session Recorder settings to continue.',
+          });
+        }
       } finally {
         controller.current = undefined;
       }
@@ -129,8 +172,14 @@ export function useProoflineSettings() {
     return perform(async () => {
       const settings = await loadProoflineSettings();
       if (!settings.connection) return;
-      const account = await prooflineRequest<ProoflineAccount>(settings, '/account');
-      const next = { ...settings, connection: { ...settings.connection, account } };
+      const account = await prooflineRequest<ProoflineAccount>(
+        settings,
+        '/account',
+      );
+      const next = {
+        ...settings,
+        connection: { ...settings.connection, account },
+      };
       await saveProoflineSettings(next);
       dispatch({ type: 'loaded', settings: next });
     });
@@ -142,6 +191,8 @@ export function useProoflineSettings() {
     refresh,
     disconnect: () => patch({ connection: undefined }),
     cancel: () =>
-      controller.current?.abort(new DOMException('Sign-in cancelled.', 'AbortError')),
+      controller.current?.abort(
+        new DOMException('Sign-in cancelled.', 'AbortError'),
+      ),
   };
 }
