@@ -136,7 +136,9 @@ test('offers Proofline credits instead of requiring a provider key after sign-in
   await voice.getByRole('button', { name: 'Back to voice options' }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.screenshot({ path: '/tmp/recorder-proofline-voice-choice-dark.png', fullPage: true });
+  await page.screenshot({ path: '/tmp/recorder-proofline-voice-choice-dark.png', fullPage: true, animations: 'disabled' });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.screenshot({ path: '/tmp/recorder-proofline-voice-choice-light.png', fullPage: true, animations: 'disabled' });
   await voice.getByRole('button', { name: 'Use Proofline credits' }).click();
   await expect(voice).toHaveCount(0);
   const stored = await background.evaluate(() => chrome.storage.local.get(['prooflineSettings', 'transcription']));
