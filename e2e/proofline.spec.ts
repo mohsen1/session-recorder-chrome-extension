@@ -51,7 +51,7 @@ test('connects by browser approval and requires an explicit switch from personal
       ? {
           device_code: 'private-device-code',
           user_code: 'ABCD-EFGH',
-          verification_uri_complete: 'https://proofline.sh/device?user_code=ABCD-EFGH',
+          verification_uri_complete: 'https://proofline.sh/auth/device?user_code=ABCD-EFGH',
           expires_in: 600,
           interval: 5,
         }
@@ -73,9 +73,17 @@ test('connects by browser approval and requires an explicit switch from personal
   });
   const page = await context.newPage();
   await page.goto(extUrl(extensionId, 'options.html#proofline'));
+  const approvalPromise = context.waitForEvent('page');
   await page.getByRole('button', { name: 'Connect Proofline' }).click();
+  const approvalPage = await approvalPromise;
+  await approvalPage.waitForURL('https://proofline.sh/auth/device?user_code=ABCD-EFGH');
   await expect(page.getByText('ABCD-EFGH', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Change account' })).toBeVisible({ timeout: 20000 });
+  await expect.poll(() => approvalPage.isClosed()).toBe(true);
+  const active = await background.evaluate(async () =>
+    (await chrome.tabs.query({ active: true, currentWindow: true }))[0]?.url,
+  );
+  expect(active).toBe(extUrl(extensionId, 'options.html#proofline'));
   await expect(page.getByLabel('AI usage')).toHaveCount(0);
   await page.getByRole('link', { name: 'Services', exact: true }).click();
   await expect(page.getByLabel('AI usage')).toHaveValue('personal');
@@ -109,6 +117,36 @@ test('connects by browser approval and requires an explicit switch from personal
   expect(stored.sharingSettings.models.openai.apiKey).toBe('existing-key');
   expect(stored.prooflineSettings.aiMode).toBe('proofline');
   expect(stored.prooflineSettings.connection).toBeUndefined();
+});
+
+test('offers Proofline credits instead of requiring a provider key after sign-in', async ({ context, background, extensionId }) => {
+  await background.evaluate((settings) => chrome.storage.local.set({
+    prooflineSettings: { ...settings, aiMode: 'personal', github: 'personal', publishing: 'personal' },
+    micFromStart: true,
+  }), connected());
+  await context.route('https://proofline.sh/**', route => route.fulfill({ status: 503, json: { detail: 'Fixture: no provider calls' } }));
+  const page = await context.newPage();
+  await page.goto(extUrl(extensionId, 'sidepanel.html'));
+  await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+  const voice = page.getByRole('dialog', { name: 'Voice setup' });
+  await expect(voice.getByRole('button', { name: 'Use Proofline credits' })).toBeVisible();
+  await expect(voice.getByLabel('API key')).toHaveCount(0);
+  await voice.getByRole('button', { name: 'Use a provider key' }).click();
+  await expect(voice.getByLabel('API key')).toBeVisible();
+  await voice.getByRole('button', { name: 'Back to voice options' }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.screenshot({ path: '/tmp/recorder-proofline-voice-choice-dark.png', fullPage: true, animations: 'disabled' });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.screenshot({ path: '/tmp/recorder-proofline-voice-choice-light.png', fullPage: true, animations: 'disabled' });
+  await voice.getByRole('button', { name: 'Use Proofline credits' }).click();
+  await expect(voice).toHaveCount(0);
+  const stored = await background.evaluate(() => chrome.storage.local.get(['prooflineSettings', 'transcription']));
+  expect(stored.prooflineSettings.aiMode).toBe('proofline');
+  expect(stored.prooflineSettings.connection.organizationId).toBe(org);
+  expect(stored.prooflineSettings.github).toBe('personal');
+  expect(stored.prooflineSettings.publishing).toBe('personal');
+  expect(stored.transcription).toBeUndefined();
 });
 
 test('files through Proofline with managed AI and private attachment uploads', async ({
@@ -228,7 +266,7 @@ test('changes the paying workspace only after matching browser approval', async 
         json: {
           device_code: `device-${approvals}`,
           user_code: `APPROVAL-${approvals}`,
-          verification_uri_complete: `https://proofline.sh/device?user_code=APPROVAL-${approvals}`,
+          verification_uri_complete: `https://proofline.sh/auth/device?user_code=APPROVAL-${approvals}`,
           expires_in: 600,
           interval: 5,
         },

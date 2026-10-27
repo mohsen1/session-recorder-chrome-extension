@@ -97,6 +97,19 @@ The manifest is generated from `wxt.config.ts`.
 | `alarms` | Flush capture buffers while recording |
 | `<all_urls>` | Record the web application selected by the user |
 
+## Proofline connection
+
+Browser approval uses the existing device authorization flow. After the approved
+connection and account have been saved, the extension returns to
+`options.html#proofline` and closes only the matching approval tab. Starting from
+the side panel opens settings in a tab. Cancellation or approval of a different
+workspace preserves the current connection and does not trigger the return.
+
+Signing in preserves service selection. Connected accounts can explicitly choose
+**Use Proofline credits for AI** in Proofline settings. Voice setup offers
+**Use Proofline credits** before asking for a personal provider key. These actions
+keep personal keys and other service choices unchanged.
+
 ## Website and release ownership
 
 The Proofline marketing site and help center are implemented in `apps/marketing` in the Proofline repository. The destination is `https://proofline.sh/session-recorder-chrome-extension/`, with help under `/help/session-recorder/`. Deployment is separate from publishing this extension.
