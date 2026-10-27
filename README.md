@@ -49,7 +49,7 @@ See [sharing setup](docs/sharing.md) for configuration and token permissions.
 
 ### Proofline connection — preview
 
-The source includes an optional Proofline connection for credit-funded AI, private reports and GitHub App issue filing. The managed backend and new website are being rolled out; these services are not yet available in production.
+The optional Proofline connection supports credit-funded AI, private reports and GitHub App issue filing. The backend and website are deployed. The connection remains in preview, and managed speech is disabled until its providers are configured.
 
 **Settings → Proofline** connects your account and selects the paying workspace. **Settings → Services** explicitly enables managed services; connecting alone keeps your personal-key choices. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation. AI pauses when credits run out and never silently switches to your keys.
 
