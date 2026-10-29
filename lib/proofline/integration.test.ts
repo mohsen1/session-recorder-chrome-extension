@@ -133,7 +133,7 @@ describe('Proofline integration boundaries', () => {
         () => {},
         new AbortController().signal,
       ),
-    ).rejects.toThrow('(503)');
+    ).rejects.toThrow('Proofline report storage is unavailable.');
     const retryId = saved!.attachments[0]!.requestId;
     await publishProoflineReport(
       managed(),
