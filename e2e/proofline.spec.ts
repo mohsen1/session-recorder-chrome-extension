@@ -170,6 +170,7 @@ test('files through Proofline with managed AI and private attachment uploads', a
     connected(),
   );
   const paths: string[] = [];
+  let attachmentFailed = false;
   await context.route('https://proofline.sh/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -193,6 +194,14 @@ test('files through Proofline with managed AI and private attachment uploads', a
         url: `https://proofline.sh/recorder/reports/${org}/${reportId}`,
       };
     else if (path.endsWith('/attachments')) {
+      if (!attachmentFailed) {
+        attachmentFailed = true;
+        await route.fulfill({
+          status: 503,
+          json: { detail: 'private report storage is not configured' },
+        });
+        return;
+      }
       const body = request.postDataJSON();
       expect(body.name).not.toMatch(/\.html$/);
       json = { id: 'asset' };
@@ -212,6 +221,23 @@ test('files through Proofline with managed AI and private attachment uploads', a
   const page = await context.newPage();
   await page.goto(extUrl(extensionId, `share.html?session=${started.session.id}`));
   await expect(page.getByLabel('Issue repository')).toHaveValue('alice/product');
+  await page.getByRole('button', { name: 'File GitHub issue', exact: true }).click();
+  await expect(page.getByText('Upload incomplete', { exact: true })).toHaveCount(2);
+  await expect(
+    page.getByText('Proofline report storage is unavailable.', { exact: false }),
+  ).toBeVisible();
+  expect(paths.filter((path) => path.endsWith('/issue'))).toHaveLength(0);
+  await page.screenshot({
+    path: '/tmp/recorder-upload-incomplete-light.png',
+    fullPage: true,
+  });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.screenshot({
+    path: '/tmp/recorder-upload-incomplete-dark.png',
+    fullPage: true,
+  });
+  await page.getByRole('button', { name: 'Resume upload', exact: true }).click();
+  await expect(page.getByText('Published', { exact: true })).toHaveCount(2);
   await page.getByRole('button', { name: 'File GitHub issue', exact: true }).click();
   await expect(page.getByRole('link', { name: 'View issue #42' })).toBeVisible({
     timeout: 30000,

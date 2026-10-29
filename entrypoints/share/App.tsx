@@ -18,7 +18,11 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { formatClock } from '@/lib/export/markdown';
 import type { VerbosityLevel } from '@/lib/session/types';
-import { publicationUrl, REPORT_LEVELS } from '@/lib/sharing/draft';
+import {
+  isProoflinePublication,
+  publicationUrl,
+  REPORT_LEVELS,
+} from '@/lib/sharing/draft';
 import { useShareReport } from './useShareReport';
 import { useReportEvidence, type EvidenceItem } from './useReportEvidence';
 
@@ -73,9 +77,11 @@ export function App(): React.JSX.Element {
             <span className="draft-status">
               {state.issue
                 ? 'Filed'
-                : state.publication
+                : share.ready
                   ? 'Published'
-                  : 'Saved locally'}
+                  : state.publication
+                    ? 'Upload incomplete'
+                    : 'Saved locally'}
             </span>
             <FileIssueAction share={share} />
           </div>
@@ -115,10 +121,14 @@ function FileIssueAction({ share }: { share: ShareModel }) {
         View issue #{state.issue.number}
       </a>
     );
-  const repositories = [...new Set([
-    state.repository,
-    ...configuredRepositories(state.settings).map((entry) => entry.repository),
-  ].filter(Boolean))];
+  const repositories = [
+    ...new Set(
+      [
+        state.repository,
+        ...configuredRepositories(state.settings).map((entry) => entry.repository),
+      ].filter(Boolean),
+    ),
+  ];
   return (
     <div className="file-issue-split">
       <button
@@ -132,15 +142,26 @@ function FileIssueAction({ share }: { share: ShareModel }) {
         <GitHubIcon size={14} />
         {state.attempt ? 'Check GitHub issue' : 'File issue'}
       </button>
-      <label className="issue-destination" title={state.repository || 'Select a repository'}>
+      <label
+        className="issue-destination"
+        title={state.repository || 'Select a repository'}
+      >
         <select
           aria-label="Issue repository"
           value={state.repository}
           disabled={busy || !!state.attempt || !repositories.length}
           onChange={(event) => actions.editRepository(event.target.value)}
         >
-          {!state.repository && <option value="" disabled>Select repository</option>}
-          {repositories.map((repository) => <option key={repository} value={repository}>{repository}</option>)}
+          {!state.repository && (
+            <option value="" disabled>
+              Select repository
+            </option>
+          )}
+          {repositories.map((repository) => (
+            <option key={repository} value={repository}>
+              {repository}
+            </option>
+          ))}
         </select>
         <ChevronDown size={14} aria-hidden="true" />
       </label>
@@ -327,7 +348,15 @@ function ReportDetails({ share }: { share: ShareModel }) {
       <dl>
         <div>
           <dt>Status</dt>
-          <dd>{state.issue ? 'Filed' : state.publication ? 'Published' : 'Draft'}</dd>
+          <dd>
+            {state.issue
+              ? 'Filed'
+              : ready
+                ? 'Published'
+                : state.publication
+                  ? 'Upload incomplete'
+                  : 'Draft'}
+          </dd>
         </div>
         <div>
           <dt>Recorded</dt>
@@ -361,7 +390,11 @@ function ReportDetails({ share }: { share: ShareModel }) {
           target="_blank"
           rel="noreferrer"
         >
-          {ready ? 'Open published report' : 'Deployment created'}
+          {ready
+            ? 'Open published report'
+            : isProoflinePublication(state.publication)
+              ? 'Open partial report'
+              : 'Deployment created'}
           <ExternalLink size={12} />
         </a>
       )}
@@ -374,7 +407,9 @@ function ReportDetails({ share }: { share: ShareModel }) {
           disabled={busy}
           onClick={() => void actions.checkDeployment()}
         >
-          Check deployment
+          {isProoflinePublication(state.publication)
+            ? 'Resume upload'
+            : 'Check deployment'}
         </button>
       )}
     </aside>

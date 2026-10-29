@@ -46,9 +46,11 @@ export async function prooflineRequest<T>(
           ? 'Reconnect to Proofline in Settings → Proofline.'
           : response.status === 403
             ? 'Your Proofline account does not have access to this workspace, repository or report.'
-            : response.status === 413
-              ? 'This upload exceeds the report or workspace storage limit. Free up storage or use Cloudflare.'
-              : `Proofline could not complete the request (${response.status}). Try again or check your Proofline settings.`;
+            : response.status === 503 && /^\/reports\/[^/]+\/attachments$/.test(path)
+              ? 'Proofline report storage is unavailable. Your recording is saved locally. Try Resume upload later.'
+              : response.status === 413
+                ? 'This upload exceeds the report or workspace storage limit. Free up storage or use Cloudflare.'
+                : `Proofline could not complete the request (${response.status}). Try again or check your Proofline settings.`;
     if (response.status === 409) {
       const problem = await response.json().catch(() => undefined);
       if (typeof problem?.detail === 'string' && problem.detail.trim())

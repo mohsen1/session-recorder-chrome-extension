@@ -260,6 +260,7 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
     });
   }
   function checkDeployment() {
+    if (state.publication && isProoflinePublication(state.publication)) return publish();
     return run('check', async (signal) => {
       if (!state.publication || isProoflinePublication(state.publication)) return;
       const deployment = await waitForDeployment(
