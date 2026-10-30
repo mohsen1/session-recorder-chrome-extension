@@ -20,11 +20,21 @@ export function SharingSettings({
   const { settings, loaded, busy, message, error, provider, model, actions } =
     controller;
   const cf = settings.cloudflare;
-  const managed = section === 'summaries' ? settings.proofline?.aiMode === 'proofline' : section === 'github' ? settings.proofline?.github === 'proofline' : settings.proofline?.publishing === 'proofline';
   const { patchCloudflare: patchCf, patchModel, save } = actions;
+  if (!loaded) return <p role={error ? "alert" : "status"}>{error || "Loading settings…"}</p>;
+  if (settings.proofline?.connection) {
+    const title = section === 'summaries' ? 'AI summaries' : section === 'github' ? 'GitHub issues' : 'Publishing';
+    const service = section === 'summaries' ? 'AI summaries' : section === 'github' ? 'GitHub issues' : 'private report hosting';
+    return (
+      <section className="settings__section" aria-label={title}>
+        <h3 className="settings__title">{title}</h3>
+        <p className="settings__hint">Using Proofline for {service}.</p>
+        <a href="#proofline">Manage connection</a>
+      </section>
+    );
+  }
   return (
     <div className="sharing-settings">
-      {managed && <p className="settings__hint">Using Proofline. <a href="#proofline">Manage connection</a>. Personal settings below.</p>}
       <fieldset className="sharing-settings__fields" disabled={!loaded || busy}>
         {section === 'publishing' && (
           <section

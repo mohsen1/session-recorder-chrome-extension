@@ -1,6 +1,5 @@
 import {
   loadProoflineSettings,
-  saveProoflineSettings,
 } from '@/lib/proofline/settings';
 import { useProoflineSettings } from './useProoflineSettings';
 /**
@@ -54,7 +53,6 @@ export function VoiceSetupModal({
   const [saving, setSaving] = useState(false);
   const { state: proofline } = useProoflineSettings();
   const account = proofline.settings.connection?.account;
-  const [personal, setPersonal] = useState(false);
   const [error, setError] = useState('');
 
   const useProofline = async () => {
@@ -74,7 +72,6 @@ export function VoiceSetupModal({
         throw new Error(
           'Reconnect to Proofline in Settings → Proofline, then try again.',
         );
-      await saveProoflineSettings({ ...current, aiMode: 'proofline' });
       onDone();
     } catch (error) {
       setError(
@@ -140,7 +137,7 @@ export function VoiceSetupModal({
           <p role="status" className="modal__lede">
             Loading voice settings…
           </p>
-        ) : account && !personal ? (
+        ) : account ? (
           <>
             <p className="modal__lede">
               Use {account.organization.name || account.organization.login}’s
@@ -155,29 +152,12 @@ export function VoiceSetupModal({
                 disabled={saving}
                 onClick={() => void useProofline()}
               >
-                {saving ? 'Saving…' : 'Use Proofline credits'}
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                disabled={saving}
-                onClick={() => setPersonal(true)}
-              >
-                Use a provider key
+                {saving ? 'Saving…' : 'Continue'}
               </button>
             </div>
           </>
         ) : (
           <>
-            {account && (
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={() => setPersonal(false)}
-              >
-                Back to voice options
-              </button>
-            )}
             <p className="modal__lede">
               Your narration is transcribed in real time and placed on the
               timeline next to what you were doing. Add a provider key once; it
@@ -224,6 +204,7 @@ export function VoiceSetupModal({
           </p>
         )}
         <div className="modal__actions">
+          {!account && (
           <button
             type="button"
             className="btn btn--sm"
@@ -232,7 +213,8 @@ export function VoiceSetupModal({
           >
             Keep raw audio only
           </button>
-          {proofline.status !== 'loading' && (!account || personal) && (
+          )}
+          {proofline.status !== 'loading' && !account && (
             <button
               type="button"
               className="btn btn--primary btn--sm"

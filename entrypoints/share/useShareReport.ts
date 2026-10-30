@@ -304,7 +304,7 @@ export function useShareReport(sessionId: string, initialLevel: VerbosityLevel) 
         async () => {
           const stored = (await chrome.storage.local.get(draftKey))[draftKey] as
             SavedDraft | undefined;
-          const saved = stored ?? snapshot();
+          const saved = stored ? { ...stored, repository: stored.repository || state.repository } : snapshot();
           await rememberRepository(saved.attempt?.repository ?? saved.repository);
           const result = await fileIssue({
             saved,

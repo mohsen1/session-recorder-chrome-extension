@@ -1865,7 +1865,7 @@ class Orchestrator {
         | undefined;
       const proofline = await loadProoflineSettings();
       if (proofline.aiMode === 'proofline') {
-        return { provider: cfg?.provider === 'elevenlabs' ? 'elevenlabs' : 'deepgram', apiKey: '', managed: true, language: cfg?.language };
+        return { provider: 'deepgram', apiKey: '', managed: true };
       }
       if (!cfg || !cfg.provider || !cfg.apiKey) return null;
       return cfg as TranscriptionConfig;

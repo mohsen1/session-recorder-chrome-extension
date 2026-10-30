@@ -74,7 +74,7 @@ export function shareReducer(state: ShareState, action: ShareAction): ShareState
         loading: false,
         preparing: true,
         draft: action.saved?.draft ?? initialDraft(action.session.name),
-        repository: action.saved?.issue?.repository ?? action.saved?.attempt?.repository ?? action.saved?.repository ?? preferredRepository(action.settings),
+        repository: action.saved?.issue?.repository ?? action.saved?.attempt?.repository ?? (action.saved?.repository || preferredRepository(action.settings)),
         publication: action.saved?.publication,
         summaryRequestId: action.saved?.summaryRequestId,
         issue: action.saved?.issue,

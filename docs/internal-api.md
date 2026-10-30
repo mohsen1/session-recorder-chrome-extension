@@ -46,9 +46,9 @@ Voice events retain retry generation and request identity locally. Export remove
 
 [`lib/sharing/`](../lib/sharing/) contains personal-provider summaries, GitHub issue creation, Cloudflare publishing, settings and durable local draft state. [`entrypoints/share/useShareReport.ts`](../entrypoints/share/useShareReport.ts) orchestrates filing; [`entrypoints/share/reducer.ts`](../entrypoints/share/reducer.ts) owns its UI state. Annotations and narration take priority over diagnostics in the summary input.
 
-[`lib/proofline/`](../lib/proofline/) owns the optional device authorization, authenticated requests, managed AI and private report client. A connection is bound to one paying organization. A new organization requires browser approval; the previous connection is retained if approval is canceled or mismatched. Connecting does not enable managed service modes automatically.
+[`lib/proofline/`](../lib/proofline/) owns the optional device authorization, authenticated requests, managed AI and private report client. A connection is bound to one paying organization. A new organization requires browser approval; the previous connection is retained if approval is canceled or mismatched. Connected settings always use Proofline for all AI, private hosting and GitHub issue filing, including older stored profiles. Provider/model overrides and manual credential forms are unavailable until disconnect. The shared settings boundary enforces the same behavior in the background and UI.
 
-`Settings → Proofline` owns account/workspace connection. `Settings → Services` owns AI, hosting and issue-filing modes plus the advanced managed-model override. Both use the focused settings hook and persisted settings; they do not share an implicit account-wide fallback.
+`Settings → Proofline` owns account/workspace connection. `Settings → Services` shows the active service routing without overrides. Connected summary, transcription, publishing and GitHub pages show their managed status. Disconnect restores standalone modes and their saved personal settings.
 
 Keep these boundaries intact:
 

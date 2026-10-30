@@ -1,4 +1,3 @@
-import { ProoflineBrand } from '@/lib/ui/ProoflineBrand';
 import { recorderHelpUrl } from '@/lib/proofline/settings';
 /**
  * Options page UI.
@@ -7,7 +6,7 @@ import { recorderHelpUrl } from '@/lib/proofline/settings';
  */
 
 import React from 'react';
-import { ChevronRight, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { SettingsForm } from '../sidepanel/components/SettingsForm';
 
 export function App(): React.JSX.Element {
@@ -15,8 +14,6 @@ export function App(): React.JSX.Element {
     <div className="options-page">
       <header className="options-page__header">
         <div className="options-page__identity">
-          <ProoflineBrand />
-          <ChevronRight className="options-page__separator" size={14} aria-hidden="true" />
           <h1 className="options-page__title">Settings</h1>
         </div>
         <a className="options-page__help" href={recorderHelpUrl()} target="_blank" rel="noreferrer">

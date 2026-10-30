@@ -1,5 +1,5 @@
 import { useProoflineSettings } from './components/useProoflineSettings';
-import { ProoflineBrand } from '@/lib/ui/ProoflineBrand';
+import { ProoflineMark } from '@/lib/ui/ProoflineMark';
 import { PRODUCT_WEBSITE, PRODUCT_REPOSITORY } from '@/lib/proofline/settings';
 import React from 'react';
 import { Settings, X } from 'lucide-react';
@@ -24,7 +24,6 @@ export function App(): React.JSX.Element {
   return (
     <div className="app">
       <div className="app__actions">
-        <ProoflineBrand />
         <AccountLink />
         <button
           type="button"
@@ -120,5 +119,10 @@ function AccountLink(): React.JSX.Element | null {
   const { state } = useProoflineSettings();
   if (state.status === 'loading') return null;
   const connection = state.settings.connection;
-  return <a className="proofline-account-link" href={chrome.runtime.getURL('options.html#proofline')} target="_blank" rel="noreferrer">{connection ? (connection.expiresAt <= Date.now() ? 'Reconnect' : connection.account.organization.login) : 'Connect'}</a>;
+  return (
+    <a className="proofline-account-link" href={chrome.runtime.getURL('options.html#proofline')} target="_blank" rel="noreferrer">
+      <ProoflineMark size={16} />
+      <span>{connection ? (connection.expiresAt <= Date.now() ? 'Reconnect to Proofline' : connection.account.organization.login) : 'Connect to Proofline'}</span>
+    </a>
+  );
 }

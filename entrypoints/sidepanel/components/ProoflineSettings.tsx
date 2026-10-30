@@ -4,7 +4,7 @@ import { ProoflineMark } from '@/lib/ui/ProoflineMark';
 import { useProoflineSettings } from './useProoflineSettings';
 import { PROOFLINE_ORIGIN, recorderHelpUrl } from '@/lib/proofline/settings';
 export function ProoflineSettings(): React.JSX.Element {
-  const { state, connect, disconnect, refresh, cancel, patch } =
+  const { state, connect, disconnect, refresh, cancel } =
     useProoflineSettings();
   const { settings, status, error, code } = state;
   const account = settings.connection?.account;
@@ -18,7 +18,7 @@ export function ProoflineSettings(): React.JSX.Element {
     >
       <header className="proofline-settings__heading">
         <ProoflineMark size={26} />
-        <h2>Proofline · Preview</h2>
+        <h2>Proofline</h2>
       </header>
       {account ? (
         <>
@@ -59,17 +59,6 @@ export function ProoflineSettings(): React.JSX.Element {
               Refresh
             </button>
           </div>
-          {settings.aiMode !== 'proofline' && (
-            <div className="settings__actions">
-              <button
-                className="btn btn--primary btn--sm"
-                disabled={busy || !!expired}
-                onClick={() => void patch({ aiMode: 'proofline' })}
-              >
-                Use Proofline credits for AI
-              </button>
-            </div>
-          )}
           <div className="settings__actions">
             <button
               className="btn btn--sm"
@@ -98,7 +87,7 @@ export function ProoflineSettings(): React.JSX.Element {
             disabled={busy}
             onClick={() => void connect()}
           >
-            Connect Proofline
+            Connect to Proofline
           </button>
           <p className="settings__hint proofline-settings__onboarding">
             Finish Proofline onboarding and install the GitHub App to get 10,000

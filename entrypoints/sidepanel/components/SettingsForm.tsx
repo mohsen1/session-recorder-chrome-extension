@@ -102,7 +102,14 @@ export function SettingsForm(): React.JSX.Element {
           {/* ---------------------------------------------------------------- */}
           {/* 1) Transcription                                                 */}
           {/* ---------------------------------------------------------------- */}
-          {page === 'transcription' && (
+          {page === 'transcription' && sharing.settings.proofline?.connection && (
+            <section className="settings__section" aria-label="Transcription">
+              <h3 className="settings__title">Transcription</h3>
+              <p className="settings__hint">Using Proofline credits for transcription.</p>
+              <a href="#proofline">Manage connection</a>
+            </section>
+          )}
+          {page === 'transcription' && sharing.loaded && !sharing.settings.proofline?.connection && (
             <section className="settings__section" aria-label="Transcription">
               <div className="settings__head">
                 <AudioLines size={14} strokeWidth={1.75} />

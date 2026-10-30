@@ -108,10 +108,12 @@ Reconnecting an expired connection requests its existing workspace and rejects
 approval of another workspace. Saved report destinations and upload checkpoints
 remain unchanged.
 
-Signing in preserves service selection. Connected accounts can explicitly choose
-**Use Proofline credits for AI** in Proofline settings. Voice setup offers
-**Use Proofline credits** before asking for a personal provider key. These actions
-keep personal keys and other service choices unchanged.
+Connecting enables Proofline for all AI, private reports and GitHub issue filing.
+The shared settings load/save boundary applies this rule to existing connected
+profiles too. Expired connections remain on managed services and require reconnect;
+they never fall back to personal keys. Disconnect explicitly restores standalone
+service modes without removing saved personal credentials. Connected settings hide
+manual setup forms and provider/model overrides.
 
 ## Website and release ownership
 

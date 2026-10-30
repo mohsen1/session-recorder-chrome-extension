@@ -1,20 +1,20 @@
 # Privacy Policy — Session Recorder by Proofline
 
-_Last updated: 2026-10-27_
+_Last updated: 2026-10-30_
 
 Session Recorder is a Chrome extension that records a session of you using a web
 app — interactions, network traffic, console logs, screenshots, voice narration,
 annotations, and files — and exports it as a local zip report intended for an LLM
 coding agent.
 
-> The Proofline backend is deployed, and the optional connection remains in preview. Managed speech is disabled until its providers are configured. Personal-provider and Cloudflare behavior is available independently.
+> Connecting Proofline automatically uses its workspace credits for AI, private report hosting and GitHub App issue filing. Personal-provider and Cloudflare integrations remain available when disconnected.
 
 ## Summary
 
 - **Recordings stay on your machine by default.** Sessions are stored locally in
   your browser (IndexedDB) and exported as a zip file you save yourself. Connecting Proofline is optional. Recording and local export do not require an account.
 - **Voice transcription is optional.** If — and only if — you
-  configure personal transcription credentials or explicitly select Proofline credits, recorded audio is sent to the selected service to produce a text transcript.
+  configure personal transcription credentials or connect Proofline, recorded audio is sent to the selected service to produce a text transcript.
 - **Publishing and AI summaries are optional.** Publishing sends the selected
   report and its included assets to your selected Proofline workspace or Cloudflare account. Generating a summary
   sends a bounded text excerpt to your configured model provider or, in managed mode, through Proofline to its configured provider. Filing a
@@ -96,7 +96,7 @@ information. Review them before publishing.
 
 ## Optional Proofline services
 
-Connecting Proofline uses browser approval to store an expiring, workspace-scoped token in trusted extension storage. Connecting alone does not enable paid AI. You explicitly choose Proofline credits in Settings → Services. Personal provider keys remain local and are never sent to Proofline.
+Connecting Proofline uses browser approval to store an expiring, workspace-scoped token in trusted extension storage. Connecting automatically enables paid AI using that workspace’s credits, including summaries, session titles, page vocabulary and transcription when you record audio. Connected service settings cannot select personal keys or override models. Disconnect to use standalone integrations. Personal provider keys remain local and are never sent to Proofline.
 
 In Proofline AI mode, bounded text for summaries, session titles and page vocabulary is sent through the Proofline server to configured model providers. Recorded speech is decoded to mono audio and sent through Proofline to Deepgram or ElevenLabs. Provider credentials stay on the server. Paid usage is attributed to the workspace you select and recorded in Proofline’s credit ledger. AI pauses when credits are unavailable; the extension never silently switches to your personal keys or another workspace.
 

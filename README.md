@@ -47,11 +47,11 @@ With a model configured, stopping a recording also generates its session-list ti
 
 See [sharing setup](docs/sharing.md) for configuration and token permissions.
 
-### Proofline connection — preview
+### Proofline connection
 
-The optional Proofline connection supports credit-funded AI, private reports and GitHub App issue filing. The backend and website are deployed. The connection remains in preview, and managed speech is disabled until its providers are configured.
+Connecting Proofline uses workspace credits for all AI, including transcription, and enables private reports and GitHub App issue filing.
 
-**Settings → Proofline** connects your account and selects the paying workspace. **Settings → Services** explicitly enables managed services; connecting alone keeps your personal-key choices. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation. AI pauses when credits run out and never silently switches to your keys.
+**Settings → Proofline** connects your account and selects the paying workspace. Connected services use Proofline automatically. Manual provider settings and overrides stay hidden until you disconnect. Existing personal credentials remain stored locally. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation. AI pauses when credits run out and never silently switches to your keys.
 
 Hosted reports are private to their creator and selected readers. Outside readers need a free Proofline account. Local recording and personal-key integrations remain available independently.
 
