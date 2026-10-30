@@ -112,7 +112,13 @@ export function useProoflineSettings() {
       controller.current = abort;
       try {
         const settings = await loadProoflineSettings();
-        const code = await beginProoflineSignIn(abort.signal, organizationId);
+        // Renew the original workspace so saved reports retain their destination.
+        const requestedOrganizationId = organizationId ?? (
+          settings.connection && settings.connection.expiresAt <= Date.now()
+            ? settings.connection.organizationId
+            : undefined
+        );
+        const code = await beginProoflineSignIn(abort.signal, requestedOrganizationId);
         const url = new URL(code.verification_uri_complete);
         dispatch({ type: 'code', code: code.user_code });
         const settingsTab = await chrome.tabs.getCurrent();
@@ -127,7 +133,7 @@ export function useProoflineSettings() {
           settings,
           abort.signal,
         );
-        if (organizationId && connection.organizationId !== organizationId)
+        if (requestedOrganizationId && connection.organizationId !== requestedOrganizationId)
           throw new Error(
             'A different workspace was approved. Your existing connection was kept; reconnect and select the intended workspace.',
           );

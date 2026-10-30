@@ -104,6 +104,9 @@ connection and account have been saved, the extension returns to
 `options.html#proofline` and closes only the matching approval tab. Starting from
 the side panel opens settings in a tab. Cancellation or approval of a different
 workspace preserves the current connection and does not trigger the return.
+Reconnecting an expired connection requests its existing workspace and rejects
+approval of another workspace. Saved report destinations and upload checkpoints
+remain unchanged.
 
 Signing in preserves service selection. Connected accounts can explicitly choose
 **Use Proofline credits for AI** in Proofline settings. Voice setup offers
