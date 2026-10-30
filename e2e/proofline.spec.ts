@@ -92,14 +92,14 @@ test('connects by browser approval and requires an explicit switch from personal
   await expect(page.getByLabel('Report hosting')).toHaveValue('proofline');
   await page.setViewportSize({ width: 1100, height: 800 });
   await page.screenshot({
-    path: '/tmp/recorder-proofline-account-light.png',
+    path: 'test-results/recorder-proofline-account-light.png',
     fullPage: true,
     animations: 'disabled',
   });
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
-    path: '/tmp/recorder-proofline-account-dark-narrow.png',
+    path: 'test-results/recorder-proofline-account-dark-narrow.png',
     fullPage: true,
     animations: 'disabled',
   });
@@ -136,9 +136,9 @@ test('offers Proofline credits instead of requiring a provider key after sign-in
   await voice.getByRole('button', { name: 'Back to voice options' }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.screenshot({ path: '/tmp/recorder-proofline-voice-choice-dark.png', fullPage: true, animations: 'disabled' });
+  await page.screenshot({ path: 'test-results/recorder-proofline-voice-choice-dark.png', fullPage: true, animations: 'disabled' });
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.screenshot({ path: '/tmp/recorder-proofline-voice-choice-light.png', fullPage: true, animations: 'disabled' });
+  await page.screenshot({ path: 'test-results/recorder-proofline-voice-choice-light.png', fullPage: true, animations: 'disabled' });
   await voice.getByRole('button', { name: 'Use Proofline credits' }).click();
   await expect(voice).toHaveCount(0);
   const stored = await background.evaluate(() => chrome.storage.local.get(['prooflineSettings', 'transcription']));
@@ -228,16 +228,23 @@ test('files through Proofline with managed AI and private attachment uploads', a
   ).toBeVisible();
   expect(paths.filter((path) => path.endsWith('/issue'))).toHaveLength(0);
   await page.screenshot({
-    path: '/tmp/recorder-upload-incomplete-light.png',
+    path: 'test-results/recorder-upload-incomplete-light.png',
     fullPage: true,
   });
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.screenshot({
-    path: '/tmp/recorder-upload-incomplete-dark.png',
+    path: 'test-results/recorder-upload-incomplete-dark.png',
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'Resume upload', exact: true }).click();
-  await expect(page.getByText('Published', { exact: true })).toHaveCount(2);
+  // Reopening must resume the durable checkpoint through File issue itself.
+  await page.reload();
+  await expect(page.getByText('Upload incomplete', { exact: true })).toHaveCount(2);
+  const expired = connected();
+  expired.connection.expiresAt = 0;
+  await background.evaluate((settings) => chrome.storage.local.set({ prooflineSettings: settings }), expired);
+  await page.getByRole('button', { name: 'File GitHub issue', exact: true }).click();
+  await expect(page.getByText('Your Proofline connection has expired.', { exact: false })).toBeVisible();
+  await background.evaluate((settings) => chrome.storage.local.set({ prooflineSettings: settings }), connected());
   await page.getByRole('button', { name: 'File GitHub issue', exact: true }).click();
   await expect(page.getByRole('link', { name: 'View issue #42' })).toBeVisible({
     timeout: 30000,
@@ -255,7 +262,7 @@ test('files through Proofline with managed AI and private attachment uploads', a
   await expect(panel.locator('.app')).toHaveCount(1);
   await expect(panel.getByRole('link', { name: 'Website', exact: true })).toBeVisible();
   await panel.screenshot({
-    path: '/tmp/recorder-proofline-panel-dark.png',
+    path: 'test-results/recorder-proofline-panel-dark.png',
     animations: 'disabled',
   });
 });
@@ -302,13 +309,13 @@ test('changes the paying workspace only after matching browser approval', async 
         json: {
           access_token: `approved-token-${approvals}`,
           // The browser can approve a different workspace from the URL hint.
-          organization_id: approvals === 2 ? org : teamId,
+          organization_id: (approvals === 2 || approvals === 4) ? org : teamId,
           expires_in: 3600,
           scope: 'recorder:read recorder:ai recorder:reports recorder:issues',
         },
       });
     } else if (path.endsWith('/account')) {
-      const approvedOrg = approvals === 2 ? org : teamId;
+      const approvedOrg = (approvals === 2 || approvals === 4) ? org : teamId;
       expect(path).toBe(`/api/v1/organizations/${approvedOrg}/recorder/account`);
       expect(request.headers().authorization).toBe(`Bearer approved-token-${approvals}`);
       await route.fulfill({
@@ -357,6 +364,24 @@ test('changes the paying workspace only after matching browser approval', async 
   expect(approved.account.repositories).toEqual([]);
   await page.reload();
   await expect(page.getByLabel('Workspace paying for usage')).toHaveValue(teamId);
+
+  // Expiration renews this workspace instead of approving the default personal one.
+  const expiredTeam = await background.evaluate(async () =>
+    (await chrome.storage.local.get('prooflineSettings')).prooflineSettings,
+  );
+  expiredTeam.connection.expiresAt = 0;
+  await background.evaluate((settings) => chrome.storage.local.set({ prooflineSettings: settings }), expiredTeam);
+  await page.reload();
+  const renewal = page.waitForRequest(request => new URL(request.url()).pathname === '/auth/device/code');
+  await page.getByRole('button', { name: 'Reconnect', exact: true }).click();
+  expect((await renewal).postDataJSON().organization_id).toBe(teamId);
+  await expect(page.getByRole('alert')).toContainText('A different workspace was approved', { timeout: 20000 });
+  expect((await storedConnection()).organizationId).toBe(teamId);
+  expect((await storedConnection()).accessToken).toBe('approved-token-3');
+  await page.getByRole('button', { name: 'Reconnect', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Change account', exact: true })).toBeVisible({ timeout: 20000 });
+  expect((await storedConnection()).organizationId).toBe(teamId);
+  expect((await storedConnection()).accessToken).toBe('approved-token-5');
 });
 
 for (const failure of [
