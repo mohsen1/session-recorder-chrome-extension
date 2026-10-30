@@ -19,7 +19,7 @@ Turn a recorded browser session into a useful GitHub issue without manually asse
 - Chrome extension built with WXT, React and TypeScript.
 - Live element annotations can be toggled while recording; screenshot markup remains available.
 - Once configured, filing automatically generates an LLM summary, publishes the report to Cloudflare Pages, and creates a GitHub issue linking to it.
-- Proofline connection is optional. Explicitly choose Proofline credits, private hosted reports and GitHub App issue filing; standalone mode retains personal API keys and Cloudflare Access. Existing settings are preserved.
+- Proofline connection is optional. While connected, all AI uses workspace credits, reports use private Proofline hosting, and issue filing uses the workspace GitHub App and repositories. Service and model overrides are unavailable. Disconnect to use standalone personal integrations; stored credentials are retained.
 - Model integrations support OpenAI, compatible endpoints, Anthropic and Google.
 - State belongs in focused hooks and reducers; avoid effects for user-action orchestration.
 - No mandatory report-review acknowledgment checkbox.
@@ -50,6 +50,6 @@ Live annotations follow the supplied Codex reference: click an element or drag a
 
 ## Proofline Integration
 
-The extension uses Proofline’s official mark, Geist typography, neutral console surfaces and ink primary controls. Record stays centered. An account link lives beside the brand; the paying workspace lives in Settings → Proofline, and service modes live in Settings → Services. Models remain automatic with an advanced override.
+The extension uses Proofline’s official mark, Geist typography, neutral console surfaces and ink primary controls. Record stays centered. A left-aligned account link with a small Proofline mark replaces the redundant inner sidebar title and byline. It reads Connect to Proofline when signed out. The paying workspace lives in Settings → Proofline. Connected service pages show Using Proofline instead of manual setup forms. Models remain automatic without an override.
 
 The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation. Report readers are explicitly selected, and outside readers need a free Proofline account. Paid AI pauses at exhausted credits; personal keys are never a silent fallback. Publishing and issue requests save durable IDs before sending so retries resume their original operations.

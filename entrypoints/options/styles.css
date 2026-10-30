@@ -20,14 +20,6 @@
   gap: 12px;
   min-width: 0;
 }
-.options-page__identity img { flex: none; }
-.options-page__brand {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-2);
-  white-space: nowrap;
-}
-.options-page__separator { color: var(--muted); flex: none; }
 .options-page__title {
   margin: 0;
   font-size: 14px;
@@ -54,16 +46,5 @@
   .options-page { padding: 0 20px 48px; }
   .options-page__header { min-height: 64px; gap: 12px; margin-bottom: 16px; }
   .options-page__identity { gap: 8px; }
-  .options-page__brand { font-size: 12px; }
   .options-page .settings__title { font-size: 18px; }
-}
-@media (max-width: 359px) {
-  .options-page__identity {
-    display: grid;
-    grid-template-columns: 22px auto;
-    gap: 2px 8px;
-  }
-  .options-page__identity img { grid-row: span 2; align-self: center; }
-  .options-page__title { grid-column: 2; }
-  .options-page__separator { display: none; }
 }

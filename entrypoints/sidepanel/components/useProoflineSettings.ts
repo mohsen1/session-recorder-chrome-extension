@@ -101,8 +101,7 @@ export function useProoflineSettings() {
   }
   async function patch(patch: Partial<ProoflineSettings>) {
     return perform(async () => {
-      const next = { ...(await loadProoflineSettings()), ...patch };
-      await saveProoflineSettings(next);
+      const next = await saveProoflineSettings({ ...(await loadProoflineSettings()), ...patch });
       dispatch({ type: 'loaded', settings: next });
     });
   }
@@ -137,8 +136,7 @@ export function useProoflineSettings() {
           throw new Error(
             'A different workspace was approved. Your existing connection was kept; reconnect and select the intended workspace.',
           );
-        const next = { ...settings, connection };
-        await saveProoflineSettings(next);
+        const next = await saveProoflineSettings({ ...settings, connection });
         dispatch({ type: 'loaded', settings: next });
         // Credentials stay in extension storage. The website never receives an
         // extension URL, token, or a new external-message permission.
@@ -182,20 +180,18 @@ export function useProoflineSettings() {
         settings,
         '/account',
       );
-      const next = {
+      const next = await saveProoflineSettings({
         ...settings,
         connection: { ...settings.connection, account },
-      };
-      await saveProoflineSettings(next);
+      });
       dispatch({ type: 'loaded', settings: next });
     });
   }
   return {
     state,
-    patch,
     connect,
     refresh,
-    disconnect: () => patch({ connection: undefined }),
+    disconnect: () => patch({ connection: undefined, aiMode: 'personal', publishing: 'cloudflare', github: 'personal' }),
     cancel: () =>
       controller.current?.abort(
         new DOMException('Sign-in cancelled.', 'AbortError'),

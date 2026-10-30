@@ -35,7 +35,7 @@ const connected = () => ({
   },
 });
 
-test('connects by browser approval and requires an explicit switch from personal keys', async ({
+test('connects by browser approval and uses Proofline for every service', async ({
   context,
   background,
   extensionId,
@@ -74,7 +74,7 @@ test('connects by browser approval and requires an explicit switch from personal
   const page = await context.newPage();
   await page.goto(extUrl(extensionId, 'options.html#proofline'));
   const approvalPromise = context.waitForEvent('page');
-  await page.getByRole('button', { name: 'Connect Proofline' }).click();
+  await page.getByRole('button', { name: 'Connect to Proofline' }).click();
   const approvalPage = await approvalPromise;
   await approvalPage.waitForURL('https://proofline.sh/auth/device?user_code=ABCD-EFGH');
   await expect(page.getByText('ABCD-EFGH', { exact: true })).toBeVisible();
@@ -86,10 +86,8 @@ test('connects by browser approval and requires an explicit switch from personal
   expect(active).toBe(extUrl(extensionId, 'options.html#proofline'));
   await expect(page.getByLabel('AI usage')).toHaveCount(0);
   await page.getByRole('link', { name: 'Services', exact: true }).click();
-  await expect(page.getByLabel('AI usage')).toHaveValue('personal');
-  await page.getByRole('button', { name: 'Use Proofline for AI and sharing' }).click();
-  await expect(page.getByLabel('AI usage')).toHaveValue('proofline');
-  await expect(page.getByLabel('Report hosting')).toHaveValue('proofline');
+  await expect(page.getByText('Using Proofline for all AI services, private report hosting and GitHub issues.')).toBeVisible();
+  await expect(page.locator('select,input')).toHaveCount(0);
   await page.setViewportSize({ width: 1100, height: 800 });
   await page.screenshot({
     path: 'test-results/recorder-proofline-account-light.png',
@@ -109,44 +107,136 @@ test('connects by browser approval and requires an explicit switch from personal
   await page.getByRole('link', { name: 'Proofline', exact: true }).click();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: 'Connect Proofline', exact: true }),
+    page.getByRole('button', { name: 'Connect to Proofline', exact: true }),
   ).toBeVisible();
   const stored = await background.evaluate(() =>
     chrome.storage.local.get(['sharingSettings', 'prooflineSettings']),
   );
   expect(stored.sharingSettings.models.openai.apiKey).toBe('existing-key');
-  expect(stored.prooflineSettings.aiMode).toBe('proofline');
+  expect(stored.prooflineSettings.aiMode).toBe('personal');
   expect(stored.prooflineSettings.connection).toBeUndefined();
+  const panel = await context.newPage();
+  await panel.goto(extUrl(extensionId, 'sidepanel.html'));
+  await panel.setViewportSize({ width: 390, height: 844 });
+  await expect(panel.getByRole('link', { name: 'Connect to Proofline', exact: true })).toBeVisible();
+  await expect(panel.locator('.app__actions .proofline-brand')).toHaveCount(0);
+  await panel.screenshot({ path: 'test-results/proofline-connect-panel-light.png', fullPage: true });
 });
 
-test('offers Proofline credits instead of requiring a provider key after sign-in', async ({ context, background, extensionId }) => {
+test('older connected profiles use Proofline without manual setup or service overrides', async ({ context, background, extensionId }) => {
   await background.evaluate((settings) => chrome.storage.local.set({
-    prooflineSettings: { ...settings, aiMode: 'personal', github: 'personal', publishing: 'personal' },
+    prooflineSettings: { ...settings, aiMode: 'personal', github: 'personal', publishing: 'cloudflare', model: 'old-model-override' },
     micFromStart: true,
   }), connected());
   await context.route('https://proofline.sh/**', route => route.fulfill({ status: 503, json: { detail: 'Fixture: no provider calls' } }));
   const page = await context.newPage();
-  await page.goto(extUrl(extensionId, 'sidepanel.html'));
-  await page.getByRole('button', { name: 'Start recording', exact: true }).click();
-  const voice = page.getByRole('dialog', { name: 'Voice setup' });
-  await expect(voice.getByRole('button', { name: 'Use Proofline credits' })).toBeVisible();
-  await expect(voice.getByLabel('API key')).toHaveCount(0);
-  await voice.getByRole('button', { name: 'Use a provider key' }).click();
-  await expect(voice.getByLabel('API key')).toBeVisible();
-  await voice.getByRole('button', { name: 'Back to voice options' }).click();
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(extUrl(extensionId, 'options.html#services'));
+  await expect(page.getByText('Using Proofline for all AI services, private report hosting and GitHub issues.')).toBeVisible();
+  await expect(page.locator('#settings-page input,#settings-page select')).toHaveCount(0);
+  for (const section of [
+    { link: 'AI summaries', message: 'Using Proofline for AI summaries.' },
+    { link: 'Publishing', message: 'Using Proofline for private report hosting.' },
+    { link: 'GitHub', message: 'Using Proofline for GitHub issues.' },
+    { link: 'Transcription', message: 'Using Proofline credits for transcription.' },
+  ]) {
+    await page.getByRole('link', { name: section.link, exact: true }).click();
+    await expect(page.getByText(section.message, { exact: true })).toBeVisible();
+    await expect(page.locator('#settings-page input,#settings-page select,#settings-page textarea')).toHaveCount(0);
+  }
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.screenshot({ path: 'test-results/proofline-connected-settings-light.png', fullPage: true });
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.screenshot({ path: 'test-results/recorder-proofline-voice-choice-dark.png', fullPage: true, animations: 'disabled' });
-  await page.emulateMedia({ colorScheme: 'light' });
-  await page.screenshot({ path: 'test-results/recorder-proofline-voice-choice-light.png', fullPage: true, animations: 'disabled' });
-  await voice.getByRole('button', { name: 'Use Proofline credits' }).click();
-  await expect(voice).toHaveCount(0);
-  const stored = await background.evaluate(() => chrome.storage.local.get(['prooflineSettings', 'transcription']));
-  expect(stored.prooflineSettings.aiMode).toBe('proofline');
-  expect(stored.prooflineSettings.connection.organizationId).toBe(org);
-  expect(stored.prooflineSettings.github).toBe('personal');
-  expect(stored.prooflineSettings.publishing).toBe('personal');
-  expect(stored.transcription).toBeUndefined();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: 'test-results/proofline-connected-settings-dark.png', fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const demo = await context.newPage();
+  await demo.goto('/');
+  const panel = await context.newPage();
+  await panel.goto(extUrl(extensionId, 'sidepanel.html'));
+  await expect(panel.locator('.app__actions .proofline-brand')).toHaveCount(0);
+  await expect(panel.locator('.proofline-account-link svg')).toHaveCount(1);
+  await expect(panel.locator('.proofline-account-link')).toHaveText('alice');
+  await panel.setViewportSize({ width: 390, height: 844 });
+  await panel.screenshot({ path: 'test-results/proofline-connected-panel-light.png', fullPage: true });
+  await panel.emulateMedia({ colorScheme: 'dark' });
+  await panel.screenshot({ path: 'test-results/proofline-connected-panel-dark.png', fullPage: true });
+  await background.evaluate(id => chrome.tabs.update(id, { active: true }), await tabIdForUrl(background, 'http://localhost:5319'));
+  await panel.getByRole('button', { name: 'Start recording', exact: true }).click();
+  await expect(panel.getByRole('dialog', { name: 'Voice setup' })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Stop', exact: true })).toBeVisible();
+  await dispatch(background, { kind: 'session/stop' });
+});
+
+test('connecting Proofline populates and files a saved draft without personal repository tokens', async ({
+  context, background, extensionId,
+}) => {
+  const demo = await context.newPage();
+  await demo.goto('/');
+  const recording = await dispatch<{ session: { id: string } }>(background, {
+    kind: 'session/start', tabId: await tabIdForUrl(background, 'http://localhost:5319'),
+  });
+  await dispatch(background, { kind: 'session/stop' });
+  await background.evaluate((id) => chrome.storage.local.set({
+    [`shareDraft:${id}`]: {
+      repository: '',
+      draft: { title: 'Saved before connecting', body: 'Keep this manually written summary.' },
+      draftSource: 'edited',
+    },
+  }), recording.session.id);
+  const paths: string[] = [];
+  await context.route('https://proofline.sh/**', async route => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    paths.push(path);
+    let json: unknown;
+    if (path === '/auth/device/code') json = {
+      device_code: 'repo-test-code', user_code: 'REPO-TEST',
+      verification_uri_complete: 'https://proofline.sh/auth/device?user_code=REPO-TEST',
+      expires_in: 600, interval: 5,
+    };
+    else if (path === '/auth/device/token') json = {
+      access_token: 'test-proofline-token', organization_id: org, expires_in: 3600,
+      scope: 'recorder:read recorder:ai recorder:reports recorder:issues',
+    };
+    else if (path.endsWith('/account')) json = account;
+    else if (path.endsWith('/reports')) json = {
+      id: reportId, url: `https://proofline.sh/recorder/reports/${org}/${reportId}`,
+    };
+    else if (path.endsWith('/attachments')) json = { id: 'asset' };
+    else if (path.endsWith('/issue')) {
+      expect(request.postDataJSON()).toMatchObject({
+        repository_id: account.repositories[0]!.id,
+        title: 'Saved before connecting', body: 'Keep this manually written summary.',
+      });
+      json = { request_id: request.postDataJSON().request_id, status: 'complete',
+        number: 42, url: 'https://github.com/alice/product/issues/42' };
+    } else if (path === '/auth/device') {
+      await route.fulfill({ contentType: 'text/html', body: '<p>Approval fixture</p>' });
+      return;
+    } else if (path.startsWith('/api/') || path.startsWith('/auth/')) {
+      throw new Error(`Unexpected request ${path}`);
+    } else {
+      await route.fulfill({ contentType: 'text/html', body: '<p>Public page fixture</p>' });
+      return;
+    }
+    await route.fulfill({ json });
+  });
+  await context.route('https://github.com/alice/product/issues/42', route => route.fulfill({ body: 'Issue fixture' }));
+  const share = await context.newPage();
+  await share.goto(extUrl(extensionId, `share.html?session=${recording.session.id}`));
+  await expect(share.getByLabel('Issue repository')).toBeDisabled();
+  const options = await context.newPage();
+  await options.goto(extUrl(extensionId, 'options.html#proofline'));
+  await options.getByRole('button', { name: 'Connect to Proofline', exact: true }).click();
+  await expect(options.getByRole('button', { name: 'Change account', exact: true })).toBeVisible({ timeout: 20000 });
+  await expect(share.getByLabel('Issue repository')).toHaveValue('alice/product');
+  await share.getByRole('button', { name: 'File GitHub issue', exact: true }).click();
+  await expect(share.getByRole('link', { name: 'View issue #42' })).toBeVisible();
+  expect(paths.filter(path => path.endsWith('/reports'))).toHaveLength(1);
+  expect(paths.filter(path => path.endsWith('/issue'))).toHaveLength(1);
+  expect(paths.some(path => path.endsWith('/attachments'))).toBe(true);
+  expect(paths.some(path => path.endsWith('/ai'))).toBe(false);
+  await share.screenshot({ path: 'test-results/connected-repository-filed.png', fullPage: true });
 });
 
 test('files through Proofline with managed AI and private attachment uploads', async ({

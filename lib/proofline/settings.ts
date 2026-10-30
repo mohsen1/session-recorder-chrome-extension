@@ -44,13 +44,29 @@ export const defaultProoflineSettings = (): ProoflineSettings => ({
 });
 export async function loadProoflineSettings(): Promise<ProoflineSettings> {
   const stored = await chrome.storage.local.get(PROOFLINE_SETTINGS_KEY);
-  return { ...defaultProoflineSettings(), ...stored[PROOFLINE_SETTINGS_KEY] };
+  return connectedSettings({
+    ...defaultProoflineSettings(),
+    ...stored[PROOFLINE_SETTINGS_KEY],
+  });
 }
 export async function saveProoflineSettings(
   settings: ProoflineSettings,
-): Promise<void> {
+): Promise<ProoflineSettings> {
+  const next = connectedSettings(settings);
   await chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
-  await chrome.storage.local.set({ [PROOFLINE_SETTINGS_KEY]: settings });
+  await chrome.storage.local.set({ [PROOFLINE_SETTINGS_KEY]: next });
+  return next;
+}
+/** A connected workspace owns every service, including older saved profiles. */
+function connectedSettings(settings: ProoflineSettings): ProoflineSettings {
+  if (!settings.connection) return settings;
+  return {
+    ...settings,
+    aiMode: 'proofline',
+    publishing: 'proofline',
+    github: 'proofline',
+    model: '',
+  };
 }
 export function requireConnection(settings: ProoflineSettings): ProoflineConnection {
   if (!settings.connection || settings.connection.expiresAt <= Date.now())

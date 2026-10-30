@@ -46,13 +46,9 @@ Sessions stay in Chrome locally by default. Redaction masks common credentials a
 
 ## Managed-service copy
 
-The public listing's paragraph that says the backend deployment is pending is obsolete. Replace it with:
+Use the following paragraph to describe managed services:
 
-> The optional Proofline account connection remains in preview. The Proofline backend is deployed. Managed speech is unavailable until its providers are configured. Personal API keys and your own Cloudflare account work independently.
-
-After authorized customer acceptance, use the following paragraph to describe the managed services:
-
-> Connect Proofline to use workspace credits for AI and share private reports with selected readers. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation. Personal API keys and your own Cloudflare account remain supported. Outside report readers need a free Proofline account. Paid AI pauses when credits are unavailable; the extension does not silently switch to personal keys.
+> Connect to Proofline to use workspace credits for all AI, share private reports with selected readers and file issues through the workspace GitHub App. Connected services work automatically without manual provider setup or overrides. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation. Disconnect to use personal API keys and your own Cloudflare account; saved credentials remain local. Outside report readers need a free Proofline account. Paid AI pauses when credits are unavailable and never switches to personal keys automatically.
 
 ## Single purpose
 

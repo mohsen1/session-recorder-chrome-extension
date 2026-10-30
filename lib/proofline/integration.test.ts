@@ -61,6 +61,26 @@ describe('Proofline integration boundaries', () => {
     );
     expect((await loadProoflineSettings()).aiMode).toBe('proofline'); // Disconnect must not silently spend personal keys.
   });
+  it('routes older connected profiles through every Proofline service without personal overrides', async () => {
+    const legacy = { ...managed(), aiMode: 'personal', publishing: 'cloudflare', github: 'personal', model: 'old-override' };
+    stored.prooflineSettings = legacy;
+    stored.sharingSettings = { repository: 'other/manual', githubToken: 'personal-token', models: { openai: { apiKey: 'personal-key' } } };
+    const loaded = await loadProoflineSettings();
+    expect(loaded).toMatchObject({ aiMode: 'proofline', publishing: 'proofline', github: 'proofline', model: '' });
+    const settings = await loadSharingSettings();
+    expect(configuredRepositories(settings)).toEqual([{ id: 'r1', repository: 'alice/app', token: '' }]);
+    expect(settings.models.openai.apiKey).toBe('personal-key');
+    expect(stored.sharingSettings).toMatchObject({ githubToken: 'personal-token' });
+    await saveProoflineSettings(legacy as ProoflineSettings);
+    expect((stored.prooflineSettings as ProoflineSettings).github).toBe('proofline');
+    legacy.connection!.expiresAt = 0;
+    stored.prooflineSettings = legacy;
+    expect((await loadProoflineSettings()).aiMode).toBe('proofline');
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    await expect(publishProoflineReport(await loadProoflineSettings(), [], 'Title', 'L1', undefined, async () => {}, () => {}, new AbortController().signal)).rejects.toThrow('expired');
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it('uses only the authorized workspace repositories in managed mode', () => {
     expect(
       configuredRepositories({

@@ -5,17 +5,17 @@ continues to work without any keys or accounts.
 
 ## Proofline setup
 
-The Proofline backend is deployed, and the connection remains in preview. Managed speech is disabled until its providers are configured. Standalone recording, personal provider keys and Cloudflare publishing work independently.
+Connecting Proofline uses workspace credits for all AI, private report hosting and GitHub App issue filing. Standalone recording, personal provider keys and Cloudflare publishing remain available when disconnected.
 
-In Settings → Proofline, choose Connect Proofline and approve the code in your browser. Your personal workspace is selected by default when eligible. In Settings → Services, choose Use Proofline for AI and sharing to enable managed AI, private report hosting and GitHub App issue creation. Connecting alone preserves existing personal-key settings.
+In Settings → Proofline, choose Connect to Proofline and approve the code in your browser. Your personal workspace is selected by default when eligible. All services use the connected workspace automatically, including previously saved connections. Settings shows Using Proofline instead of manual provider setup or overrides. Personal credentials remain stored locally for use after disconnecting.
 
-The workspace selector chooses whose credits pay for AI. Switching workspaces requires browser approval. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation; sign-in alone does not grant credits. If credits run out, top up or explicitly switch to personal keys. Local recording and manual annotations remain available.
+The workspace selector chooses whose credits pay for AI. Switching workspaces requires browser approval. The existing 10,000-credit grant requires Proofline onboarding and GitHub App installation; sign-in alone does not grant credits. If credits run out, top up or disconnect to use personal keys. Local recording and manual annotations remain available.
 
-Proofline keeps provider keys on the server. It meters summaries, session titles, page vocabulary and transcription. Model selection is automatic; the advanced model field in Settings → Services can select a server-approved model. When configured, managed dictation transcribes short audio segments using Deepgram or ElevenLabs. Personal-key mode retains direct streaming.
+Proofline keeps provider keys on the server. It meters summaries, session titles, page vocabulary and transcription. Model selection is automatic and cannot be overridden while connected. When configured, managed dictation transcribes short audio segments using Deepgram or ElevenLabs. Personal-key mode retains direct streaming.
 
 Reports are private to their creator until readers are selected. Invited outside readers require a free Proofline account. Reports remain until deleted, subject to workspace storage limits. The extension uploads Markdown and attachments rather than executable HTML. Each attachment is limited to 25 MB. Upload and issue request identifiers are saved before submission so retries resume their original requests.
 
-The repository dropdown lists repositories available through the selected workspace’s GitHub App installation. Managed issue creation requires Proofline hosting. Choose Cloudflare hosting and personal repository tokens for the standalone publishing path. Existing Cloudflare reports remain at their original destination.
+The repository dropdown lists repositories available through the selected workspace’s GitHub App installation. Managed issue creation requires Proofline hosting. Disconnect Proofline to use Cloudflare hosting and personal repository tokens. Existing Cloudflare reports remain at their original destination.
 
 ## Cloudflare setup
 
